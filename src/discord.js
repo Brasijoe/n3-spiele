@@ -222,7 +222,7 @@ async function editSubmit(i, env) {
   const w = who(i);
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   if (!row) return say('Diese Runde gibt es nicht mehr.');
-  if ((await sha256('discord:' + w.id)) !== row.host_key_hash) return say('Nur der Gastgeber kann die Runde bearbeiten.');
+  if (!(await ownsRound(row, w.id)) && !modOf(i)) return say('Nur der Ersteller oder Moderierende können die Runde bearbeiten.');
   if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
   const f = {};
   for (const r of i.data.components || []) for (const c of r.components || []) f[c.custom_id] = c.value;
