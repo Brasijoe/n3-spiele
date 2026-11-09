@@ -11,6 +11,15 @@ async function sha256(s) {
   const b = await crypto.subtle.digest('SHA-256', enc.encode(s));
   return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join('');
 }
+export const normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+export const codeHash = (c) => sha256('n3-member:' + normCode(c));
+const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne I, O, 0, 1
+function newMemberCode() {
+  const b = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(b, (x) => ALPHA[x % ALPHA.length]).join('');
+}
+const showCode = (c) => c.slice(0, 4) + '-' + c.slice(4);
+const ownsRound = async (row, uid) => (row.host_discord && row.host_discord === uid) || (await sha256('discord:' + uid)) === row.host_key_hash;
 const reply = (data) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
 const say = (content) => reply({ type: 4, data: { content, flags: 64 } }); // nur für die Person sichtbar
 
@@ -118,8 +127,8 @@ async function cmdParty(i, env) {
   const time = str(opt(i, 'uhrzeit') || '18:00', 5); if (!/^\d{2}:\d{2}$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.');
   const seats = Number(opt(i, 'plaetze') || 4); if (!(seats >= 2 && seats <= 30)) return say('Plätze: 2 bis 30.');
   const id = newId();
-  await env.DB.prepare("INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'{}',?12)")
-    .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), str(opt(i, 'hinweis'), 200), new Date().toISOString()).run();
+  await env.DB.prepare("INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'{}',?12,?13)")
+    .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), str(opt(i, 'hinweis'), 200), new Date().toISOString(), w.id).run();
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   // Per REST posten, damit wir die Nachricht später aktualisieren können; sonst normale Antwort.
   try {
@@ -151,8 +160,8 @@ async function button(i, env) {
   // (bei Runden von der Webseite ist das die einzige Möglichkeit in Discord; dort verwaltet der Ersteller sie im Browser).
   const perms = BigInt((i.member && i.member.permissions) || '0');
   const isMod = (perms & 0x20n) !== 0n || (perms & 0x8n) !== 0n;
-  const isHost = isMod || (await sha256('discord:' + w.id)) === row.host_key_hash;
-  const isOwner = (await sha256('discord:' + w.id)) === row.host_key_hash;
+  const isHost = isMod || (await ownsRound(row, w.id));
+  const isOwner = await ownsRound(row, w.id);
   const key = 'd' + w.id;
   if (act === 'join') {
     if (isOwner) return say('Du bist der Gastgeber und hast schon einen Platz.');
@@ -253,7 +262,7 @@ export async function handleInteraction(req, env, ctx) {
   try {
     await ensureCols(env);
     if (i.type === 4) return await autocomplete(i, env, ctx);
-    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : say('Unbekannter Befehl.');
+    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
     if (i.type === 3) return await button(i, env);
     if (i.type === 5) return await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
@@ -262,6 +271,7 @@ export async function handleInteraction(req, env, ctx) {
 
 const GAME = { type: 3, name: 'spiel', description: 'Spielname (Vorschläge von BoardGameGeek)', required: true, autocomplete: true };
 export const COMMANDS = [
+  { name: 'code', description: 'Persönlichen Code für die Webseite abholen (nur für dich sichtbar)' },
   { name: 'party', description: 'Spielrunde anlegen und Mitspielende suchen', options: [
     GAME,
     { type: 3, name: 'datum', description: 'Standard: nächster Dienstag. Format 2026-11-17, 17.11., heute, morgen' },
@@ -307,6 +317,8 @@ export async function ensureCols(env) {
   const have = new Set(results.map((r) => r.name));
   if (!have.has('discord_channel')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_channel TEXT').run();
   if (!have.has('discord_msg')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_msg TEXT').run();
+  if (!have.has('host_discord')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN host_discord TEXT').run();
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS members (discord_id TEXT PRIMARY KEY, name TEXT NOT NULL, code_hash TEXT NOT NULL UNIQUE, blocked INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, checked_at INTEGER NOT NULL DEFAULT 0)').run();
   colsOk = true;
 }
 
@@ -338,4 +350,22 @@ export async function cancelPartyMessage(env, row, internal = false) {
   if (!row || !row.discord_msg) return;
   if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] });
+}
+
+// Prüft (höchstens alle 10 Minuten pro Person), ob jemand noch auf dem Server ist. Wer ihn verlassen hat, verliert den Code.
+export async function stillMember(env, m) {
+  if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) return true;
+  if (Date.now() - m.checked_at < 600000) return true;
+  const res = await fetch(`${api(env)}/guilds/${env.DISCORD_GUILD_ID}/members/${m.discord_id}`, { headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN } });
+  if (res.status === 404) { await env.DB.prepare('DELETE FROM members WHERE discord_id = ?1').bind(m.discord_id).run(); return false; }
+  if (res.ok) await env.DB.prepare('UPDATE members SET checked_at = ?1 WHERE discord_id = ?2').bind(Date.now(), m.discord_id).run();
+  return true;
+}
+
+async function cmdCode(i, env) {
+  const w = who(i);
+  const code = newMemberCode();
+  await env.DB.prepare('INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at) VALUES(?1, ?2, ?3, 0, ?4, ?5) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, code_hash = excluded.code_hash, checked_at = excluded.checked_at')
+    .bind(w.id, w.name, await codeHash(code), new Date().toISOString(), Date.now()).run();
+  return say(`**Dein persönlicher Code: \`${showCode(code)}\`**\nGib ihn auf der Webseite ein, um Spielrunden anzulegen oder Partien einzutragen. Er gehört zu deinem Discord-Konto (Name: ${w.name}). Gib ihn nicht weiter. Mit einem neuen \`/code\` wird der alte ungültig.`);
 }

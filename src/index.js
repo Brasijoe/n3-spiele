@@ -1,6 +1,6 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
-import { handleInteraction, registerCommands, ensureCols, discordOn, announceParty, syncParty, cancelPartyMessage } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage } from './discord.js';
 
 const SALT = 'n3-club:';
 const enc = new TextEncoder();
@@ -44,6 +44,19 @@ async function checkClubCode(req, env, ip) {
   return safeEq(await sha256(SALT + code), row.value) ? null : 'bad_code';
 }
 
+// Persönlicher Code (per Discord /code). Gibt { member } oder { err } zurück.
+async function checkMember(req, env, ip) {
+  const code = normCode(req.headers.get('x-member-code'));
+  if (code.length !== 8) return { err: 'code_format' };
+  if (!(await allow(env, 'code:' + ip, 15, 600))) return { err: 'rate_limited' };
+  await ensureCols(env);
+  const m = await env.DB.prepare('SELECT * FROM members WHERE code_hash = ?1').bind(await codeHash(code)).first();
+  if (!m) return { err: 'bad_code' };
+  if (m.blocked) return { err: 'blocked' };
+  if (!(await stillMember(env, m))) return { err: 'bad_code' };
+  return { member: m };
+}
+
 async function body(req) {
   const text = await req.text();
   if (text.length > 16000) throw Object.assign(new Error('too_large'), { status: 413 });
@@ -71,7 +84,7 @@ async function route(req, env, ctx, url) {
     return json(results.map(playOut));
   }
   if (path === '/plays' && m === 'POST') {
-    const err = await checkClubCode(req, env, ip); if (err) return fail(err === 'rate_limited' ? 429 : 403, err);
+    const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req);
     const game = str(b.game, 120), date = str(b.date, 10), players = int(b.players), duration = b.duration == null ? null : int(b.duration);
@@ -94,14 +107,14 @@ async function route(req, env, ctx, url) {
     return json(results.map(partyOut));
   }
   if (path === '/parties' && m === 'POST') {
-    const err = await checkClubCode(req, env, ip); if (err) return fail(err === 'rate_limited' ? 429 : 403, err);
+    const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req);
-    const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = str(b.host, 40);
+    const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = auth.member.name;
     if (!game || !host || !isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     const id = newId(), hostKey = newId() + newId();
-    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString()).run();
+    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12,?13)')
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString(), auth.member.discord_id).run();
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id, null, true)));
     return json({ id, hostKey });
   }

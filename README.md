@@ -106,3 +106,8 @@ Der Bot läuft im selben Worker (kein extra Server). Endpoint: `https://<worker>
 - Variablen in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (nur dieser Server darf den Bot nutzen), optional `DISCORD_CHANNEL_ID` (nur dieser Kanal; hierhin postet der Bot auch Runden, die auf der Webseite angelegt werden). Secret: `DISCORD_BOT_TOKEN`.
 - Befehle registrieren (nach jeder Änderung an `COMMANDS`): `POST /api/admin/discord/register` mit Header `X-Admin-Token`.
 - Im Developer Portal unter *General Information* als **Interactions Endpoint URL** die URL oben eintragen.
+
+## Persönliche Codes (statt Vereinscode)
+
+Mitglieder holen sich auf dem Discord-Server mit `/code` einen persönlichen 8-stelligen Code (nur für sie sichtbar). Damit legen sie auf der Webseite Runden an oder tragen Partien ein; der Browser merkt sich den Code. Die Runde trägt den Discord-Namen und gehört dem Discord-Konto, der Ersteller kann sie also auch in Discord über „Verwalten“ ändern. Ein neues `/code` macht den alten ungültig. Wer den Server verlässt, verliert den Code (Prüfung höchstens alle 10 Minuten, braucht `DISCORD_GUILD_ID` und den Bot-Token). Der Code wird nur als Hash gespeichert (Tabelle `members`).
+Nach dem Deploy einmal in der Verwaltung „Discord-Befehle registrieren“ klicken, damit `/code` erscheint.

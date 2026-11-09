@@ -299,7 +299,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
       <h2 id="admH" style="font-size:26px" data-t="admin"></h2>
       <span class="note" data-t="adminNote"></span>
     </div>
-    <div class="adm-block">
+    <div class="adm-block" hidden>
       <h3 data-t="admCode"></h3>
       <form id="codeForm" class="row">
         <label class="field code"><span data-t="admNewCode"></span><input type="text" id="newCode" inputmode="numeric" maxlength="4" autocomplete="off"></label>
@@ -400,7 +400,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <label style="display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600;color:var(--fg)"><input type="checkbox" id="fFirst" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="first"></span></label>
     <label class="field"><span data-t="winner"></span><input type="text" id="fWinner" maxlength="80"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="fNote" maxlength="200"></label>
-    <label class="field code"><span data-t="code"></span><input type="text" id="fCode" inputmode="numeric" maxlength="4" autocomplete="off"><span class="note" data-t="codeHint"></span></label>
+    <label class="field code"><span data-t="code"></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="fMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
       <button type="button" class="btn btn-quiet" id="cancel" data-t="cancel"></button>
@@ -420,9 +420,9 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <div class="row"><label class="field" style="flex:1 1 150px"><span data-t="date"></span><input type="date" id="pDate" required></label>
       <label class="field" style="flex:1 1 110px"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label></div>
     <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
-    <label class="field"><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40" required></label>
+    <label class="field" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="pNote" maxlength="200"></label>
-    <label class="field code"><span data-t="code"></span><input type="text" id="pCode" inputmode="numeric" maxlength="4" autocomplete="off"><span class="note" data-t="codeHint"></span></label>
+    <label class="field code"><span data-t="code"></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="pMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
       <button type="button" class="btn btn-quiet" id="pCancel" data-t="cancel"></button>
@@ -445,8 +445,8 @@ const TXT = {
     recent: 'Zuletzt im Club gespielt', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
-    code: 'Vereinscode', codePh: '4-stellig', codeHint: 'Der aktuelle Code hängt im Vereinsheim aus.', cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
-    errLen: 'Bitte den 4-stelligen Vereinscode eingeben.', errCode: 'Der Code stimmt nicht. Der aktuelle Code hängt im Vereinsheim aus.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
+    code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Auf dem N3-Discord-Server mit /code abholen.', cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
+    errLen: 'Bitte deinen persönlichen Code eingeben (8 Zeichen).', errCode: 'Der Code stimmt nicht. Hol dir mit /code auf dem Discord-Server einen neuen.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
     gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
     weights: ['Einsteiger', 'Leicht', 'Mittel', 'Anspruchsvoll', 'Sehr komplex'], times: ['bis 30 Min', '30–60 Min', '1–2 Std', 'über 2 Std'],
     feels: ['Kooperativ', 'Party', 'Bluffen & Verraten', 'Kampagne / Legacy', 'Solo spielbar', 'Top zu zweit'], modes: ['laut Schachtel', 'empfohlen (Community)', 'am besten (Community)'],
@@ -490,8 +490,8 @@ const TXT = {
     recent: 'Recently played at the club', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
-    code: 'Club code', codePh: '4 digits', codeHint: 'The current code is posted at the club.', cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
-    errLen: 'Please enter the 4-digit club code.', errCode: 'Wrong code. The current code is posted at the club.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
+    code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it on the N3 Discord server with /code.', cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
+    errLen: 'Please enter your personal code (8 characters).', errCode: 'Wrong code. Get a new one with /code on the Discord server.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
     gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
     weights: ['Beginner', 'Light', 'Medium', 'Demanding', 'Very complex'], times: ['up to 30 min', '30–60 min', '1–2 h', 'over 2 h'],
     feels: ['Cooperative', 'Party', 'Bluff & betrayal', 'Campaign / legacy', 'Solo-friendly', 'Great with two'], modes: ['per box', 'recommended (community)', 'best (community)'],
@@ -528,7 +528,11 @@ const TXT = {
     stNeverAll: 'Every game in the collection has been played at least once.' },
 };
 const EXPB = { 412735: 342444, 324767: 322656, 324766: 322656, 276044: 260934, 275923: 260934, 242993: 186751, 349606: 319910, 226162: 184287, 325: 13, 926: 13, 181336: 143884, 342274: 160477, 219326: 160477 };
-const CODE_SALT = 'n3-club:';
+const normCode = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+const showCode = (v) => { const c = normCode(v); return c.length > 4 ? c.slice(0, 4) + '-' + c.slice(4) : c; };
+const savedCode = () => { try { return localStorage.getItem('n3-member-code') || ''; } catch (e) { return ''; } };
+const saveCode = (c) => { try { localStorage.setItem('n3-member-code', c); } catch (e) {} };
+const forgetCode = () => { try { localStorage.removeItem('n3-member-code'); } catch (e) {} };
 const PAGE = 24;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -666,7 +670,7 @@ function renderStatic() {
   $('prev').setAttribute('aria-label', t.prev); $('next').setAttribute('aria-label', t.next);
   $('q').placeholder = t.searchPh; $('gQ').placeholder = t.bggPh; $('pQ').placeholder = t.bggPh;
   $('tabs').setAttribute('aria-label', de() ? 'Bereiche' : 'Sections');
-  $('fWinner').placeholder = t.winnerPh; $('fNote').placeholder = t.notePh; $('fCode').placeholder = t.codePh;
+  $('fWinner').placeholder = t.winnerPh; $('fNote').placeholder = t.notePh; $('fCode').placeholder = t.codePh; $('pCode').placeholder = t.codePh;
   renderSortOpts();
   $('minVotes').innerHTML = [[0, t.any], [500, '500+'], [2000, '2.000+'], [10000, '10.000+']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('minVotes').value = S.minVotes;
   $('rankMax').innerHTML = [[0, t.any], [100, 'Top 100'], [500, 'Top 500'], [1000, 'Top 1.000'], [2500, 'Top 2.500']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('rankMax').value = S.rankMax;
@@ -856,34 +860,34 @@ function openLog(g) {
   $('gPick').hidden = !guest; $('logGame').hidden = guest;
   if (guest) { $('gQ').value = ''; gResults = []; gActive = -1; renderPick(); } else $('logGame').textContent = name(g);
   const d = new Date(); $('fDate').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  $('fPlayers').value = Math.min(Math.max(4, g.p1), Math.min(g.p2, 30)); $('fWinner').value = ''; $('fNote').value = ''; $('fCode').value = ''; $('fDur').value = ''; $('fFirst').checked = false;
+  $('fPlayers').value = Math.min(Math.max(4, g.p1), Math.min(g.p2, 30)); $('fWinner').value = ''; $('fNote').value = ''; $('fCode').value = showCode(savedCode()); $('fDur').value = ''; $('fFirst').checked = false;
   $('fMsg').textContent = ''; $('fMsg').className = ''; $('save').disabled = false;
   $('modal').hidden = false; (guest ? $('gQ') : $('fDate')).focus();
 }
 function closeLog() { $('modal').hidden = true; logGame = null; logParty = null; }
-const codeErr = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave);
+const codeErr = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set' || e.code === 'blocked') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave);
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join(''); }
 
 $('logForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const t = T(), msg = $('fMsg'), code = $('fCode').value.replace(/\D/g, '');
+  const t = T(), msg = $('fMsg'), code = normCode($('fCode').value);
   msg.className = 'err';
-  if (code.length !== 4) { msg.textContent = t.errLen; return; }
+  if (code.length !== 8) { msg.textContent = t.errLen; return; }
   const durRaw = $('fDur').value.trim(); const dur = durRaw ? Math.round(Number(durRaw)) : null;
   if (durRaw && !(dur >= 1 && dur <= 1440)) { msg.textContent = t.errDur; return; }
   if (!logGame || logGame === GUEST_PENDING) { msg.textContent = t.errPick; $('gQ').focus(); return; }
   $('save').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   try {
     await api('POST', '/plays', { guest: !!logGame.guest, year: logGame.guest ? (logGame.y || null) : null, gameId: logGame.id, game: logGame.nDe, date: $('fDate').value, players: Number($('fPlayers').value) || 0,
-      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined }, { 'X-Club-Code': code });
-    refreshAll();
+      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined }, { 'X-Member-Code': code });
+    saveCode(code); refreshAll();
     msg.textContent = t.saved; setTimeout(closeLog, 600);
-  } catch (err) { msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
+  } catch (err) { if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
 });
 $('cancel').onclick = closeLog;
 $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeLog(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeLog(); if (e.key === 'Escape' && !$('pModal').hidden) closeParty(); });
-$('fCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+$('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
 
 $('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); });
 const AUTO_MS = 5000;
@@ -1195,28 +1199,28 @@ $('pChange').onclick = () => { pGame = null; renderPPick(); $('pQ').focus(); };
 function nextTuesday() { const d = new Date(); d.setDate(d.getDate() + ((2 - d.getDay() + 7) % 7)); return isoDay(d); }
 function openParty() {
   pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextTuesday(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
-  $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = ''; $('pMsg').textContent = ''; $('pSave').disabled = false;
+  $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
   try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
   renderPPick(); $('pModal').hidden = false; $('pQ').focus();
 }
 function closeParty() { $('pModal').hidden = true; }
 $('ptNew').onclick = openParty; $('pCancel').onclick = closeParty;
 $('pModal').addEventListener('click', (e) => { if (e.target === $('pModal')) closeParty(); });
-$('pCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+$('pCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
 $('pForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const t = T(), msg = $('pMsg'), code = $('pCode').value.replace(/\D/g, ''), seats = Math.round(Number($('pSeats').value)), host = $('pHost').value.trim().slice(0, 40);
+  const t = T(), msg = $('pMsg'), code = normCode($('pCode').value), seats = Math.round(Number($('pSeats').value));
   msg.className = 'err';
   if (!pGame) { msg.textContent = t.errPick; $('pQ').focus(); return; }
   if (!(seats >= 2 && seats <= 30)) { msg.textContent = t.ptErrSeats; return; }
-  if (!host) { msg.textContent = t.ptErrName; return; }
-  if (code.length !== 4) { msg.textContent = t.errLen; return; }
+  if (code.length !== 8) { msg.textContent = t.errLen; return; }
   $('pSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   try {
-    const r = await api('POST', '/parties', { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date: $('pDate').value, time: $('pTime').value || '', seats, host, note: $('pNote').value.trim().slice(0, 200) }, { 'X-Club-Code': code });
-    const m = mine(); m[r.id] = { host: true, hostKey: r.hostKey }; setMine(m); try { localStorage.setItem('n3-name', host); } catch (x) {}
+    const r = await api('POST', '/parties', { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date: $('pDate').value, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) }, { 'X-Member-Code': code });
+    saveCode(code);
+    const m = mine(); m[r.id] = { host: true, hostKey: r.hostKey }; setMine(m);
     refreshAll(); msg.textContent = t.ptCreated; setTimeout(closeParty, 500);
-  } catch (err) { msg.className = 'err'; msg.textContent = codeErr(err); $('pSave').disabled = false; }
+  } catch (err) { if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('pSave').disabled = false; }
 });
 
 /* ---------- Ansichten (Tabs) ---------- */
