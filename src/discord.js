@@ -164,6 +164,10 @@ export async function handleInteraction(req, env, ctx) {
   const i = JSON.parse(text);
   if (i.type === 1) return reply({ type: 1 });
   if (env.DISCORD_GUILD_ID && i.guild_id !== env.DISCORD_GUILD_ID) return say('Dieser Bot ist für diesen Server nicht freigeschaltet.');
+  // Optional: nur ein Kanal. Buttons an alten Nachrichten gelten ebenfalls nur dort.
+  if (env.DISCORD_CHANNEL_ID && i.channel_id !== env.DISCORD_CHANNEL_ID) {
+    return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur im Kanal <#${env.DISCORD_CHANNEL_ID}>.`);
+  }
   try {
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : say('Unbekannter Befehl.');
