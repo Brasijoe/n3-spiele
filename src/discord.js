@@ -76,23 +76,18 @@ function view(r) {
   const components = logged ? [] : [{ type: 1, components: [
     { type: 2, style: 3, label: 'Ich bin dabei', custom_id: 'join:' + r.id, disabled: !free },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
-    { type: 2, style: 1, label: 'Als gespielt registrieren', custom_id: 'log:' + r.id },
-    { type: 2, style: 2, label: 'Bearbeiten', custom_id: 'edit:' + r.id },
-    { type: 2, style: 4, label: 'Stornieren', custom_id: 'cancel:' + r.id },
+    { type: 2, style: 1, label: 'Verwalten (Ersteller)', custom_id: 'manage:' + r.id },
   ] }];
   return { embeds: [embed], components };
 }
 
-function confirmView(r) {
-  const v = view(r);
-  v.components = [{ type: 1, components: [
-    { type: 2, style: 4, label: 'Ja, Runde stornieren', custom_id: 'cancelyes:' + r.id },
-    { type: 2, style: 2, label: 'Zurück', custom_id: 'cancelno:' + r.id },
-  ] }];
-  v.embeds[0].footer = { text: 'Wirklich stornieren? Das löscht die Runde auch auf der Webseite.' };
-  v.embeds[0].color = 0xc62828;
-  return v;
-}
+// Nur der Ersteller sieht diese Schaltflächen (kurzlebige Nachricht, nur für ihn sichtbar).
+const managePanel = (r) => ({ type: 7, data: { content: `**Runde verwalten:** ${r.game}`, embeds: [], components: [{ type: 1, components: [
+  { type: 2, style: 1, label: 'Als gespielt registrieren', custom_id: 'log:' + r.id },
+  { type: 2, style: 2, label: 'Bearbeiten', custom_id: 'edit:' + r.id },
+  { type: 2, style: 4, label: 'Stornieren', custom_id: 'cancel:' + r.id },
+] }] } });
+const done = (text) => reply({ type: 7, data: { content: text, embeds: [], components: [] } });
 function editModal(r) {
   const row = (custom_id, label, value, extra = {}) => ({ type: 1, components: [{ type: 4, custom_id, label, style: 1, value: String(value == null ? '' : value), required: true, ...extra }] });
   return { type: 9, data: { custom_id: 'edit:' + r.id, title: 'Spielrunde bearbeiten', components: [
@@ -150,7 +145,7 @@ async function button(i, env) {
   const w = who(i);
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   if (!row) return say('Diese Runde gibt es nicht mehr.');
-  if (!row.discord_msg && i.message && i.channel_id) await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(i.channel_id, i.message.id, id).run();
+  if (!row.discord_msg && i.message && i.channel_id && !(i.message.flags & 64)) await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(i.channel_id, i.message.id, id).run();
   const isHost = (await sha256('discord:' + w.id)) === row.host_key_hash;
   const key = 'd' + w.id;
   if (act === 'join') {
@@ -162,8 +157,12 @@ async function button(i, env) {
   } else if (act === 'leave') {
     if (isHost) return say('Als Gastgeber kannst du die Runde nur löschen (über die Webseite).');
     await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, id).run();
+  } else if (act === 'manage') {
+    if (!isHost) return say('Nur der Ersteller kann die Runde verwalten.');
+    if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
+    return reply({ type: 4, data: { ...managePanel(row).data, flags: 64 } });
   } else if (act === 'log') {
-    if (!isHost) return say('Nur der Gastgeber kann die Runde als gespielt registrieren.');
+    if (!isHost) return say('Nur der Ersteller kann die Runde als gespielt registrieren.');
     if (!hasStarted(row)) return say(`Das geht erst, wenn der vereinbarte Termin erreicht ist (${fmtDate(row.date)}${row.time ? ', ' + row.time + ' Uhr' : ''}).`);
     if (!row.play_id) {
       const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
@@ -172,19 +171,26 @@ async function button(i, env) {
         .bind(pid, row.game_id, row.game, row.guest, row.year, row.date, att, '', 'Über Discord eingetragen', new Date().toISOString()).run();
       await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(pid, id).run();
     }
+    await syncParty(env, id, true);
+    return done('Als gespielt registriert ✓');
   } else if (act === 'edit') {
-    if (!isHost) return say('Nur der Gastgeber kann die Runde bearbeiten.');
+    if (!isHost) return say('Nur der Ersteller kann die Runde bearbeiten.');
     if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
     return reply(editModal(row));
   } else if (act === 'cancel') {
-    if (!isHost) return say('Nur der Gastgeber kann die Runde stornieren.');
-    return reply({ type: 7, data: confirmView(row) });
+    if (!isHost) return say('Nur der Ersteller kann die Runde stornieren.');
+    return reply({ type: 7, data: { content: `**Wirklich stornieren?** ${row.game} (${fmtDate(row.date)}). Das löscht die Runde auch auf der Webseite.`, components: [{ type: 1, components: [
+      { type: 2, style: 4, label: 'Ja, Runde stornieren', custom_id: 'cancelyes:' + id },
+      { type: 2, style: 2, label: 'Zurück', custom_id: 'cancelno:' + id },
+    ] }] } });
   } else if (act === 'cancelno') {
-    if (!isHost) return say('Nur der Gastgeber kann das entscheiden.');
+    if (!isHost) return say('Nur der Ersteller kann das entscheiden.');
+    return reply(managePanel(row));
   } else if (act === 'cancelyes') {
-    if (!isHost) return say('Nur der Gastgeber kann die Runde stornieren.');
+    if (!isHost) return say('Nur der Ersteller kann die Runde stornieren.');
     await env.DB.prepare('DELETE FROM parties WHERE id = ?1').bind(id).run();
-    return reply({ type: 7, data: { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] } });
+    await cancelPartyMessage(env, row, true);
+    return done('Runde storniert ✓');
   } else return say('Unbekannte Aktion.');
   const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   return reply({ type: 7, data: view(fresh) });
@@ -208,8 +214,8 @@ async function editSubmit(i, env) {
   const same = game === row.game;
   await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, date = ?4, time = ?5, seats = ?6, note = ?7 WHERE id = ?8')
     .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, str(f.hinweis, 200), id).run();
-  const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
-  return reply({ type: 7, data: view(fresh) });
+  await syncParty(env, id, true);
+  return done('Gespeichert ✓');
 }
 
 async function autocomplete(i, env, ctx) {
@@ -313,14 +319,14 @@ export async function announceParty(env, id, channelId, fromWeb = false) {
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
   return msg.id;
 }
-export async function syncParty(env, id) {
-  if (!(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
+export async function syncParty(env, id, internal = false) {
+  if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   const row = await getParty(env, id);
   if (!row || !row.discord_msg) return;
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
 }
-export async function cancelPartyMessage(env, row) {
+export async function cancelPartyMessage(env, row, internal = false) {
   if (!row || !row.discord_msg) return;
-  if (!(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
+  if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] });
 }
