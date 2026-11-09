@@ -61,9 +61,7 @@ export function parseDate(input, now = new Date()) {
   return null;
 }
 export function hasStarted(r, now = new Date()) {
-  const b = berlin(now);
-  if (r.date !== b.date) return r.date < b.date;
-  return !r.time || r.time <= `${String(b.hour).padStart(2, '0')}:${String(b.minute).padStart(2, '0')}`;
+  return r.date <= berlin(now).date; // ab dem Tag der Runde (deutsche Zeit)
 }
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
@@ -178,7 +176,7 @@ async function button(i, env) {
     return reply({ type: 4, data: { ...managePanel(row).data, flags: 64 } });
   } else if (act === 'log') {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde als gespielt registrieren.');
-    if (!hasStarted(row)) return say(`Das geht erst, wenn der vereinbarte Termin erreicht ist (${fmtDate(row.date)}${row.time ? ', ' + row.time + ' Uhr' : ''}).`);
+    if (!hasStarted(row)) return say(`Das geht erst am Tag des vereinbarten Termins (${fmtDate(row.date)}).`);
     if (!row.play_id) {
       const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
       const pid = newId();

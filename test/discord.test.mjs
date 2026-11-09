@@ -13,11 +13,11 @@ assert.equal(parseDate('17.11.', new Date('2026-11-09T12:00:00Z')), '2026-11-17'
 assert.equal(parseDate('01.01.', new Date('2026-11-09T12:00:00Z')), '2027-01-01');
 assert.equal(parseDate('morgen', new Date('2026-11-09T12:00:00Z')), '2026-11-10');
 assert.equal(parseDate('quatsch'), null);
-assert.equal(COMMANDS.length, 2);
+assert.equal(COMMANDS.length, 3);
 console.log('discord ok');
 import { hasStarted } from '../src/discord.js';
-assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11-10T16:30:00Z')), false); // 17:30 Berlin
-assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11-10T17:00:00Z')), true);  // 18:00 Berlin
-assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11-09T23:00:00Z')), false);
+assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11-10T06:00:00Z')), true);   // am Tag selbst, vor der Uhrzeit
+assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11-09T23:30:00Z')), true);   // 00:30 Berlin am 10.11.
+assert.equal(hasStarted({ date: '2026-11-11', time: '18:00' }, new Date('2026-11-10T12:00:00Z')), false);
 assert.equal(hasStarted({ date: '2026-11-09', time: '18:00' }, new Date('2026-11-10T08:00:00Z')), true);
 console.log('hasStarted ok');
