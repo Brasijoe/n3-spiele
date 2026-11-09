@@ -1,0 +1,23 @@
+<!doctype html><html><body style="margin:0"><div style="height:300px">Homepage</div><!-- N3 Spielesammlung einbetten: diesen Block an die gewünschte Stelle der Homepage setzen.
+     Die Adresse im src-Attribut durch die eigene ersetzen. -->
+<iframe id="n3-games" src="http://localhost:8799/?lang=en" title="Spielesammlung" loading="lazy"
+        style="width:100%;border:0;min-height:600px" scrolling="no"></iframe>
+<script>
+(() => {
+  const f = document.getElementById('n3-games'), origin = new URL(f.src).origin;
+  // Sichtbarer Ausschnitt des iFrames, damit Dialoge der Seite mittig im Sichtfeld erscheinen
+  const sendViewport = () => {
+    const r = f.getBoundingClientRect();
+    const top = Math.max(0, -r.top), height = Math.min(innerHeight, r.bottom) - Math.max(0, r.top);
+    if (f.contentWindow) f.contentWindow.postMessage({ type: 'n3-games-viewport', top, height }, origin);
+  };
+  addEventListener('message', (e) => {
+    if (e.origin !== origin || !e.data || e.data.type !== 'n3-games-height') return;
+    f.style.height = e.data.height + 'px'; sendViewport();   // iFrame wächst mit dem Inhalt, kein Scrollbalken im iFrame
+  });
+  addEventListener('scroll', sendViewport, { passive: true });
+  addEventListener('resize', sendViewport);
+  f.addEventListener('load', sendViewport);
+})();
+</script>
+<div style="height:800px">Footer</div></body></html>

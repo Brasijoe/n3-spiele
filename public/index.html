@@ -1,0 +1,1303 @@
+<!doctype html><html lang="de"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Nerd Nexus Spielesammlung</title><link rel="stylesheet" href="fonts/fonts.css"></head><body>
+<style>
+/* Layout: dunkles Kopfband wie nerd-nexus.de, darunter weiße Karten auf hellgrauem Grund, max. 1290px Inhalt */
+:root {
+  --bg: #e5e5e5; --surface: #ffffff; --surface-2: #f4f4f4; --cover: #efefef; --fg: #1b1b1b; --text: #3a3a3a; --muted: #5c5c5c;
+  --line: #d9d9d9; --line-strong: #a8a8a8; --band: #262626; --band-fg: #ffffff; --band-muted: #d6d6d6;
+  --accent: #f09b19; --accent-2: #f0b418; --on-accent: #1b1b1b; --error: #a1260d; --slide-bg: #1f1f1f; --club: #2c6aa0; --guest: #c67c00; --guest-soft: #fdecd0; --guest-ink: #7a4a00;
+  --font-display: "Rubik", "Segoe UI", system-ui, sans-serif; --font-body: "Karla", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141414; --surface: #1f1f1f; --surface-2: #262626; --cover: #2a2a2a; --fg: #f2f2f2; --text: #d9d9d9; --muted: #a8a8a8;
+  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --guest-ink: #f5c77a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141414; --surface: #1f1f1f; --surface-2: #262626; --cover: #2a2a2a; --fg: #f2f2f2; --text: #d9d9d9; --muted: #a8a8a8;
+  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --guest-ink: #f5c77a; color-scheme: dark }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+h1, h2, h3 { font-family: var(--font-display); color: var(--fg); text-wrap: balance; margin: 0; }
+a { color: inherit; }
+button, input, select { font-family: inherit; font-size: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1290px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); box-sizing: border-box; }
+.band { background: var(--band); color: var(--band-fg); }
+.band .wrap { padding-block: 20px 48px; text-align: center; }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.lang { display: flex; border: 1px solid #5a5a5a; border-radius: 8px; overflow: hidden; }
+.lang button { min-width: 48px; min-height: 40px; border: 0; background: transparent; color: var(--band-fg); font-weight: 700; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.band h1 { color: var(--band-fg); font-size: clamp(30px, 5vw, 44px); margin-top: 24px; }
+.band p { color: var(--band-muted); max-width: 640px; margin: 12px auto 0; font-size: 16px; }
+main.wrap { padding-block: 32px 64px; display: flex; flex-direction: column; gap: 32px; }
+.panel { background: var(--surface); border-radius: 8px; }
+.hl { padding-block: 28px; overflow: hidden; display: flex; flex-direction: column; gap: 18px; }
+.hl h2, .sec-h { font-size: 30px; }
+.hl h2 { padding-inline: 28px; }
+.stage { position: relative; }
+/* Karussell: alle Highlights stehen auf einem Ring, das aktive Spiel vorne; Wechsel = Drehung des Rings */
+.track { position: relative; height: 460px; perspective: 1400px; perspective-origin: 50% 40%; overflow: hidden; }
+.slide { position: absolute; left: 50%; top: 14px; width: 300px; height: 340px; margin-left: -150px; border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; color: inherit;
+  transform-style: preserve-3d; transform-origin: 50% 0; will-change: transform, opacity; transition: transform .8s cubic-bezier(.22, .8, .3, 1), opacity .8s ease, filter .8s ease; }
+.slide .cv { position: absolute; inset: 0; border-radius: 10px; background: var(--slide-bg); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.slide .cv img { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); object-fit: contain; }
+.slide.center .cv { box-shadow: 0 16px 40px rgba(0,0,0,.35); outline: 4px solid var(--accent); }
+.slide.off { pointer-events: none; }
+.slide-info { display: flex; flex-direction: column; gap: 6px; max-width: 560px; margin: 0 auto; padding-inline: 28px; text-align: center; min-height: 120px; transition: opacity .35s ease; }
+.slide-info.fading { opacity: 0; }
+.slide-info .nm { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--fg); }
+.slide-info .yr { font-family: var(--font-body); font-weight: 400; font-size: 14px; color: var(--muted); }
+.slide-info .desc { font-size: 14px; color: var(--text); }
+.slide-info .exp { font-size: 13px; font-weight: 600; color: var(--fg); }
+.arrow { position: absolute; top: 200px; z-index: 200; width: 48px; height: 48px; border-radius: 24px; border: 0; background: var(--band); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.arrow.prev { left: 16px; } .arrow.next { right: 16px; }
+.hl-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding-inline: 28px; }
+.btn { min-height: 44px; padding: 0 20px; border-radius: 8px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: .02em; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.btn-primary { background: var(--accent); color: var(--on-accent); border: 0; }
+.btn-outline { background: var(--surface); color: var(--fg); border: 2px solid var(--fg); }
+.btn-quiet { background: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); text-transform: none; font-weight: 600; letter-spacing: 0; }
+.btn-dark { background: var(--band); color: #fff; border: 0; }
+.filters { padding: 26px 28px; display: flex; flex-direction: column; gap: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text); }
+.field input, .field select { height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font-weight: 400; font-size: 15px; }
+.field input[type=range] { height: auto; padding: 0; border: 0; accent-color: #c67c00; }
+.group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.group-label { flex: 0 0 140px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text); }
+.chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font-weight: 600; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.bar { border-top: 1px solid var(--line); padding-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.adv { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 28px; background: var(--surface-2); border-radius: 8px; padding: 22px; }
+.adv .wide { grid-column: 1 / -1; }
+.note { font-size: 12px; font-weight: 400; color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; }
+.card { background: var(--surface); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.card .cv { position: relative; height: 190px; background: var(--cover); }
+.card .cv img { position: absolute; inset: 10px; width: calc(100% - 20px); height: calc(100% - 20px); object-fit: contain; }
+.type { position: absolute; left: 10px; top: 10px; max-width: calc(100% - 80px); font-size: 12px; font-weight: 700; color: var(--on-accent); background: var(--accent-2); padding: 4px 9px; border-radius: 4px; }
+.badge { position: absolute; right: 10px; top: 10px; border-radius: 50%; color: #fff; font-family: var(--font-display); font-weight: 700; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; font-variant-numeric: tabular-nums; }
+.card .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.card h3 { font-weight: 500; font-size: 17px; line-height: 1.25; }
+.meta { font-size: 13px; color: var(--muted); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
+.pill { background: var(--surface-2); color: var(--fg); padding: 3px 8px; border-radius: 4px; }
+.played { font-size: 13px; font-weight: 600; color: var(--fg); }
+.card .actions { margin-top: auto; display: flex; gap: 8px; padding-top: 6px; }
+.card .actions .btn-primary { flex: 1; font-size: 13px; padding: 0 10px; }
+.bgg { min-width: 44px; min-height: 44px; border-radius: 8px; border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; text-decoration: none; color: var(--fg); }
+.more { display: flex; justify-content: center; }
+.recent { padding: 26px 28px; display: flex; flex-direction: column; gap: 12px; }
+.play { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 12px 0; border-top: 1px solid var(--line); }
+.play strong { color: var(--fg); min-width: 220px; }
+footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.bgglogo { display: inline-flex; background: #fff; border-radius: 8px; padding: 10px 16px; }
+.bgglogo img { height: 48px; width: auto; display: block; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.dialog { background: var(--surface); border-radius: 8px; width: 100%; max-width: 480px; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; max-height: 100%; overflow: auto; }
+.code input { width: 150px; font-size: 22px; letter-spacing: .3em; }
+.err { color: var(--error); font-weight: 600; font-size: 14px; }
+.ok { color: var(--fg); font-weight: 600; font-size: 14px; }
+.admin { padding: 26px 28px; display: flex; flex-direction: column; gap: 22px; border: 2px dashed var(--accent); }
+.adm-block { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--line); padding-top: 18px; }
+.adm-block h3 { font-size: 18px; font-weight: 700; }
+.hl-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.hl-row img { width: 56px; height: 56px; object-fit: contain; background: var(--cover); border-radius: 4px; }
+.hl-row .txts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 6px; }
+.hl-row textarea { width: 100%; box-sizing: border-box; min-height: 70px; padding: 8px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--fg); font: inherit; font-size: 14px; resize: vertical; }
+.hl-row .ctrl { display: flex; gap: 6px; }
+.icon-btn { min-width: 40px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); cursor: pointer; font-weight: 700; }
+.icon-btn.danger { color: var(--error); }
+.adm-play { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.adm-play strong { color: var(--fg); min-width: 200px; }
+.adm-play .btn { margin-left: auto; min-height: 40px; }
+@media (max-width: 720px) {
+  .track { min-height: 300px; } .group-label { flex-basis: 100%; }
+  .arrow { top: 160px; }
+}
+@media (prefers-reduced-motion: reduce) { .slide, .slide-info { transition: none; } }
+@media (max-width: 720px) { .track { height: 380px; } .slide { width: 240px; height: 290px; margin-left: -120px; } }
+
+/* Tabs Sammlung / Statistik */
+.topbar { justify-content: space-between; flex-wrap: wrap; }
+.tabs { display: flex; gap: 4px; }
+.tabs a { min-height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 8px; color: var(--band-muted); font-weight: 700; text-decoration: none; }
+.tabs a[aria-current="page"] { background: var(--accent); color: var(--on-accent); }
+.tabs a:not([aria-current="page"]):hover { color: var(--band-fg); background: #3a3a3a; }
+/* Herkunfts-Label im Partien-Log */
+.src { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.src::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: currentColor; flex: none; }
+.src.guest { background: var(--guest-soft); color: var(--guest-ink); }
+.src.guest::before { background: var(--guest); }
+.src.club { background: var(--surface-2); color: var(--fg); }
+.src.club::before { background: var(--club); }
+.rec-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.guest-cta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; background: var(--surface); border-radius: 8px; padding: 16px 20px; }
+/* BGG-Suche im Dialog */
+.gpick { display: flex; flex-direction: column; gap: 8px; }
+.gres { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: 8px; max-height: 260px; overflow: auto; }
+.gres:empty { display: none; }
+.gres li { padding: 10px 12px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--line); }
+.gres li:first-child { border-top: 0; }
+.gres li[aria-selected="true"], .gres li:hover { background: var(--surface-2); }
+.gres .yr { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.gres .inc { font-size: 12px; color: var(--muted); }
+.gsel { display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.gsel strong { color: var(--fg); }
+/* Statistik */
+.st-filters { padding: 20px 28px; display: flex; flex-direction: column; gap: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; }
+.kpi { background: var(--surface); border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
+.kpi .v { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.kpi .l { font-size: 13px; color: var(--muted); font-weight: 600; }
+.st-panel { padding: 26px 28px; display: flex; flex-direction: column; gap: 16px; }
+.st-panel h2 { font-size: 24px; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rank li { display: grid; grid-template-columns: 34px 48px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.rank .pos { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--fg); text-align: right; font-variant-numeric: tabular-nums; }
+.rank .th { width: 48px; height: 48px; border-radius: 4px; background: var(--cover); object-fit: contain; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); font-size: 18px; }
+.rank .ln { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.rank .ln strong { color: var(--fg); }
+.rank .barrow { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.rank .bar { height: 10px; border-radius: 0 4px 4px 0; min-width: 4px; }
+.rank .cnt { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 14px; }
+.months { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; height: 200px; align-items: end; border-bottom: 1px solid var(--line-strong); padding-top: 8px; }
+.months .col { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 2px; cursor: default; position: relative; }
+.months .col:hover { background: var(--surface-2); }
+.months .seg { border-radius: 0; }
+.months .seg.top { border-radius: 4px 4px 0 0; }
+.months .tot { text-align: center; font-size: 12px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+.mlabels { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; font-size: 12px; color: var(--muted); text-align: center; }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--band); color: #fff; font-size: 13px; padding: 8px 10px; border-radius: 6px; white-space: nowrap; transform: translate(-50%, -100%); }
+.st-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.st-table th, .st-table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.st-table th { color: var(--fg); }
+.st-empty { color: var(--muted); margin: 0; }
+.st-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; }
+.never { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Mitspieler finden */
+.pt-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.parties { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.party { background: var(--surface); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.party .top { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; padding: 16px; }
+.party .th { width: 72px; height: 72px; border-radius: 6px; background: var(--cover); object-fit: contain; display: flex; align-items: center; justify-content: center; font: 700 26px var(--font-display); color: var(--muted); }
+.party .when { font-family: var(--font-display); font-weight: 700; color: var(--fg); font-size: 15px; }
+.party h3 { font-size: 18px; font-weight: 500; margin: 2px 0 6px; }
+.party .body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.seats { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.seat { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--club); box-sizing: border-box; }
+.seat.on { background: var(--club); }
+.who { display: flex; flex-wrap: wrap; gap: 6px; }
+.who .pill.host { font-weight: 700; }
+.party .actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
+.party .actions .btn { flex: 1 1 auto; min-height: 40px; font-size: 13px; padding: 0 12px; }
+.join { display: flex; gap: 8px; flex-wrap: wrap; }
+.join input { flex: 1 1 140px; height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font-size: 15px; }
+.party.past { opacity: .92; }
+.done { font-size: 13px; font-weight: 700; color: var(--fg); }
+
+/* Einbettung per iFrame */
+.embed .band .wrap { padding-block: 14px 22px; }
+.embed .band h1, .embed .band p { display: none; }
+.embed .modal { position: absolute; inset: auto; left: 0; right: 0; top: var(--vp-top, 0px); height: var(--vp-h, 100vh); }
+.foot-admin .btn { min-height: 36px; font-size: 13px; }
+.gl-list { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 720px) { .st-panel, .st-filters { padding-inline: 18px; } .months { gap: 3px; } .mlabels { gap: 3px; font-size: 10px; } }
+</style>
+
+<div class="band">
+  <div class="wrap">
+    <div class="topbar">
+      <nav class="tabs" id="tabs" aria-label="Bereiche">
+        <a href="#" data-view="collection" data-t="tabCollection"></a>
+        <a href="#partys" data-view="parties" data-t="tabParties"></a>
+        <a href="#statistik" data-view="stats" data-t="tabStats"></a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d6d6d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+      <div class="lang" role="group" id="langGroup">
+        <button type="button" data-lang="de" aria-label="Deutsch">DE</button>
+        <button type="button" data-lang="en" aria-label="English">EN</button>
+      </div>
+      </div>
+    </div>
+    <h1 data-t="title"></h1>
+    <p data-t="intro"></p>
+  </div>
+</div>
+
+<main class="wrap" id="viewCollection">
+  <section class="panel hl" aria-labelledby="hlH">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-inline:28px">
+      <h2 id="hlH" style="padding:0">Highlights</h2>
+      <button type="button" class="icon-btn" id="autoBtn" aria-pressed="false" style="min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"></button>
+    </div>
+    <div class="stage">
+      <div class="track" id="track"></div>
+      <button type="button" class="arrow prev" id="prev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+      <button type="button" class="arrow next" id="next"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+    </div>
+    <div class="slide-info" id="hlInfo"></div>
+    <div class="hl-actions">
+      <a class="btn btn-primary" id="hlBgg" target="_blank" rel="noopener" href="https://boardgamegeek.com" data-t="viewBgg"></a>
+      <button type="button" class="btn btn-outline" id="hlLog" data-t="logPlay"></button>
+    </div>
+  </section>
+
+  <section class="panel filters" aria-label="Filter">
+    <div class="row">
+      <label class="field" style="flex: 1 1 280px;"><span data-t="search"></span>
+        <input type="search" id="q" autocomplete="off">
+      </label>
+      <label class="field" style="flex: 0 1 240px;"><span data-t="sortBy"></span>
+        <select id="sort"></select>
+      </label>
+      <button type="button" class="btn btn-quiet" id="reset" data-t="reset"></button>
+    </div>
+    <div id="quick"></div>
+    <div class="bar">
+      <button type="button" class="btn btn-outline" id="advBtn" aria-expanded="false" aria-controls="adv"></button>
+      <span><strong id="count" style="color: var(--fg)"></strong> <span data-t="match"></span></span>
+    </div>
+    <div class="adv" id="adv" hidden>
+      <div class="field">
+        <span data-t="pModeLabel"></span>
+        <div class="group" id="modes"></div>
+        <label class="field" style="font-weight: 400"><span id="recPctL"></span><input type="range" id="recPct" min="50" max="95" step="5" value="70"></label>
+        <span class="note" data-t="recNote"></span>
+      </div>
+      <label class="field"><span id="minRatingL"></span><input type="range" id="minRating" min="0" max="9" step="0.1" value="0"></label>
+      <label class="field"><span data-t="minVotes"></span><select id="minVotes"></select></label>
+      <label class="field"><span data-t="rank"></span><select id="rankMax"></select></label>
+      <div class="field"><span id="weightL"></span>
+        <div style="display:flex;gap:10px"><input type="range" id="wMin" min="1" max="5" step="0.1" value="1" style="flex:1"><input type="range" id="wMax" min="1" max="5" step="0.1" value="5" style="flex:1"></div>
+      </div>
+      <label class="field"><span id="maxTimeL"></span><input type="range" id="maxTime" min="15" max="240" step="15" value="240"></label>
+      <label class="field"><span data-t="age"></span><select id="maxAge"></select></label>
+      <label class="field"><span data-t="yearFrom"></span><select id="yearFrom"></select></label>
+      <div class="field wide"><span data-t="cats"></span><div class="group" id="cats"></div></div>
+      <div class="field wide"><span data-t="mechs"></span><div class="group" id="mechs"></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="allH" style="display:flex;flex-direction:column;gap:20px">
+    <h2 class="sec-h" id="allH" data-t="allGames"></h2>
+    <div class="guest-cta"><span data-t="guestCta"></span><button type="button" class="btn btn-outline" data-guest-log data-t="logGuest"></button></div>
+    <div class="grid" id="grid"></div>
+    <div class="more"><button type="button" class="btn btn-dark" id="moreBtn" hidden></button></div>
+  </section>
+
+  <section class="panel recent" aria-labelledby="recH">
+    <div class="rec-head"><h2 id="recH" style="font-size:26px" data-t="recent"></h2><button type="button" class="btn btn-quiet" data-guest-log data-t="logGuest"></button></div>
+    <p class="meta" id="recentState" style="margin:0"></p>
+    <div id="plays"></div>
+  </section>
+
+  <section class="panel admin" id="admin" hidden aria-labelledby="admH">
+    <div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between">
+      <h2 id="admH" style="font-size:26px" data-t="admin"></h2>
+      <span class="note" data-t="adminNote"></span>
+    </div>
+    <div class="adm-block">
+      <h3 data-t="admCode"></h3>
+      <form id="codeForm" class="row">
+        <label class="field code"><span data-t="admNewCode"></span><input type="text" id="newCode" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+        <button type="submit" class="btn btn-primary" data-t="admSaveCode"></button>
+        <span id="codeMsg" role="status"></span>
+      </form>
+    </div>
+    <div class="adm-block">
+      <h3 data-t="admHl"></h3>
+      <p class="note" data-t="admHlNote" style="margin:0"></p>
+      <div id="hlList"></div>
+      <div class="row">
+        <label class="field" style="flex:1 1 280px"><span data-t="admAdd"></span><select id="hlAdd"></select></label>
+        <button type="button" class="btn btn-quiet" id="hlAddBtn" data-t="admAddBtn"></button>
+      </div>
+      <div class="row" style="align-items:center">
+        <button type="button" class="btn btn-primary" id="hlSave" data-t="admSaveHl"></button>
+        <button type="button" class="btn btn-quiet" id="hlReset" data-t="admResetHl"></button>
+        <span id="hlMsg" role="status"></span>
+      </div>
+    </div>
+    <div class="adm-block">
+      <h3 data-t="admPlays"></h3>
+      <div id="admPlays"></div>
+    </div>
+    <div class="adm-block">
+      <h3 data-t="admGl"></h3>
+      <p class="note" data-t="admGlNote" style="margin:0"></p>
+      <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="glRefresh" data-t="admGlRefresh"></button><span id="glMsg" role="status" class="note"></span></div>
+      <div class="gl-list pills" id="glList"></div>
+    </div>
+  </section>
+</main>
+
+<main class="wrap" id="viewParties" hidden>
+  <section class="panel st-panel">
+    <div class="pt-head"><h2 data-t="ptTitle"></h2><button type="button" class="btn btn-primary" id="ptNew" data-t="ptNew"></button></div>
+    <p class="meta" data-t="ptIntro" style="margin:0"></p>
+  </section>
+  <p class="meta" id="ptState" style="margin:0"></p>
+  <h2 class="sec-h" style="font-size:24px" data-t="ptUpcoming"></h2>
+  <div class="parties" id="ptUpcoming"></div>
+  <h2 class="sec-h" style="font-size:24px" id="ptPastH" data-t="ptPast"></h2>
+  <div class="parties" id="ptPast"></div>
+</main>
+
+<main class="wrap" id="viewStats" hidden>
+  <section class="panel st-filters" aria-label="Filter">
+    <div class="group"><span class="group-label" data-t="stPeriod"></span><span id="stPeriod" class="group"></span></div>
+    <div class="group"><span class="group-label" data-t="stSource"></span><span id="stSource" class="group"></span></div>
+  </section>
+  <p class="meta" id="stState" style="margin:0"></p>
+  <div class="kpis" id="stKpis"></div>
+  <section class="panel st-panel" aria-labelledby="stRankH">
+    <div class="rec-head"><h2 id="stRankH" data-t="stRank"></h2><div class="legend" id="stLegend1"></div></div>
+    <ol class="rank" id="stRank"></ol>
+    <div class="more"><button type="button" class="btn btn-quiet" id="stMore" hidden></button></div>
+  </section>
+  <section class="panel st-panel" aria-labelledby="stMonthH">
+    <div class="rec-head"><h2 id="stMonthH" data-t="stMonths"></h2><div class="legend" id="stLegend2"></div></div>
+    <div style="position:relative"><div class="months" id="stMonths"></div><div class="tip" id="stTip" hidden></div></div>
+    <div class="mlabels" id="stMLabels"></div>
+    <details><summary class="meta" data-t="stAsTable" style="cursor:pointer"></summary><table class="st-table" id="stMTable"></table></details>
+  </section>
+  <section class="panel st-panel" aria-labelledby="stNeverH">
+    <h2 id="stNeverH" data-t="stNever"></h2>
+    <p class="meta" id="stNeverNote" style="margin:0"></p>
+    <div class="never pills" id="stNeverList"></div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <a class="bgglogo" target="_blank" rel="noopener" href="https://boardgamegeek.com"><img src="covers/logo.png" alt="Powered by BoardGameGeek"></a>
+  <span data-t="footer"></span>
+  <span class="foot-admin"><button type="button" class="btn btn-quiet" id="admLink"></button></span>
+  <form id="admForm" class="row" hidden style="width:100%">
+    <label class="field"><span data-t="admPw"></span><input type="password" id="admPw" autocomplete="current-password"></label>
+    <button type="submit" class="btn btn-primary" data-t="admIn"></button><span id="admMsg" class="err" role="alert"></span>
+  </form>
+</footer>
+
+<div class="modal" id="modal" hidden>
+  <form class="dialog" id="logForm" role="dialog" aria-modal="true" aria-labelledby="logH">
+    <h2 id="logH" style="font-size:22px" data-t="logPlay"></h2>
+    <span id="logGame" style="font-size:15px"></span>
+    <div class="gpick" id="gPick" hidden>
+      <div class="gsel" id="gSel" hidden><span><strong id="gSelName"></strong> <span class="meta" id="gSelMeta"></span></span><button type="button" class="btn btn-quiet" id="gChange" data-t="change" style="min-height:40px"></button></div>
+      <div id="gSearchBox" class="gpick">
+        <label class="field"><span data-t="bggSearch"></span><input type="search" id="gQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="gRes"></label>
+        <ul class="gres" id="gRes" role="listbox"></ul>
+        <span class="note" id="gHint"></span>
+      </div>
+    </div>
+    <label class="field"><span data-t="date"></span><input type="date" id="fDate" required></label>
+    <label class="field"><span data-t="nPlayers"></span><input type="number" id="fPlayers" min="1" max="30" required></label>
+    <label class="field"><span data-t="dur"></span><input type="number" id="fDur" min="1" max="1440" step="1" inputmode="numeric"></label>
+    <label style="display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600;color:var(--fg)"><input type="checkbox" id="fFirst" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="first"></span></label>
+    <label class="field"><span data-t="winner"></span><input type="text" id="fWinner" maxlength="80"></label>
+    <label class="field"><span data-t="note"></span><input type="text" id="fNote" maxlength="200"></label>
+    <label class="field code"><span data-t="code"></span><input type="text" id="fCode" inputmode="numeric" maxlength="4" autocomplete="off"><span class="note" data-t="codeHint"></span></label>
+    <span id="fMsg" role="alert"></span>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
+      <button type="button" class="btn btn-quiet" id="cancel" data-t="cancel"></button>
+      <button type="submit" class="btn btn-primary" id="save" data-t="save"></button>
+    </div>
+  </form>
+</div>
+
+<div class="modal" id="pModal" hidden>
+  <form class="dialog" id="pForm" role="dialog" aria-modal="true" aria-labelledby="pH">
+    <h2 id="pH" style="font-size:22px" data-t="ptNew"></h2>
+    <div class="gsel" id="pSel" hidden><span><strong id="pSelName"></strong> <span id="pSelTag"></span></span><button type="button" class="btn btn-quiet" id="pChange" data-t="change" style="min-height:40px"></button></div>
+    <div id="pSearchBox" class="gpick">
+      <label class="field"><span data-t="ptGame"></span><input type="search" id="pQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pRes"></label>
+      <ul class="gres" id="pRes" role="listbox"></ul>
+    </div>
+    <div class="row"><label class="field" style="flex:1 1 150px"><span data-t="date"></span><input type="date" id="pDate" required></label>
+      <label class="field" style="flex:1 1 110px"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label></div>
+    <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
+    <label class="field"><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40" required></label>
+    <label class="field"><span data-t="note"></span><input type="text" id="pNote" maxlength="200"></label>
+    <label class="field code"><span data-t="code"></span><input type="text" id="pCode" inputmode="numeric" maxlength="4" autocomplete="off"><span class="note" data-t="codeHint"></span></label>
+    <span id="pMsg" role="alert"></span>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
+      <button type="button" class="btn btn-quiet" id="pCancel" data-t="cancel"></button>
+      <button type="submit" class="btn btn-primary" id="pSave" data-t="ptCreate"></button>
+    </div>
+  </form>
+</div>
+
+<script type="application/json" id="gameData">{"cats":["Ancient","Card Game","City Building","Civilization","Economic","Adventure","Dice","Exploration","Fantasy","Fighting","Science Fiction","Medieval","Miniatures","Deduction","Movies / TV / Radio theme","Murder / Mystery","Abstract Strategy","Renaissance","American West","Bluffing","Humor","Horror","Expansion for Base-game","Video Game Theme","Puzzle","Spies / Secret Agents","Animals","Arabian","Racing","Modern Warfare","Nautical","Real-time","Negotiation","Zombies","Trains","Party Game","Novel-based","Political","Prehistoric","Territory Building","Mythology","Comic Book / Strip","Mature / Adult","Pirates","Word Game","Travel","Space Exploration","Wargame","Maze","Post-Napoleonic","Medical","Environmental","Print & Play","Educational","Pike and Shot","Religious","Industry / Manufacturing","Farming","Electronic","Action / Dexterity","Math","Collectible Components","Trivia","Children's Game","Number","Sports","Mafia"],"mechs":["Closed Drafting","End Game Bonuses","Hand Management","Melding and Splaying","Multi-Use Cards","Neighbor Scope","Income","Modular Board","Once-Per-Game Abilities","Command Cards","Cooperative Game","Dice Rolling","Grid Movement","Map Addition","Chit-Pull System","Deck, Bag, and Pool Building","Delayed Purchase","Open Drafting","Legacy Game","Scenario / Mission / Campaign Game","Variable Phase Order","Variable Player Powers","Area Majority / Influence","Set Collection","Tile Placement","Solo / Solitaire Game","Critical Hits and Failures","Deck Construction","Narrative Choice / Paragraph","Deduction","Trading","Grid Coverage","Pattern Building","Square Grid","Hidden Roles","Player Elimination","Take That","Team-Based Game","Role Playing","Storytelling","Card Play Conflict Resolution","Kill Steal","Push Your Luck","Simultaneous Action Selection","Communication Limits","Memory","Real-Time","Action Points","Action Queue","Die Icon Resolution","Betting and Bluffing","Roll / Spin and Move","Track Movement","Variable Set-up","Hidden Movement","Line Drawing","Tags","Action Drafting","Lose a Turn","Area Movement","Negotiation","Voting","Events","Movement Points","Programmed Movement","Turn Order: Progressive","Auction: Dutch","Contracts","Finale Ending","Roles with Asymmetric Information","Force Commitment","Increase Value of Unchosen Resources","Ordering","Semi-Cooperative Game","Stat Check Resolution","Hexagon Grid","Network and Route Building","Move Through Deck","Interrupts","Secret Unit Deployment","Pick-up and Deliver","Paper-and-Pencil","Campaign / Battle Card Driven","Auction: Multiple Lot","Catch the Leader","Commodity Speculation","I Cut, You Choose","Elapsed Real Time Ending","Worker Placement with Dice Workers","Pattern Recognition","Line of Sight","Bias","Slide / Push","Action Retrieval","Worker Placement","Turn Order: Claim Action","Chaining","Point to Point Movement","Re-rolling and Locking","Market","Spelling","Acting","Questions and Answers","Simulation","Hidden Victory Points","Follow","Random Production","Map Reduction","Race","Three Dimensional Movement","Ladder Climbing","Score-and-Reset Game","Traitor Game","Advantage Token","Trick-taking","Automatic Resource Growth","Auction: Dutch Priority","Order Counters","Worker Placement, Different Worker Types","Multiple Maps","Action / Event","Connections","Pieces as Map","Auction: Sealed Bid","Auction / Bidding","Turn Order: Random","Map Deformation","Speed Matching","Pattern Movement","Static Capture","Sudden Death Ending","Enclosure","Matching","Rondel","Layering","Bingo","Algorithmic Resolution","Ownership"],"g":[[68448,"7 Wonders",2010,2,7,30,30,10,7.66,7.54,114160,2.31,117,"4-5","3-7",0,[0,1,2,3,4],[0,1,2,3,4,5],"Antoine Bauza","J",0,"7 Wonders"],[173346,"7 Wonders Duel",2015,2,2,30,30,10,8.07,7.95,111293,2.23,24,"2","2",0,[0,1,2,3,4],[1,6,3,7,4,8],"Antoine Bauza, Bruno Cathala","J",0,"7 Wonders Duel"],[242705,"Aeon Trespass: Odyssey",2022,1,4,90,0,12,8.98,6.94,2809,4.75,579,"1-2","1-4",3,[5,0,3,6,7,8],[9,10,11,12,13,7],"Marcin Wełnicki","J",0,"Aeon Trespass: Odyssey"],[191189,"Aeon's End (deutsch)",2016,1,4,60,60,14,7.86,7.58,24546,2.8,109,"2","1-4",3,[1,8,9,10],[14,10,15,16,2,17],"Jenny Iglesias, Nick Little (I)","J",0,"Aeon's End (deutsch)"],[191189,"Aeon's End (englisch, KS)",2016,1,4,60,60,14,7.86,7.58,24546,2.8,109,"2","1-4",3,[1,8,9,10],[14,10,15,16,2,17],"Jenny Iglesias, Nick Little (I)","J",0,"Aeon's End (englisch, KS)"],[241451,"Aeon's End: Legacy",2019,1,4,45,90,14,8.02,7.26,6001,2.87,262,"2","1-4",4,[1,8,10],[10,15,2,18,17,19],"Jenny Iglesias, Nick Little (I)","J",0,"Aeon's End: Legacy"],[218417,"Aeon's End: War Eternal",2017,1,4,60,60,14,8.22,7.46,6824,2.93,152,"2","1-4",3,[1,8,9,10],[10,15,2,17,20,21],"Jenny Iglesias, Nick Little (I)","J",0,"Aeon's End: War Eternal"],[6249,"Alhambra",2003,2,6,45,60,8,7.03,6.91,36015,2.1,616,"3","2-5",0,[2,11],[22,2,17,23,24],"Dirk Henn","J",0,"Alhambra"],[378574,"Ascension Tactics: Inferno",2025,1,4,45,90,0,7.98,5.66,198,2.33,7258,"2","2-4",1,[8,12],[10,15,19,25],"Gary Arant, Justin Gary","J",0,"Ascension Tactics: Inferno"],[304531,"Ascension Tactics: Miniatures Deckbuilding Game",2022,1,4,45,90,10,7.8,6.25,1279,2.55,2070,"2","1-4",3,[8,12],[10,15,19,25],"Justin Gary, Ryan Sutherland","J",0,"Ascension Tactics: Miniatures Deckbuilding Game"],[352179,"Astro Knights",2023,1,4,45,45,14,7.78,6.41,1694,2.7,1584,"2","1-4",3,[1,9,10],[14,10,15,16,2,17],"Nick Little (I), Will Sobel","J",0,"Astro Knights"],[190400,"Aventuria: Adventure Card Game",2016,1,4,45,180,14,7.48,6,1043,2.6,3207,"4","1-4",3,[5,1,8,9],[10,26,27,11,2,28],"Michael Palm, Lukas Zach","J",0,"Aventuria: Adventure Card Game"],[188866,"Awkward Guests",2016,1,8,45,75,12,7.51,7.07,9940,2.32,419,"4","2-6",3,[1,13,14,15],[29,2,30],"Ron Gonzalo García","J",0,"Awkward Guests: The Walton Case"],[230802,"Azul",2017,2,4,30,45,8,7.71,7.6,111863,1.77,99,"2","2-4",0,[16,17],[1,31,17,32,23,33],"Michael Kiesling","J",0,"Azul"],[30933,"BANG! The Bullet!",2007,3,8,20,40,8,6.92,6.53,9484,1.85,0,"6-7","4-8",2,[18,19,1,13,9,20],[2,34,35,36,37,21],"Emiliano Sciarra","J",0,"BANG! The Bullet!"],[10547,"Betrayal at House on the Hill",2004,3,6,60,60,12,7.01,6.78,50435,2.4,788,"5-6","3-6",3,[5,7,21],[11,13,7,35,38,39],"Bruce Glassco, Rob Daviau","J",0,"Betrayal at House on the Hill"],[342444,"Black Rose Wars: Rebirth",2023,1,4,90,240,14,8.36,6.74,2303,3.75,856,"4","2-4",3,[1,8,12],[40,15,1,2,7,19],"Andrea Colletti, Diego Fonseca","J",0,"Black Rose Wars: Rebirth"],[412735,"Black Rose Wars: Rebirth – Rotas Box",2023,1,4,60,120,14,8.89,5.74,212,4,0,"3-4","1-4,5+",1,[22],[],"Marco Montanaro","J",1,"Black Rose Wars: Rebirth – Rotas Box"],[195856,"Bloodborne: The Card Game",2016,3,5,30,45,14,6.84,6.27,4289,2.04,2013,"4-5","3-5",2,[1,8,21,23],[11,1,2,41,42,43],"Eric M. Lang","J",0,"Bloodborne: The Card Game"],[413246,"Bomb Busters",2024,2,5,30,30,10,8.02,7.66,16416,2.02,82,"4","3-5",2,[13],[44,10,29,45,8,46],"Hisashi Hayashi","J",0,"Bomb Busters"],[322656,"burncycle",2022,1,4,45,180,13,7.9,6.41,1643,4.08,1578,"1-2","1-3",2,[6,7,24,10,25],[47,48,10,11,49,12],"Josh J. Carlson, Shannon Wedge","J",0,"burncycle"],[324767,"burncycle: BioDefend Expansion",2022,1,4,45,180,13,8.29,5.65,151,0,0,"","",1,[5,6,22,7,24,25],[47,48,10,11,49,12],"Josh J. Carlson, Shannon Wedge","J",1,"burncycle: BioDefend Expansion"],[324766,"burncycle: The Specialists",2022,1,4,45,180,13,8.3,5.65,148,0,0,"","",1,[5,6,22,7,24,25],[47,48,10,11,49,12],"Josh J. Carlson, Shannon Wedge","J",1,"burncycle: The Specialists"],[153938,"Camel Up",2014,2,8,20,30,8,7.03,6.87,29533,1.5,655,"4-5","3-7",0,[26,27,6,28],[50,1,51,52,53],"Steffen Bogen","J",0,"Camel Up"],[171131,"Captain Sonar",2016,2,8,45,60,14,7.49,7.28,24278,2.21,249,"8","6-8",0,[13,9,29,30,31],[29,12,54,55,46,38],"Roberto Fraga, Yohan Lemonnier","J",0,"Captain Sonar"],[416851,"Castle Combo",2024,2,5,10,25,10,7.67,7.37,17161,1.73,198,"2","2-4",1,[1,11],[1,17,23,56,24],"Grégory Grard, Mathieu Roussel","J",0,"Castle Combo"],[478,"Ohne Furcht und Adel",2000,2,8,20,60,10,7.05,6.93,57594,2.05,595,"5","2-7",2,[19,1,2,13,8,11],[57,0,6,58,23,36],"Bruno Faidutti","J",0,"Citadels"],[267370,"Cities: Skylines – The Board Game",2019,1,4,70,70,10,6.49,5.88,1625,2.4,4129,"1","1-3",2,[2,23],[10,2,7,24,21],"Rustan Håkansson","J",0,"Cities: Skylines – The Board Game"],[120217,"City of Horror",2012,3,6,90,90,13,6.68,6.14,3255,2.43,2512,"5-6","4-6",0,[21,32,33],[59,60,35,43,61],"Nicolas Normandon","J",0,"City of Horror"],[201808,"Clank!",2016,2,4,30,60,12,7.76,7.59,48316,2.23,106,"3","2-4",2,[5,8],[47,15,16,1,62,63],"Paul Dennen","J",0,"Clank!: A Deck-Building Adventure"],[158899,"Colt Express",2014,2,6,40,40,10,7.1,6.95,35994,1.83,564,"5-6","3-6",0,[18,19,9,34],[48,2,45,64,36,65],"Christophe Raimbault","J",0,"Colt Express"],[304051,"Creature Comforts",2022,1,5,45,45,8,7.41,6.84,6777,2.35,710,"2","1-4",2,[26],[66,67,11,1,62,2],"Roberta Taylor","J",0,"Creature Comforts"],[156129,"Deception: Murder in Hong Kong",2014,4,12,20,20,14,7.41,7.21,25611,1.59,301,"6-8","5-12",2,[19,13,15,35],[44,29,62,68,34,69],"Tobey Ho","J",0,"Deception: Murder in Hong Kong"],[266967,"Dice Throne: Season Two – Cursed Pirate v. Artificer",2018,2,2,20,40,8,7.8,6.31,1389,2.59,1873,"2","2",4,[1,6,8,9],[11,36,21],"Nate Chatellier, Manny Trembley","J",0,"Dice Throne: Season Two – Cursed Pirate v. Artificer"],[266966,"Dice Throne: Season Two – Gunslinger v. Samurai",2018,2,2,20,40,8,7.49,6.35,1965,2.19,1729,"2","2",4,[1,6,8,9],[11,36,21],"Nate Chatellier, Manny Trembley","J",0,"Dice Throne: Season Two – Gunslinger v. Samurai"],[447243,"Duell der Cardia",2025,2,4,15,15,9,7.49,6.84,5347,1.77,711,"2","2",2,[1,8],[2,43],"Faouzi Boughida, Mathieu Rivero","J",0,"Duel for Cardia"],[316554,"Dune: Imperium",2020,1,4,60,120,14,8.41,8.22,60404,3.08,6,"3-4","1-4",2,[14,36,37,10],[40,15,16,70,71,4],"Paul Dennen","J",0,"Dune: Imperium"],[222531,"ELO Darkness",2018,1,4,45,75,13,7.33,5.66,263,3.44,7473,"2","2,4",3,[1,8,9,23],[2,17,43,21],"Tommaso Mondadori, Alberto Parisi","J",0,"ELO Darkness"],[305096,"Endless Winter: Paleoamericans",2022,1,4,60,120,12,7.61,7.15,10239,3.32,353,"3","1-4",0,[5,38,39],[22,15,1,2,6,7],"Stan Kordonskiy","J",0,"Endless Winter: Paleoamericans"],[424981,"Eternal Decks",2025,1,4,30,40,10,8.17,7.07,3667,2.83,430,"4","1-4",0,[1,40,24],[44,10,15,2,8,72],"Hiroken","J",0,"Eternal Decks"],[172242,"Exploding Kittens: NSFW Edition",2015,2,5,10,20,18,6.23,5.96,11255,1.08,3501,"4-5","3-5",1,[26,1,41,20,42],[2,35,42,23,36],"Matthew Inman, Elan Lee","J",0,"Exploding Kittens: NSFW Edition"],[223040,"Fantastische Reiche",2017,2,6,20,20,14,7.5,7.24,18924,1.82,273,"2-3","2-5",2,[1,8],[1,2,17,23,56],"Bruce Glassco","J",0,"Fantasy Realms"],[271601,"Feed the Kraken (Deluxe)",2022,5,11,45,90,12,7.77,7.11,7036,2.17,388,"8-11","6-11",1,[19,13,8,30,35,43],[50,12,34,35,38,69],"Maikel Cheney, Dr. Hans Joachim Höh","J",0,"Feed the Kraken"],[285253,"Fiesta de los Muertos",2019,4,8,15,15,12,6.96,6.14,1934,1.09,2519,"6-8","4-8",2,[13,35,44],[44,10],"Antonin Boccara","J",0,"Fiesta de los Muertos"],[302723,"Forgotten Waters",2020,3,7,120,240,14,7.71,7.11,7226,2.12,382,"5","3-7",3,[5,7,8,30,43,45],[11,62,28,19,73,74],"Mr. Bistro, J. Arthur Ellis","J",0,"Forgotten Waters"],[408724,"Fractal: Beyond the Void",2023,2,4,60,120,14,7.58,5.62,181,3.5,0,"3-4","2-4",1,[5,3,37,10,46,47],[47,59,18,7,19,21],"Yann Hilaire, Romain Lesiuk","J",0,"Fractal: Beyond the Void"],[220308,"Gaia Project",2017,1,4,60,150,12,8.35,8.08,32053,4.4,13,"3-4","1-4",0,[3,4,10,46,39],[1,75,6,7,76,25],"Jens Drögemüller, Helge Ostertag","J",0,"Gaia Project"],[275530,"Game of Thrones: Oathbreaker",2019,5,8,30,45,14,6.98,5.67,355,2.17,7054,"6-7","5-8",2,[19,1,13,35,37],[2,34,37,21],"Kevin Spak","J",0,"Game of Thrones: Oathbreaker"],[37046,"Ghost Stories",2008,1,4,60,60,12,7.25,7.03,21980,2.9,477,"4","1-4",0,[8,9,21,40],[10,11,12,7,77,25],"Antoine Bauza","J",0,"Ghost Stories"],[299252,"Here to Slay",2020,2,6,30,60,10,6.87,6.43,9817,1.69,1512,"3-4","2-5",2,[26,1,6,8,9],[47,11,2,78,38,23],"Ramy Badie","J",0,"Here to Slay"],[320718,"Heimliche Herrschaft",2022,2,6,20,40,10,6.69,6.19,4176,1.84,2292,"4","3-6",2,[19,1,13,8,35],[50,29,2,34,17,79],"Andreas Müller, Markus Müller (II)","J",0,"Hidden Leaders"],[195194,"Horizonte",2018,2,5,60,75,14,6.75,5.8,808,2.68,4910,"3","2-4",2,[3,10,46],[22,7,24],"Levi Mote","J",0,"Horizons"],[283137,"Human Punishment: The Beginning",2022,3,6,120,180,14,6.48,5.66,637,3.6,7492,"4-6","3-6",2,[19,13,10,25],[59,29,11,2,34,80],"Stefan Godot","J",0,"Human Punishment: The Beginning"],[260934,"Ignite",2021,2,8,40,160,13,7.32,5.6,256,3,9725,"4-6","2-8",1,[8,9,12,32,47],[22,15,12,2,7,21],"Darren Terpstra","J",0,"Ignite"],[276044,"Ignite: A New Enemy",2021,1,8,30,120,13,6.25,0,14,0,0,"","",1,[22,8,12,47],[22,10,15,12,2,7],"Darren Terpstra","J",1,"Ignite: A New Enemy"],[275923,"Ignite: The Freeze",2021,2,8,40,160,13,7.57,0,23,0,0,"","",1,[22,8,9,12,32,47],[22,15,12,2,7,21],"Darren Terpstra","J",1,"Ignite: The Freeze"],[270836,"Imperial Settlers: Roll & Write",2019,1,4,30,30,10,6.24,5.86,2574,1.88,4277,"1","1-2",1,[2,3,6],[11,81],"Ignacy Trzewiczek","J",0,"Imperial Settlers: Roll & Write"],[318184,"Imperium: Klassik",2021,1,4,40,160,14,7.68,7.17,9138,3.63,336,"1-2","1-2",3,[0,1,3],[15,1,2,77,17,19],"Nigel Buckle, Dávid Turczi","J",0,"Imperium: Classics"],[155821,"Inis",2016,2,4,60,90,14,7.82,7.53,23710,2.95,126,"4","2-4",3,[0,1,7,40,47],[57,22,59,82,0,2],"Christian Martinez","J",0,"Inis"],[176494,"Isle of Skye",2015,2,5,30,50,8,7.38,7.21,27586,2.26,299,"3-4","2-5",0,[4,39],[83,84,85,86,23,24],"Andreas Pelikan, Alexander Pfister","J",0,"Isle of Skye: From Chieftain to King"],[34585,"Keltis",2008,2,4,30,30,10,6.43,6.17,7022,1.63,2365,"3","2-4",0,[],[2,23,52],"Reiner Knizia","J",0,"Keltis"],[96848,"Mage Knight Board Game",2011,1,4,60,240,14,8.08,7.84,35515,4.38,40,"1-2","1-3",3,[5,7,8,9],[40,10,15,11,12,2],"Vlaada Chvátil","J",0,"Mage Knight Board Game"],[209778,"Magic Maze",2017,1,8,15,15,8,6.93,6.77,24312,1.75,813,"4","2-6",0,[7,8,48,31],[44,10,87,12,13,7],"Kasper Lapp","J",0,"Magic Maze"],[302336,"Marvel Villainous: Infinite Power",2020,2,4,40,80,12,6.7,6.12,3389,2.7,2579,"3-4","2-4",3,[1,41,8],[47,2,21],"Prospero Hall","J",0,"Marvel Villainous: Infinite Power"],[127096,"Metal Adventures",2015,3,6,45,60,14,6.05,5.55,207,2.4,14277,"3-4","3-6",2,[5,8,9,32,43,10],[11,17,23,36,37,30],"Lionel Borg","J",0,"Metal Adventures"],[209001,"Monster Lands",2018,1,4,60,120,12,7.13,6.1,1522,3.33,2710,"3","1-4",0,[5,1,6,8,9],[11,41,17,88],"Víctor Fernández, Gorka Mata","J",0,"Monster Lands"],[181304,"Mysterium",2015,2,7,42,42,10,7.19,7.04,50067,1.89,467,"5-6","3-7",0,[13,15,35,31],[44,10,29,68,2,89],"Oleksandr Nevskiy, Oleg Sidorenko","J",0,"Mysterium"],[186751,"Mythic Battles: Pantheon",2017,2,4,60,90,14,8.29,6.95,3492,3.06,568,"2","2-4",3,[0,1,9,12,40],[59,82,9,11,2,90],"Benoit Vogt","J",0,"Mythic Battles: Pantheon"],[242993,"Mythic Battles: Pantheon – Atlas",2017,2,4,0,0,0,8.15,5.68,225,0,0,"","",1,[0,1,6,22,9,12],[22,59,15,11,2],"Benoit Vogt","J",1,"Mythic Battles: Pantheon – Atlas"],[331398,"Mythic Battles: Ragnarök",2024,2,4,60,90,14,8.36,6.05,696,3.32,2949,"2","2,4",3,[0,1,8,12,40,47],[59,82,9,11,2,90],"Benoit Vogt","J",0,"Mythic Battles: Ragnarök"],[342894,"Mythic Mischief",2022,1,4,45,90,14,7.5,6.31,1751,2.54,1885,"2","1-2,4",0,[16,8,12],[47,12,21],"Max Anderson, Zac Dixon","J",0,"Mythic Mischief"],[13308,"Niagara",2004,3,5,30,45,8,6.46,6.23,9148,1.83,2165,"4-5","3-5",0,[30],[91,2,80,23,43,92],"Thomas Liesching","J",0,"Niagara"],[50912,"Nichtlustig: Labor Chaos",2009,3,6,30,30,8,5.47,5.49,269,1.21,28382,"6","3-6",3,[1,41,35],[2],"Ivo Dekoning","J",0,"Nichtlustig: Labor Chaos"],[231733,"Obsession",2018,1,4,30,90,14,8.06,7.72,19088,3.12,68,"2","1-4",2,[49],[93,0,15,2,25,94],"Dan Hallagan","J",0,"Obsession"],[176361,"One Night Revolution",2015,3,10,15,15,14,6.06,5.72,1741,1.87,5995,"5-7","4-10",1,[19,1,13,32,35,10],[34,38,37,21,61],"Ted Alspach","J",0,"One Night Revolution"],[349606,"Pagan: Beyond the Palisades",2022,2,2,45,75,12,7.95,5.8,361,3.25,0,"2","2",2,[22,5,19,1,13,8],[47,22,27,29,2,21],"Kasper Kjær Christiansen, Kåre Storgaard","J",1,"Pagan: Beyond the Palisades"],[319910,"Pagan: Fate of Roanoke",2022,2,2,30,60,12,7.83,7.05,5292,3.05,458,"2","2",3,[5,19,1,13,8],[47,22,27,29,2,95],"Kasper Kjær Christiansen, Kåre Storgaard","J",0,"Pagan: Fate of Roanoke"],[30549,"Pandemie",2008,2,4,45,45,8,7.51,7.4,136842,2.39,176,"4","1-4",1,[50,45],[47,96,67,10,62,2],"Matt Leacock","J",0,"Pandemic"],[161936,"Pandemic Legacy: Season 1",2015,2,4,60,60,13,8.5,8.34,57994,2.83,3,"4","2-4",3,[51,50],[47,10,2,18,4,97],"Rob Daviau, Matt Leacock","J",0,"Pandemic Legacy: Season 1"],[150658,"Pandemie: Die Heilung",2014,2,5,30,30,8,7.22,6.9,11212,2.07,628,"3-4","1-5",1,[6,51,50],[10,11,2,97,42,98],"Matt Leacock","J",0,"Pandemic: The Cure"],[141572,"Paperback",2014,2,5,45,45,8,7.09,6.8,11536,2.01,763,"2","2-4",4,[1,52,44],[10,15,16,99,17,100],"Tim Fowers","J",0,"Paperback"],[280136,"Paranormal Detectives",2019,2,6,30,50,12,6.93,6.27,3071,1.68,2024,"4-5","3-6",2,[13,21,15,35],[101,10,2,55,89,102],"Marcin Łączyński, Szymon Maliński","J",0,"Paranormal Detectives"],[198953,"Pax Renaissance",2016,2,4,60,120,12,7.95,6.73,2580,4.47,870,"3","2-4",2,[53,54,55,17],[47,66,71,99,17,103],"Phil Eklund, Matt Eklund","J",0,"Pax Renaissance"],[258779,"Planet Unknown",2022,1,6,60,80,10,7.75,7.41,15048,2.26,167,"4","1-6",2,[2,56,24,10,46,39],[1,62,31,12,104,13],"Ryan Lambert, Adam Rehberg","J",0,"Planet Unknown"],[3076,"Puerto Rico",2002,3,5,90,150,12,7.9,7.75,74959,3.27,58,"4","2-5",2,[2,4,57],[57,1,105,104,71,65],"Andreas Seyfarth","J",0,"Puerto Rico"],[316287,"Quest",2021,4,10,30,30,14,7.27,6.16,1547,1.86,2410,"6,8","4-10",1,[19,1,13,8,11,32],[29,34,45,69,43,37],"Don Eskridge","J",0,"Quest"],[256680,"Return to Dark Tower",2022,1,4,100,120,10,8.18,7.32,6151,2.66,231,"4","1-4",3,[5,58,8,9],[59,10,62,42,106,19],"Tim Burrell-Saward, Isaac Childres","J",0,"Return to Dark Tower"],[15045,"Risiko Star Wars: Die Klonkriege",2005,2,4,120,120,10,6.01,5.66,1808,2.2,7368,"4","2,4",2,[14,10,47],[22,59,11],"Rob Daviau, Dan Sanfilippo","J",0,"Risk: Star Wars – Clone Wars Edition"],[121921,"Robinson Crusoe",2012,1,4,60,120,14,7.72,7.54,47298,3.83,122,"1-2","1-4",3,[5,7,9,36,39],[48,59,10,11,49,62],"Joanna Kijanka, Ignacy Trzewiczek","J",0,"Robinson Crusoe: Adventures on the Cursed Island"],[132531,"Roll for the Galaxy",2014,2,5,45,45,13,7.56,7.4,33905,2.79,177,"3-4","2-5",2,[3,6,4,10,46],[93,67,15,11,49,105],"Wei-Hwa Huang, Thomas Lehmann","J",0,"Roll for the Galaxy"],[8217,"San Juan",2004,2,4,45,60,10,7.23,7.05,24457,2.28,457,"3","2-4",2,[1,2,4],[57,1,105,2,99,4],"Andreas Seyfarth","J",0,"San Juan"],[194655,"Santorini",2016,2,4,20,20,8,7.33,7.19,42828,1.72,318,"2","2-3",0,[16,0,40],[12,107,108,33,37,109],"Gord!","J",0,"Santorini"],[291453,"SCOUT",2019,2,5,20,20,9,7.77,7.57,30072,1.4,111,"4","3-5",0,[1],[2,110,111],"Kei Kajino","J",0,"SCOUT"],[188834,"Secret Hitler",2016,5,10,45,45,13,7.48,7.25,35760,1.74,268,"8,10","6-10",1,[19,1,13,20,35,37],[34,35,37,112,61],"Mike Boxleiter, Tommy Maranges","J",0,"Secret Hitler"],[200847,"Secrets",2017,4,8,15,35,10,6.43,5.97,2679,1.53,3429,"6","4-8",1,[19,1,13,35,25],[113,17,42,56,36,37],"Bruno Faidutti, Eric M. Lang","J",0,"Secrets"],[211364,"Seize the Bean",2021,1,4,45,90,10,7.47,6.1,1113,2.78,2695,"3","1-4",2,[59,1,4],[15,2,17,23,36,94],"Andy Couch, Dylan Howard Cromwell","J",0,"Seize the Bean"],[15062,"Shadows over Camelot",2005,3,7,60,90,10,7.1,6.92,28679,2.57,603,"5-7","4-7",2,[5,19,13,8,11,40],[44,10,11,2,35,73],"Bruno Cathala, Serge Laget","J",0,"Shadows over Camelot"],[313262,"Shamans",2021,3,5,30,60,10,6.84,6.15,2432,2,2472,"4","3-5",0,[1,13,8],[29,2,34,37,52,114],"Cédrick Chaboussit","J",0,"Shamans"],[244115,"Shards of Infinity",2018,2,4,30,30,10,7.41,6.81,5934,2.09,748,"2","2-3",2,[1,8,9,10],[15,16,2,17,36],"Gary Arant, Justin Gary","J",0,"Shards of Infinity"],[255984,"Sleeping Gods",2021,1,4,60,120,13,8.07,7.68,16524,3.25,78,"1-2","1-3",4,[5,7,8,9,30],[47,10,62,2,28,42],"Ryan Laukat","J",0,"Sleeping Gods"],[329839,"So Kleever!",2021,3,6,30,30,10,7.59,7.25,12997,1.13,265,"3-4","2-6",4,[35,44],[44,10],"François Romain","J",0,"So Clover!"],[162886,"Spirit Island",2017,1,4,90,120,13,8.34,8.14,65336,4.08,11,"2","1-4",3,[51,8,40,39],[93,22,115,82,10,15],"R. Eric Reuss","J",0,"Spirit Island"],[137269,"Spyrium",2013,2,5,75,75,12,7.04,6.62,6570,2.91,1081,"4","2-5",0,[2,4,56,10],[116,62,6,94],"William Attia","J",0,"Spyrium"],[22827,"StarCraft: The Board Game",2007,2,6,180,240,12,7.36,6.84,7820,3.86,707,"4","2-6",3,[3,9,10,46,39,23],[22,59,40,15,7,117],"Corey Konieczka, Christian T. Petersen","J",0,"StarCraft: The Board Game"],[363369,"Starship Captains",2022,1,4,25,100,12,7.11,6.4,3199,2.36,1613,"3","1-4",2,[10,46],[1,17,25,65,53,118],"Peter B. Hoffgaard","J",0,"Starship Captains"],[91534,"Catan – Das schnelle Kartenspiel",2011,2,4,30,30,10,6.17,5.85,3349,1.67,4390,"4","2-4",2,[1,2],[2,30],"Klaus Teuber","J",0,"Struggle for Catan"],[133473,"Sushi Go!",2013,2,5,15,15,8,6.98,6.86,53424,1.16,667,"4","3-5",0,[1,35],[0,1,2,111,23,43],"Phil Walker-Harding","J",0,"Sushi Go!"],[167791,"Terraforming Mars",2016,1,5,120,120,12,8.33,8.18,115711,3.27,9,"3","1-4",3,[3,4,51,56,10,46],[0,67,1,2,75,6],"Jacob Fryxelius","J",0,"Terraforming Mars"],[328871,"Terraforming Mars: Ares Expedition",2021,1,4,45,60,14,7.63,7.37,21706,2.93,195,"3","1-4",2,[1,10,46],[1,105,2,6,99,4],"Sydney Engelstein, Jacob Fryxelius","J",0,"Terraforming Mars: Ares Expedition"],[371433,"Terrorscape",2023,2,4,30,45,14,8.05,6.96,3899,2.28,552,"2,4","2-4",2,[21,14],[29,11,2,54,119,37],"Jeffrey CCH","J",0,"Terrorscape"],[283863,"The Magnificent",2019,1,4,60,90,14,7.46,6.74,4381,3.13,851,"2","1-4",0,[6,4],[67,11,1,31,63,17],"Kristian Amundsen Østby, Eilif Svensson","J",0,"The Magnificent"],[41114,"The Resistance",2009,5,10,30,30,13,7.19,7.03,43014,1.59,478,"7","5-10",0,[19,1,13,32,35,52],[34,45,69,43,37,112],"Don Eskridge","J",0,"The Resistance"],[236475,"Best of Werwölfe",2017,8,28,30,30,14,7.18,5.72,409,1.8,6109,"13-20","10,12-28",1,[19,13,21,15,35],[35,38,37,21,61],"Philippe des Pallières, Hervé Marly","J",0,"The Werewolves of Miller's Hollow: Best Of"],[356123,"Turing Machine",2022,1,4,20,20,14,7.59,7.18,11122,2.53,327,"1","1-4",1,[13,60,25],[29,81,25],"Fabien Gridel, Yoann Levet","J",0,"Turing Machine"],[12333,"Gleichgewicht des Schreckens",2005,2,2,120,180,13,8.22,8.04,52629,3.61,16,"2","2",3,[29,37,47],[120,113,22,82,11,62],"Ananda Gupta, Jason Matthews","J",0,"Twilight Struggle"],[189932,"Tyrannen des Unterreichs",2016,2,4,60,60,14,7.91,7.42,11065,2.56,166,"4","2-4",2,[8,9],[22,121,15,16,17,36],"Peter Lee, Rodney Thompson","J",0,"Tyrants of the Underdark"],[302425,"Unlock!: Mythic Adventures",2020,1,6,60,60,10,7.63,6.49,2091,2.17,1377,"2","1-4",4,[26,1,7,40,36,24],[10,122,46,39],"Cyril Demaegd, Jérémy Fraile","J",0,"Unlock!: Mythic Adventures"],[287952,"Unstable Unicorns: NSFW Base Game",2019,2,8,30,45,21,6.48,5.7,908,1.55,6437,"4-5","3-6",2,[1,20,42,35],[2,23,36],"Ramy Badie","J",0,"Unstable Unicorns: NSFW Base Game"],[157526,"Viceroy",2014,1,4,45,60,13,6.78,6.39,5821,2.63,1640,"3","2-4",2,[19,1,2,3,8,32],[123,2,45,17,23,24],"Yuri Zhuravljov","J",0,"Viceroy"],[258135,"Wild Assent",2021,1,4,60,90,0,6.58,5.55,172,2.33,13039,"2","1-4",1,[5,6,8,12],[10,26,11,19,33,37],"Robert Mc Connell","J",0,"Wild Assent"],[382054,"Woodland Wizards",2023,2,6,30,45,10,5.97,5.54,287,1.82,15178,"4-6","3-6",3,[26,1,13,8,20],[40,29,1,35,42,43],"Alexander Ommer","J",0,"Woodland Wizards"],[276997,"X-ODUS: Rise of the Corruption",2020,1,4,90,150,14,7.68,5.88,657,3.33,4119,"4","1-4",3,[5,7,10,46],[10,11,75,7,38],"Yann Hilaire, Romain Lesiuk","J",0,"X-ODUS: Rise of the Corruption"],[142057,"Carcassonne Big Box",2006,2,6,35,45,7,7.56,6.19,1319,2.26,0,"2-3","2-4",0,[2,11],[22,24],"Klaus-Jürgen Wrede","V",0,"Carcassonne Big Box"],[371042,"Magic: The Gathering — Game Night: Free For All",2022,2,5,30,30,13,7.17,5.57,107,2.67,11898,"4-5","2-5",3,[1,61,8,9],[2,6,78,35,36],"Melissa DeTora","V",0,"Magic: The Gathering — Game Night: Free For All"],[112869,"Munchkin Apocalypse",2012,3,6,90,90,10,6.4,5.8,1746,2.09,4903,"4-5","3-6",3,[1,9,20],[11,2,21],"Steve Jackson (I)","V",0,"Munchkin Apocalypse"],[257700,"Munchkin Warhammer 40,000",2019,3,6,60,90,12,6.38,5.59,383,2,10372,"4","3-6",1,[1,8,9,21],[11,2,36,21],"Andrew Hackard","V",0,"Munchkin Warhammer 40,000"],[1927,"Munchkin",2001,3,6,60,120,10,5.87,5.69,54021,1.82,6601,"4","3-6",3,[1,8,9,20],[2,108,36,21],"Steve Jackson (I)","V",0,"Munchkin"],[1084,"Das Gold der Maya",1997,2,4,45,45,10,4.93,5.49,50,1.5,28987,"3","3-4",0,[0,24],[124,23,24],"Sylvie Barc, Juan Rodriguez","V",0,"Das Gold der Maya"],[1111,"Tabu",1989,4,10,20,20,12,6.32,6.14,14345,1.2,2505,"6,8","4-10",4,[35,31,44],[44,37],"Brian Hersch","V",0,"Taboo"],[4355,"Therapy",1986,3,6,90,90,16,5.4,5.45,853,1.42,31035,"4-5","3-6",3,[50,35,62],[51],"Jay Titel","V",0,"Therapy"],[146496,"BAM! Das unanständig gute Wortspiel",2013,4,10,20,40,16,5.41,5.49,230,1,29285,"8","4-10",4,[1,35],[61],"Sascha Ackermann, Lars Beckmann","V",0,"Bam!: Das unanständig gute Wortspiel"],[147949,"Werwölfe Vollmondnacht",2014,3,10,10,10,8,7.03,6.85,31519,1.38,689,"6-8","4-10",0,[19,1,13,21,35],[34,38,69,112,21,61],"Ted Alspach, Akihisa Okui","V",0,"One Night Ultimate Werewolf"],[303544,"Bill & Ted's Riff in Time",2020,1,4,60,80,14,6.76,5.53,70,1.75,17424,"4,5+","1-4,5+",1,[14],[10,11,7,21,53],"Jim Radford","V",0,"Bill & Ted's Riff in Time"],[24480,"Die Säulen der Erde",2006,2,4,90,120,12,7.25,7.03,18555,2.81,489,"4","2-4",2,[4,11,36,55],[62,99,95,125,94,118],"Michael Rieneck, Stefan Stadler","V",0,"The Pillars of the Earth"],[245643,"Luxor",2018,2,4,45,45,8,7.2,6.64,5321,1.91,1038,"3-4","2-4",0,[5,0],[11,2,7,108,51,23],"Rüdiger Dorn","V",0,"Luxor"],[437,"Das Labyrinth der Meister",1991,2,4,20,30,10,6.3,5.92,2968,1.77,3807,"3","2-4",0,[63,8,48,24],[126,7,97],"Max J. Kobbert","V",0,"Master Labyrinth"],[282853,"Catan: Sternenfahrer",2019,3,4,120,120,14,7.5,6.34,1997,2.58,1763,"4","3-4",2,[7,32,10,46],[75,7,30,53],"Klaus Teuber","V",0,"Catan: Starfarers"],[256406,"Monopoly: Warhammer 40,000",2018,2,6,0,0,13,4.86,5.48,47,1,30173,"","",1,[4,32],[124,35,51,23,30],"","V",0,"Monopoly: Warhammer 40,000"],[811,"Rummikub",1950,2,4,60,60,8,6.54,6.35,22639,1.71,1739,"4","2-4",0,[16,1,64],[23,24],"Ephraim Hertzano","V",0,"Rummikub"],[28143,"Race for the Galaxy",2007,2,4,30,60,12,7.74,7.61,59608,2.99,95,"2","2-4",1,[1,3,4,10,46],[1,105,2,6,99,4],"Thomas Lehmann","V",0,"Race for the Galaxy"],[142271,"Blitz Dings",2013,3,6,30,30,10,7.1,6.17,1960,1.04,2390,"5-6","4-6,7+",3,[1,35,44],[127],"Andrew Innes","V",0,"Anomia: Party Edition"],[160477,"Onitama",2014,2,2,15,20,10,7.33,7.13,25424,1.66,368,"2","2",0,[16],[12,2,128,33,129],"Shimpei Sato","V",0,"Onitama"],[244521,"Die Quacksalber von Quedlinburg",2018,2,4,45,45,10,7.8,7.66,60657,1.94,81,"4","2-4",2,[8],[84,15,16,11,49,62],"Wolfgang Warsch","V",0,"Quacks"],[216497,"District Noir",2016,2,2,10,20,10,6.96,6.27,2849,1.36,2003,"2","2",0,[19,1],[2,17,42,23,130],"Nobutake Dogen, Nao Shimamura","V",0,"District Noir"],[204583,"Kingdomino",2016,2,4,15,25,8,7.29,7.17,54033,1.24,335,"2,4","2-4",0,[16,11,24,39],[131,132,17,24,95],"Bruno Cathala","V",0,"Kingdomino"],[378565,"Black Hole Buccaneers",2023,3,6,30,45,10,6.62,5.63,337,2.07,8233,"3-4","3-6",2,[1,10],[0,2,23,43],"Peter Langkjær Møller","V",0,"Black Hole Buccaneers"],[309430,"Tiny Epic Pirates",2021,1,4,30,60,14,6.99,6.23,2702,2.86,2131,"3","1-4",0,[6,7,30,43],[11,99,63,80,133,25],"Scott Almes","V",0,"Tiny Epic Pirates"],[138788,"Dungeon Roll",2013,1,4,15,30,8,6.07,5.9,8571,1.33,3962,"2","1-3",1,[6,8,9],[11,2,42,25,21],"Chris Darden","V",0,"Dungeon Roll"],[62871,"Zombie Würfel",2010,2,99,10,20,10,6.23,6.08,19404,1.09,2820,"4","2-8",0,[6,21,20,35,33],[11,49,42,98],"Steve Jackson (I)","V",0,"Zombie Dice"],[200680,"Agricola",2016,1,4,30,120,12,7.95,7.65,21889,3.45,86,"3-4","1-4",3,[26,4,57],[131,2,94,113,115,0],"Uwe Rosenberg","V",0,"Agricola (Revised Edition)"],[391163,"Mischwald",2023,2,5,40,60,10,7.73,7.47,23612,2.22,150,"2","2-4",2,[26,1,53,51],[1,2,134,3,4,17],"Kosch","V",0,"Forest Shuffle"],[27710,"Catan – Das Würfelspiel",2007,1,4,15,30,7,5.73,5.64,7237,1.23,8010,"2","1-3",0,[6],[11,81,23,25],"Klaus Teuber","V",0,"Catan Dice Game"],[230358,"Penny Papers Adventures",2018,1,99,20,20,7,6.32,5.66,578,1.45,7482,"4","1-10",0,[6],[11,81,23,43],"Henri Kermarrec","V",0,"Penny Papers Adventures: The Temple of Apikhabou"],[263918,"Die Kartographin",2019,1,100,30,45,10,7.55,7.38,37293,1.89,185,"3-4","1-8",1,[8,39],[135,131,1,31,81,32],"Jordy Adan","V",0,"Cartographers"],[4491,"Cave Troll",2002,2,4,20,60,10,6.41,6.04,3903,1.98,3012,"4","2-4",1,[8],[47,22,2,97,21],"Tom Jolly","V",0,"Cave Troll"],[392756,"Dominate & Delegate",2025,1,4,60,90,14,8,5.58,103,2.75,10521,"2,4","1-4",2,[29,47],[82,1,68,12,75,34],"Thomas Denkmeier","V",0,"Dominate & Delegate"],[291874,"Zwergar",2020,2,4,60,120,12,7.01,5.73,479,3.07,5880,"3","2-4",0,[4,8,56],[47,1,62,118],"Jan Madejski","V",0,"Dwergar"],[184287,"Frantic",2015,2,8,5,45,12,6.41,5.71,948,1.53,6191,"4-6","3-8",0,[1,20,35],[62,17,36],"Fabian Engeler, Pascal Frick","V",0,"Frantic"],[226162,"Frantic: Troublemaker",2017,2,8,5,45,12,7.71,5.6,118,1,0,"4-6","3-8",1,[1,22,20,35],[17,36],"Fabian Engeler, Pascal Frick","V",1,"Frantic Troublemaker Add-On"],[145478,"Witches",2013,3,6,45,45,10,6.47,5.61,348,1.85,9128,"4-6","4-6",0,[1],[114],"Joe Andrews, Ken Fisher","V",0,"HeartSwitch"],[359970,"Challengers!",2022,1,8,45,45,8,7.04,6.67,8740,1.79,971,"4,6,8","2,4,6,8",2,[26,1,65],[136,27,15,68,2,17],"Johannes Krenner, Markus Slawitscheck","V",0,"Challengers!"],[21550,"Blokus Trigon",2006,2,4,20,20,7,6.89,6.29,3408,1.92,1952,"3-4","2-4",0,[16,39],[131,31,2,37,24],"Bernard Tavitian","V",0,"Blokus Trigon"],[13,"Die Siedler von Catan",1995,3,4,60,120,10,7.09,6.9,145250,2.28,624,"4","3-4",1,[4,32],[96,11,2,75,104,6],"Klaus Teuber","V",0,"Catan"],[325,"Catan: Seefahrer",1997,3,4,90,90,10,7.16,6.91,21624,2.37,0,"4","3-4",1,[22,7,30,32],[11,2,45,7,76,30],"Klaus Teuber","V",1,"Catan: Seafarers"],[926,"Catan: Städte & Ritter",1998,3,4,90,150,12,7.45,7.15,22083,2.9,0,"4","3-4",2,[22,11,32],[11,2,45,7,76,30],"Klaus Teuber","V",1,"Catan: Cities & Knights"],[248065,"Zombicide: Invader",2019,1,6,60,60,14,7.75,6.62,3043,2.35,1082,"3","1-6",1,[9,12,10,33],[47,10,11,7,19,21],"Raphaël Guiton, Jean-Baptiste Lullien","V",0,"Zombicide: Invader"],[269967,"EXIT: Das Spiel – Die Känguru-Eskapaden",2019,1,4,45,90,12,6.87,5.8,666,2.28,4870,"2","1-4",4,[13,36],[10],"Inka Brand, Markus Brand","V",0,"EXIT: Das Spiel – Die Känguru-Eskapaden"],[343384,"Unlock!: Star Wars – Flucht von Hoth",2021,1,6,60,60,10,6.68,5.55,111,1.5,13261,"2","1-3",4,[1,7,14,24,31,10],[10,39],"Cyril Demaegd","V",0,"Unlock!: Star Wars – Flucht von Hoth"],[343383,"Unlock!: Star Wars – Eine unerwartete Verzögerung",2021,1,6,60,60,10,6.69,5.55,98,1.33,14019,"2","2-3",4,[1,7,14,24,31,10],[10,39],"Cyril Demaegd","V",0,"Unlock!: Star Wars – Eine unerwartete Verzögerung"],[1298,"Monopoly: Star Wars",1997,2,8,90,90,8,4.94,5.2,1968,1.72,31623,"4","2-6",2,[4,14,32,10],[124,35,51,23,30],"","V",0,"Monopoly: Star Wars"],[266192,"Flügelschlag",2019,1,5,40,70,10,7.99,7.84,116480,2.48,38,"3","1-4",3,[26,1,53,51],[48,11,1,2,17,23],"Elizabeth Hargrave","V",0,"Wingspan"],[4040,"Tri-Ominos",1965,2,4,30,30,6,5.44,5.43,3462,1.37,31322,"3-4","2-4,5+",0,[16,14],[2,32,24],"Allan Cowan","V",0,"Tri-Ominos"],[423577,"Valheim: The Board Game",2025,1,4,60,120,12,7.95,5.88,581,2.75,4128,"3","1-4",2,[5,7,8,40,23],[120,10,11,49,62,68],"Ole Steiness","V",0,"Valheim: The Board Game"],[1439,"Plitsch-Platsch Pinguin",1996,1,6,20,20,5,5.31,5.44,664,1.05,31226,"3-4","2-6",0,[59,26,63,31],[59,32],"Seven Towns","V",0,"Penguin Pile-Up"],[1218,"Junior Labyrinth",1995,2,4,15,15,5,5.65,5.53,1014,1.15,16444,"4","2-4",0,[63,8,48],[126,7,76,32,89,108],"Max J. Kobbert","V",0,"Junior Labyrinth"],[2719,"4 gewinnt",1974,2,2,10,10,6,5.04,5.07,10793,1.18,31645,"2","2",0,[16,63],[32],"Ned Strongin, Howard Wexler","V",0,"Connect Four"],[25669,"Qwirkle",2006,2,4,45,45,6,6.77,6.61,22608,1.57,1100,"4","2-4",0,[16],[2,32,33,24],"Susan McKinley Ross","V",0,"Qwirkle"],[119890,"Agricola: Die Bauern und das liebe Vieh",2012,2,2,30,30,13,7.32,7.04,14354,2.35,473,"2","2",1,[26,57],[115,131,71,24,95,94],"Uwe Rosenberg","V",0,"Agricola: All Creatures Big and Small"],[295488,"Andor Junior",2020,2,4,30,45,7,7.25,6.24,1952,1.93,2087,"4","2-4",2,[5,8,9,24],[59,10,11,21],"Inka Brand, Markus Brand","V",0,"Andor: The Family Fantasy Game"],[8670,"Der Herr der Ringe: Die Rückkehr des Königs",2003,3,4,60,60,10,5.54,5.5,54,2,27004,"3","3-4",1,[8,14,47],[59,82,11,17],"Martin Wallace","V",0,"Der Herr der Ringe: Die Rückkehr des Königs"],[316995,"Fightdrome: Panama Rose",2020,2,2,30,0,0,6.13,0,8,2,0,"2","2",1,[1,9,14,36,10],[17],"Richard K. Morgan, Jim Radford","V",0,"Fightdrome: Panama Rose"],[143884,"Machi Koro",2012,2,4,30,30,10,6.59,6.47,36385,1.52,1412,"4","2-4",2,[2,6],[11,137,108,106],"Masao Suganuma","V",0,"Machi Koro"],[181336,"Machi Koro: Großstadt-Erweiterung",2015,2,4,40,40,8,7.08,6.01,1174,1.81,0,"4","2-4",1,[1,2,6,22],[11,23],"Masao Suganuma","V",1,"Machi Koro: Großstadt-Erweiterung"],[342274,"Onitama: Licht und Schatten",2022,2,2,15,20,8,7.41,5.72,330,3,0,"2","2",1,[16,0,22],[12,2,54,128,33,129],"Robert Geistlinger, Collin Meller","V",1,"Onitama: Light and Shadow"],[219326,"Onitama: Sensei's Path",2017,2,2,10,30,8,7.76,6.51,2047,1.79,0,"2","2",0,[22,16],[12,2],"Shimpei Sato","V",1,"Onitama: Sensei's Path"],[20824,"Ertappt?!",2002,3,8,60,60,18,3.85,5.45,71,1.5,31045,"","",2,[19,58,35],[11,17],"","V",0,"Saint or Sinner?"],[284083,"Die Crew",2019,2,5,20,20,10,7.75,7.61,49754,1.97,97,"4","3-5",0,[1,10,46],[44,10,29,19,114],"Thomas Sing","V",0,"The Crew: The Quest for Planet Nine"],[374039,"Tiny Epic Crimes",2023,1,4,30,60,14,6.82,5.75,624,2.64,5567,"3","1-4",2,[66,15],[59,10,11,62,12,7],"Scott Almes","V",0,"Tiny Epic Crimes"],[155708,"Tiny Epic Defenders",2015,1,4,30,30,13,6.24,5.89,2996,1.82,4043,"1","1-4",1,[8,11],[47,22,82,14,10,25],"Scott Almes","V",0,"Tiny Epic Defenders"],[291508,"Tiny Epic Dinosaurs",2020,1,4,30,60,14,7.27,6.6,4321,2.64,1112,"3","1-4",2,[26,8,57,10],[67,131,104,25,94],"Scott Almes","V",0,"Tiny Epic Dinosaurs"],[331787,"Tiny Epic Dungeons",2021,1,4,30,60,14,7.43,6.74,5914,3.11,855,"1-2","1-4",0,[5,6,7,8,9],[10,11,68,7,25,24],"Scott Almes","V",0,"Tiny Epic Dungeons"],[180852,"Tiny Epic Western",2016,1,4,30,45,14,6.62,6.19,4461,2.87,2304,"4","1,3-4",2,[18,19,56],[22,85,11,23,21,94],"Scott Almes","V",0,"Tiny Epic Western"],[338628,"Trails",2021,2,4,20,40,10,7.01,6.46,4781,1.86,1452,"2","2-4",1,[5,26,51,45],[67,1,7,23,52,94],"Henry Audubon","V",0,"Trails"],[151947,"Trivial Pursuit: Doctor Who",2013,2,6,0,0,12,5.53,5.5,94,1,25612,"","",4,[14,10,62],[51],"","V",0,"Trivial Pursuit: Doctor Who"],[348220,"Deep Rock Galactic: Das Brettspiel",2022,1,4,60,150,12,8.08,6.56,2124,2.64,1214,"4","1-4",1,[12,10,23],[10,11,62,12,75,90],"Ole Steiness","V",0,"Deep Rock Galactic: The Board Game"]],"cov":{"230358":"230358.jpg","258135":"258135.jpg","374039":"374039.jpg","121921":"121921.jpg","338628":"338628.jpg","189932":"189932.jpg","181336":"181336.jpg","156129":"156129.jpg","132531":"132531.jpg","316287":"316287.jpg","223040":"223040.jpg","267370":"267370.jpg","198953":"198953.jpg","171131":"171131.jpg","283137":"283137.jpg","316554":"316554.jpg","325":"325.jpg","204583":"204583.png","302723":"302723.jpg","280136":"280136.png","201808":"201808.jpg","408724":"408724.jpg","256406":"256406.jpg","8217":"8217.jpg","161936":"161936.png","62871":"62871.jpg","242993":"242993.jpg","282853":"282853.png","157526":"157526.jpg","1084":"1084.jpg","302336":"302336.jpg","30549":"30549.jpg","120217":"120217.png","155821":"155821.jpg","13":"13.png","176361":"176361.jpg","291453":"291453.png","155708":"155708.jpg","266192":"266192.jpg","287952":"287952.jpg","305096":"305096.jpg","245643":"245643.jpg","1298":"1298.jpg","260934":"260934.jpg","143884":"143884.png","244521":"244521.png","416851":"416851.png","195194":"195194.jpg","15045":"15045.jpg","137269":"137269.jpg","424981":"424981.png","222531":"222531.jpg","371433":"371433.png","304531":"304531.png","324767":"324767.jpg","284083":"284083.jpg","145478":"145478.jpg","10547":"10547.png","241451":"241451.jpg","331787":"331787.jpg","3076":"3076.jpg","926":"926.jpg","313262":"313262.jpg","200847":"200847.jpg","266966":"266966.jpg","328871":"328871.jpg","158899":"158899.jpg","167791":"167791.jpg","218417":"218417.jpg","318184":"318184.jpg","329839":"329839.png","236475":"236475.jpg","391163":"391163.jpg","322656":"322656.jpg","150658":"150658.jpg","413246":"413246.png","151947":"151947.jpg","316995":"316995.jpg","24480":"24480.jpg","382054":"382054.jpg","244115":"244115.png","320718":"320718.jpg","271601":"271601.jpg","343383":"343383.jpg","378565":"378565.jpg","141572":"141572.jpg","276997":"276997.jpg","263918":"263918.png","133473":"133473.jpg","226162":"226162.jpg","50912":"50912.jpg","41114":"41114.jpg","188866":"188866.jpg","285253":"285253.png","15062":"15062.jpg","331398":"331398.png","258779":"258779.jpg","219326":"219326.jpg","209778":"209778.jpg","209001":"209001.jpg","142057":"142057.jpg","275530":"275530.jpg","231733":"231733.png","200680":"200680.jpg","342444":"342444.png","194655":"194655.png","255984":"255984.png","230802":"230802.png","184287":"184287.jpg","291874":"291874.jpg","343384":"343384.jpg","270836":"270836.jpg","283863":"283863.jpg","412735":"412735.jpg","2719":"2719.jpg","309430":"309430.jpg","153938":"153938.jpg","147949":"147949.png","91534":"91534.png","195856":"195856.jpg","28143":"28143.jpg","142271":"142271.jpg","269967":"269967.jpg","12333":"12333.jpg","478":"478.jpg","119890":"119890.jpg","356123":"356123.png","21550":"21550.jpg","257700":"257700.jpg","176494":"176494.jpg","181304":"181304.jpg","1111":"1111.jpg","20824":"20824.jpg","172242":"172242.png","22827":"22827.jpg","1218":"1218.jpg","112869":"112869.jpg","276044":"276044.jpg","342894":"342894.png","4040":"4040.jpg","349606":"349606.jpg","191189":"191189.jpg","352179":"352179.jpg","392756":"392756.jpg","291508":"291508.jpg","359970":"359970.jpg","146496":"146496.jpg","211364":"211364.jpg","423577":"423577.png","180852":"180852.jpg","1927":"1927.jpg","127096":"127096.jpg","6249":"6249.jpg","138788":"138788.png","188834":"188834.jpg","319910":"319910.png","13308":"13308.jpg","363369":"363369.jpg","30933":"30933.jpg","27710":"27710.jpg","186751":"186751.jpg","303544":"303544.jpg","342274":"342274.jpg","256680":"256680.jpg","96848":"96848.jpg","248065":"248065.jpg","304051":"304051.jpg","302425":"302425.jpg","220308":"220308.png","162886":"162886.jpg","275923":"275923.jpg","299252":"299252.jpg","242705":"242705.jpg","4491":"4491.jpg","37046":"37046.jpg","378574":"378574.jpg","68448":"68448.jpg","4355":"4355.jpg","190400":"190400.jpg","1439":"1439.jpg","34585":"34585.jpg","371042":"371042.jpg","160477":"160477.jpg","266967":"266967.jpg","348220":"348220.jpg","295488":"295488.jpg","324766":"324766.jpg","8670":"8670.jpg","173346":"173346.jpg","811":"811.jpg","216497":"216497.jpg","447243":"447243.png","25669":"25669.jpg","437":"437.jpg"},"catsDe":["Antike","Kartenspiel","Städtebau","Zivilisation","Wirtschaft","Abenteuer","Würfel","Erkundung","Fantasy","Kampf","Science-Fiction","Mittelalter","Miniaturen","Deduktion","Film / TV / Radio","Krimi / Mystery","Abstraktes Strategiespiel","Renaissance","Wilder Westen","Bluffen","Humor","Horror","Erweiterung","Videospiel-Thema","Rätsel","Spione / Geheimagenten","Tiere","Orient","Rennen","Moderne Kriegsführung","Seefahrt","Echtzeit","Verhandeln","Zombies","Eisenbahn","Partyspiel","Romanvorlage","Politik","Urzeit","Gebietsaufbau","Mythologie","Comic","Für Erwachsene","Piraten","Wortspiel","Reisen","Weltraumerkundung","Konfliktsimulation","Labyrinth","Nach Napoleon","Medizin","Umwelt","Print & Play","Lernspiel","Frühe Neuzeit","Religion","Industrie / Produktion","Landwirtschaft","Elektronik","Geschicklichkeit","Mathematik","Sammelkomponenten","Quiz","Kinderspiel","Zahlen","Sport","Mafia"],"mechsDe":["Verdecktes Draften","Schlusswertung","Handkarten-Management","Auslegen und Auffächern","Mehrzweckkarten","Nachbarinteraktion","Einkommen","Modularer Spielplan","Einmalige Fähigkeiten","Befehlskarten","Kooperativ","Würfeln","Rasterbewegung","Karte erweitern","Chip-Ziehen","Deck- und Beutelbau","Verzögerter Kauf","Offenes Draften","Legacy","Szenarien / Kampagne","Variable Phasenfolge","Asymmetrische Fähigkeiten","Gebietsmehrheiten","Sets sammeln","Plättchen legen","Solo-Modus","Kritische Treffer","Deck-Konstruktion","Erzählabschnitte","Deduktion","Handeln","Raster füllen","Muster bauen","Quadratraster","Versteckte Rollen","Spielerausscheiden","Take That","Teamspiel","Rollenspiel","Geschichten erzählen","Kampf per Karten","Kill Steal","Push Your Luck","Gleichzeitige Aktionswahl","Eingeschränkte Kommunikation","Memory","Echtzeit","Aktionspunkte","Aktionswarteschlange","Würfelsymbole","Wetten und Bluffen","Würfeln und Ziehen","Leistenbewegung","Variabler Aufbau","Verdeckte Bewegung","Linien zeichnen","Tags","Aktionen draften","Aussetzen","Gebietsbewegung","Verhandeln","Abstimmen","Ereignisse","Bewegungspunkte","Programmierte Bewegung","Rotierende Zugreihenfolge","Holländische Auktion","Aufträge","Finale","Rollen mit Geheimwissen","Truppen festlegen","Wertsteigerung ungenutzter Ressourcen","Reihenfolge bilden","Halb-kooperativ","Werteprobe","Sechseckraster","Netzwerkbau","Deck durchspielen","Unterbrechungen","Verdeckte Aufstellung","Abholen und Liefern","Papier und Stift","Ereigniskarten-getrieben","Auktion mehrerer Lose","Führenden bremsen","Warenspekulation","Ich teile, du wählst","Ende nach Echtzeit","Würfel als Arbeiter","Mustererkennung","Sichtlinie","Neigung","Schieben","Aktionen zurückholen","Worker Placement","Zugreihenfolge beanspruchen","Kettenreaktionen","Punkt-zu-Punkt-Bewegung","Neu würfeln und festhalten","Markt","Buchstabieren","Darstellen","Fragen und Antworten","Simulation","Verdeckte Siegpunkte","Folgen","Zufällige Produktion","Karte verkleinern","Wettrennen","3D-Bewegung","Überbieten","Werten und Zurücksetzen","Verräter","Vorteilsmarker","Stichspiel","Automatisches Wachstum","Holländische Prioritätsauktion","Befehlsmarker","Verschiedene Arbeiter","Mehrere Karten","Aktion / Ereignis","Verbindungen","Spielteile als Karte","Verdeckte Gebote","Versteigerung","Zufällige Zugreihenfolge","Kartenverformung","Schnelles Zuordnen","Musterbewegung","Schlagen","Sofortiges Spielende","Einzäunen","Zuordnen","Rondell","Überlagern","Bingo","Algorithmische Auflösung","Besitz"],"desc":{"161936":["Kooperative Kampagne über ein Spieljahr: Ihr bekämpft vier Seuchen, und jede Partie verändert das Spiel dauerhaft – mit Aufklebern, geheimen Boxen und Story-Wendungen.","A cooperative campaign across one in-game year: fight four diseases while every game permanently changes the board with stickers, secret boxes and story twists."],"316554":["Deckbau trifft Worker Placement im Dune-Universum: Sammelt Einfluss bei den Fraktionen, schickt Truppen in den Konflikt und sichert euch die Gunst des Imperators.","Deck-building meets worker placement in the Dune universe: gain influence with the factions, send troops into conflict and win the Emperor's favour."],"167791":["Als Konzerne macht ihr den Mars bewohnbar: Mit über 200 verschiedenen Projektkarten entstehen Städte, Wälder und Ozeane – und eine immer stärkere Engine.","As corporations you terraform Mars: play from over 200 unique project cards to build cities, forests and oceans – and an ever-growing engine."],"162886":["Kooperatives Strategiespiel: Als Naturgeister verteidigt ihr eine Insel gegen Kolonisten – mit asymmetrischen Kräften und viel gemeinsamer Planung.","Cooperative strategy: as spirits of the land you defend an island against colonizers, using asymmetric powers and careful joint planning."],"220308":["Der Nachfolger von Terra Mystica im All: Völker mit ganz eigenen Fähigkeiten besiedeln Planeten, forschen und terraformen – tiefe Strategie ganz ohne Würfelglück.","Terra Mystica's successor in space: factions with unique abilities colonize planets, research and terraform – deep strategy without any dice luck."],"12333":["Der Kalte Krieg für zwei: USA und UdSSR ringen über 45 Jahre mit historischen Ereigniskarten um Einfluss in der Welt.","The Cold War for two: the USA and USSR fight for global influence over 45 years, driven by historical event cards."],"173346":["Das Zwei-Personen-Spiel zu 7 Wonders: Karten aus einer offenen Auslage nehmen, Weltwunder bauen und auf einem von drei Wegen gewinnen.","The two-player take on 7 Wonders: take cards from an open layout, build wonders and win in one of three ways."],"96848":["Episches Abenteuer für 1–4: Als Magierritter erkundet ihr das Land, kämpft und verbessert euer Deck – anspruchsvoll und sehr taktisch.","Epic adventure for 1–4 players: explore the land, fight and improve your deck as a Mage Knight – demanding and highly tactical."],"266192":["Lockt Vögel in eure Lebensräume: Jede Vogelkarte bringt Fähigkeiten mit, die sich zu Kettenreaktionen verbinden. Kennerspiel des Jahres 2019.","Attract birds to your wildlife preserves: each bird adds abilities that chain into combos. A modern engine-building classic."],"3076":["Klassiker der Rollenwahl: Ihr legt Plantagen und Gebäude in der Kolonie an, produziert Waren und verschifft sie nach Europa.","A role-selection classic: build plantations and buildings in the colony, produce goods and ship them back to Europe."],"231733":["Viktorianisches England à la Jane Austen: Ihr richtet Feste aus, baut euer Anwesen aus und sucht eine gute Partie für eure Familie.","Victorian England in the spirit of Jane Austen: host social events, expand your estate and seek a good match for your family."],"255984":["Kooperatives Erzählabenteuer: Eure Schiffscrew strandet in einer fremden Welt und erkundet sie über einen Atlas voller Geschichten.","Cooperative storybook adventure: your ship's crew is stranded in a strange world and explores it through an atlas full of encounters."],"413246":["Kooperatives Deduktionsspiel: Gemeinsam entschärft ihr Bomben und findet ohne viel Absprache heraus, wer welches Kabel hat. Spiel des Jahres 2025.","Cooperative deduction: defuse bombs together by working out who holds which wire – with only limited communication."],"244521":["Push your Luck im Hexenkessel: Ihr zieht Zutaten aus eurem Beutel – aber zu viele Knallerbsen lassen den Kessel explodieren. Kennerspiel des Jahres 2018.","Push-your-luck potion brewing: draw ingredients from your bag into the pot – but too many cherry bombs and it explodes."],"200680":["Ihr führt einen Bauernhof im 17. Jahrhundert: Felder pflügen, Tiere halten, die Familie vergrößern – und alle rechtzeitig satt bekommen.","Run a 17th-century farm: plough fields, raise animals, grow your family – and make sure everyone gets fed in time."],"13":["Der Klassiker: Rohstoffe erwürfeln, geschickt handeln und Siedlungen, Städte und Straßen auf der Insel Catan bauen.","The classic: roll for resources, trade cleverly and build settlements, cities and roads on the island of Catan."],"30549":["Kooperativ gegen die Zeit: Gemeinsam reist ihr um die Welt, behandelt Seuchen und entwickelt Heilmittel, bevor die Ausbrüche überhandnehmen.","A cooperative race against time: travel the world, treat diseases and find cures before outbreaks get out of hand."],"68448":["Draften für bis zu sieben: In drei Zeitaltern wählt ihr gleichzeitig Karten und baut eure antike Zivilisation samt Weltwunder aus.","Drafting for up to seven: over three ages, pick cards simultaneously to develop your ancient civilization and its wonder."],"230802":["Elegantes Legespiel: Ihr nehmt farbige Fliesen aus der Mitte und gestaltet die Wand eines Palasts – schnell erklärt, knifflig gespielt. Spiel des Jahres 2018.","Elegant tile drafting: take coloured tiles from the centre to decorate a palace wall – quick to learn, tricky to master."],"28143":["Flottes Kartenspiel um Weltraumimperien: Ihr wählt gleichzeitig Aktionen, besiedelt Welten und kombiniert Entwicklungen.","A fast card game of galactic empires: choose actions simultaneously, settle worlds and combine developments."],"478":["Jede Runde wählt ihr geheim eine Rolle – Dieb, Baumeister, Assassine und mehr – und baut die prächtigste Stadt.","Each round you secretly pick a role – thief, architect, assassin and more – to build the most magnificent city."],"204583":["Domino trifft Königreich: Ihr legt Landschaftsplättchen an und baut in rund 15 Minuten ein 5×5-Königreich. Spiel des Jahres 2017.","Dominoes meet kingdom-building: connect landscape tiles to build a 5×5 kingdom in about 15 minutes."]},"sd":{"68448":"FS","173346":"S","242705":"T","191189":"S","241451":"S","218417":"S","6249":"FS","378574":"T","304531":"T","352179":"ST","190400":"CT","188866":"FS","230802":"AF","30933":"P","10547":"T","342444":"S","412735":"S","195856":"T","413246":"F","322656":"ST","324767":"T","324766":"T","153938":"F","171131":"PT","416851":"F","478":"FS","267370":"F","120217":"T","201808":"FS","158899":"F","304051":"F","156129":"P","266967":"F","266966":"F","447243":"FS","316554":"S","222531":"T","305096":"S","424981":"S","172242":"P","223040":"F","271601":"PT","285253":"P","302723":"T","408724":"S","220308":"S","275530":"P","37046":"ST","299252":"FP","320718":"F","195194":"S","283137":"T","260934":"T","276044":"T","275923":"T","270836":"FS","318184":"S","155821":"S","176494":"FS","34585":"F","96848":"ST","209778":"FP","302336":"S","127096":"T","209001":"S","181304":"FT","186751":"SW","242993":"T","331398":"SW","342894":"A","13308":"F","50912":"P","231733":"ST","176361":"PS","349606":"T","319910":"CS","30549":"FS","161936":"ST","150658":"FS","141572":"FS","280136":"P","198953":"ST","258779":"FS","3076":"S","316287":"P","256680":"T","15045":"T","121921":"T","132531":"S","8217":"S","194655":"A","291453":"F","188834":"P","200847":"P","211364":"S","15062":"T","313262":"F","244115":"S","255984":"T","329839":"P","162886":"S","137269":"S","22827":"ST","363369":"S","91534":"F","133473":"F","167791":"S","328871":"S","371433":"T","283863":"S","41114":"P","236475":"P","356123":"S","12333":"SW","189932":"S","302425":"T","287952":"P","157526":"S","258135":"T","382054":"F","276997":"S","142057":"FS","371042":"T","112869":"P","257700":"T","1927":"PT","1084":"F","1111":"P","4355":"P","146496":"P","147949":"P","303544":"F","24480":"S","245643":"F","437":"F","282853":"F","256406":"F","811":"F","28143":"S","142271":"P","160477":"A","244521":"F","216497":"F","204583":"F","378565":"F","309430":"S","138788":"F","62871":"P","200680":"S","391163":"FS","27710":"F","230358":"F","263918":"F","4491":"ST","392756":"SW","291874":"S","184287":"P","226162":"P","145478":"F","359970":"FP","21550":"A","13":"FS","325":"FS","926":"S","248065":"T","269967":"F","343384":"T","343383":"T","1298":"F","266192":"FS","4040":"A","423577":"T","1439":"K","1218":"K","2719":"AK","25669":"AF","119890":"S","295488":"KF","8670":"W","316995":"F","143884":"F","181336":"F","342274":"A","219326":"A","20824":"P","284083":"F","374039":"T","155708":"S","291508":"S","331787":"ST","180852":"S","338628":"F","151947":"F","348220":"ST"}}</script>
+<script>
+(function () {
+const TXT = {
+  de: { title: 'Unsere Spielesammlung', intro: 'Über 180 Brett- und Kartenspiele warten jeden Dienstag ab 18 Uhr auf euch. Stöbert, filtert und sucht euch schon vorab euer nächstes Abenteuer aus.',
+    prev: 'Vorheriges Spiel', next: 'Nächstes Spiel', viewBgg: 'Auf BGG ansehen', logPlay: 'Partie eintragen',
+    search: 'Spiel suchen', searchPh: 'Name, z. B. Azul', sortBy: 'Sortieren nach', reset: 'Filter zurücksetzen', match: 'passen zu deiner Auswahl',
+    advOpen: 'Erweiterte Filter', advClose: 'Erweiterte Filter schließen', pModeLabel: 'Spielerzahl gilt …',
+    recNote: 'Die Prozent-Schwelle wirkt erst mit der BGG-API (vollständige Umfragedaten).', minVotes: 'Mindestanzahl Bewertungen', rank: 'BGG-Rang', any: 'egal',
+    age: 'Geeignet ab Alter', yearFrom: 'Erschienen ab', cats: 'Kategorien', mechs: 'Mechaniken', allGames: 'Alle Spiele',
+    recent: 'Zuletzt im Club gespielt', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
+    footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
+    date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
+    code: 'Vereinscode', codePh: '4-stellig', codeHint: 'Der aktuelle Code hängt im Vereinsheim aus.', cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
+    errLen: 'Bitte den 4-stelligen Vereinscode eingeben.', errCode: 'Der Code stimmt nicht. Der aktuelle Code hängt im Vereinsheim aus.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
+    gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
+    weights: ['Einsteiger', 'Leicht', 'Mittel', 'Anspruchsvoll', 'Sehr komplex'], times: ['bis 30 Min', '30–60 Min', '1–2 Std', 'über 2 Std'],
+    feels: ['Kooperativ', 'Party', 'Bluffen & Verraten', 'Kampagne / Legacy', 'Solo spielbar', 'Top zu zweit'], modes: ['laut Schachtel', 'empfohlen (Community)', 'am besten (Community)'],
+    bestFor: 'Am besten für {n} Spieler', bestForSolo: 'Am besten solo',
+    sorts: ['BGG-Bewertung', 'BGG-Rang', 'Name (A–Z)', 'Komplexität (leicht zuerst)', 'Spieldauer (kurz zuerst)', 'Erscheinungsjahr (neu zuerst)', 'Im Club gespielt (häufig zuerst)'],
+    typeNames: { S: 'Strategie', T: 'Thematisch', F: 'Familie', P: 'Party', A: 'Abstrakt', K: 'Kinder', W: 'Konflikt', C: 'Sammelkarten' },
+    years: 'Jahre', min: 'Min', players: 'Spieler', pl: 'Sp.', bestWith: 'Am besten mit', exp1: '+ Erweiterung: ', expN: '+ Erweiterungen: ', of: 'von', games: 'Spielen',
+    more: 'Weitere Spiele anzeigen ({n})', recPct: 'Empfohlen von mind. {p} % der BGG-Stimmen', minRating: 'BGG-Bewertung mindestens: {v}', weightRange: 'Komplexität (BGG-Gewicht) {a} – {b}',
+    maxTime: 'Spieldauer höchstens: {v}', win: 'Sieg: ', jump: 'Zu {n} springen', current: '{n}, aktuelles Highlight', onBgg: '{n} auf BoardGameGeek öffnen', cover: 'Cover von {n}', playedN: '{n}× im Club gespielt',
+    admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.', admCode: 'Vereinscode ändern', admNewCode: 'Neuer 4-stelliger Code', admSaveCode: 'Code speichern',
+    codeSaved: 'Neuer Code ist aktiv.', codeErr: 'Speichern hat nicht geklappt.', admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
+    admAdd: 'Spiel hinzufügen', admAddBtn: 'Hinzufügen', admSaveHl: 'Highlights speichern', admResetHl: 'Auf Top 15 zurücksetzen', hlSaved: 'Highlights gespeichert.', hlReset: 'Zurückgesetzt auf Top 15.', hlErr: 'Speichern hat nicht geklappt.',
+    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admNoPlays: 'Noch keine Partien eingetragen.',
+    del: 'Löschen', delConfirm: 'Wirklich löschen?', unsaved: 'Ungespeicherte Änderungen',
+    autoPause: 'Automatisches Weiterblättern anhalten', autoPlay: 'Automatisches Weiterblättern starten',
+    dur: 'Dauer in Minuten (optional)', first: 'Erstpartie (mit Regelerklärung)', clubTime: 'Bei uns: ~{m} Min ({p} Sp.)', firstTag: 'Erstpartie', errDur: 'Bitte eine Dauer zwischen 1 und 1440 Minuten eingeben oder das Feld leer lassen.',
+    errRate: 'Zu viele Versuche. Bitte in ein paar Minuten noch einmal.', admLink: 'Verwaltung', admOut: 'Abmelden', admPw: 'Admin-Passwort', admIn: 'Anmelden', admBad: 'Passwort falsch oder zu viele Versuche.',
+    admGl: 'GeekList-Abgleich', admGlNote: 'Vergleicht die BGG-GeekList mit den Spielen dieser Seite. Die Liste wird nachts automatisch geladen.', admGlRefresh: 'Jetzt von BGG laden',
+    admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
+    gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
+    ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an, andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen.',
+    ptUpcoming: 'Geplante Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
+    ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
+    ptLog: 'Partie eintragen', ptLogged: 'Partie eingetragen ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
+    ptErrFull: 'Die Runde ist leider schon voll.', ptCreated: 'Runde angelegt.', ptNoteAuto: 'Runde: {n}', ptToday: 'Heute', ptTomorrow: 'Morgen', ptHostTag: 'organisiert', tabCollection: 'Sammlung', tabStats: 'Statistik', logGuest: 'Gastspiel eintragen', guestCta: 'Jemand hat ein eigenes Spiel mitgebracht? Tragt die Partie als Gastspiel ein.',
+    guestTag: 'Gastspiel', clubTag: 'Sammlung', bggSearch: 'Spiel auf BoardGameGeek suchen', bggPh: 'Name eingeben, z. B. Cascadia', change: 'Ändern',
+    gHintIdx: 'Suche im BGG-Katalog ({n} Spiele, Stand {d}). Auswahl mit Pfeiltasten und Enter.', gHintNoIdx: 'Der BGG-Katalog ist noch nicht geladen. Du kannst den Namen trotzdem eintragen.',
+    gNone: 'Kein Treffer.', gUseName: '„{q}“ ohne BGG-Eintrag verwenden', gInColl: 'auch in der Sammlung', gNoBgg: 'ohne BGG-Eintrag', errPick: 'Bitte zuerst ein Spiel auswählen.',
+    stPeriod: 'Zeitraum', stSource: 'Spiele', stPeriods: ['Gesamt', 'Dieses Jahr', 'Letzte 90 Tage'], stSources: ['Alle', 'Aus der Sammlung', 'Gastspiele'],
+    stPlays: 'Partien', stGames: 'verschiedene Spiele', stNights: 'Spieltage', stGuestShare: 'davon Gastspiele', stAvgP: 'Spieler pro Partie (Ø)',
+    stRank: 'Meistgespielt', stMonths: 'Partien pro Monat', stAsTable: 'Als Tabelle anzeigen', stMonth: 'Monat', stTotal: 'Gesamt', stLast: 'zuletzt {d}',
+    stPlaysN: '{n} Partien', stPlays1: '1 Partie', stMoreRank: 'Ganze Rangliste zeigen ({n})', stEmpty: 'Für diese Auswahl gibt es noch keine Partien.',
+    stNever: 'Noch nie gespielt', stNeverNote: '{n} von {m} Spielen der Sammlung wurden noch nie eingetragen. Vielleicht ist ja euer nächstes dabei:',
+    stNeverAll: 'Jedes Spiel der Sammlung wurde schon mindestens einmal gespielt.' },
+  en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
+    prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
+    search: 'Search games', searchPh: 'Name, e.g. Azul', sortBy: 'Sort by', reset: 'Reset filters', match: 'match your selection',
+    advOpen: 'Advanced filters', advClose: 'Close advanced filters', pModeLabel: 'Player count based on …',
+    recNote: 'The percentage threshold only works once the BGG API (full poll data) is connected.', minVotes: 'Minimum number of ratings', rank: 'BGG rank', any: 'any',
+    age: 'Suitable from age', yearFrom: 'Published from', cats: 'Categories', mechs: 'Mechanics', allGames: 'All games',
+    recent: 'Recently played at the club', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
+    footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
+    date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
+    code: 'Club code', codePh: '4 digits', codeHint: 'The current code is posted at the club.', cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
+    errLen: 'Please enter the 4-digit club code.', errCode: 'Wrong code. The current code is posted at the club.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
+    gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
+    weights: ['Beginner', 'Light', 'Medium', 'Demanding', 'Very complex'], times: ['up to 30 min', '30–60 min', '1–2 h', 'over 2 h'],
+    feels: ['Cooperative', 'Party', 'Bluff & betrayal', 'Campaign / legacy', 'Solo-friendly', 'Great with two'], modes: ['per box', 'recommended (community)', 'best (community)'],
+    bestFor: 'Best for {n} players', bestForSolo: 'Best solo',
+    sorts: ['BGG rating', 'BGG rank', 'Name (A–Z)', 'Complexity (lightest first)', 'Play time (shortest first)', 'Year (newest first)', 'Played at the club (most first)'],
+    typeNames: { S: 'Strategy', T: 'Thematic', F: 'Family', P: 'Party', A: 'Abstract', K: "Children's", W: 'Wargame', C: 'Customizable' },
+    years: 'years', min: 'min', players: 'players', pl: 'pl.', bestWith: 'Best with', exp1: '+ Expansion: ', expN: '+ Expansions: ', of: 'of', games: 'games',
+    more: 'Show more games ({n})', recPct: 'Recommended by at least {p} % of BGG votes', minRating: 'Minimum BGG rating: {v}', weightRange: 'Complexity (BGG weight) {a} – {b}',
+    maxTime: 'Maximum play time: {v}', win: 'Winner: ', jump: 'Jump to {n}', current: '{n}, current highlight', onBgg: 'Open {n} on BoardGameGeek', cover: 'Cover of {n}', playedN: 'Played {n}× at the club',
+    admin: 'Administration', adminNote: 'Only visible to people with edit access.', admCode: 'Change club code', admNewCode: 'New 4-digit code', admSaveCode: 'Save code',
+    codeSaved: 'The new code is active.', codeErr: 'Saving didn’t work.', admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
+    admAdd: 'Add a game', admAddBtn: 'Add', admSaveHl: 'Save highlights', admResetHl: 'Reset to top 15', hlSaved: 'Highlights saved.', hlReset: 'Reset to top 15.', hlErr: 'Saving didn’t work.',
+    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admNoPlays: 'No plays logged yet.',
+    del: 'Delete', delConfirm: 'Really delete?', unsaved: 'Unsaved changes',
+    autoPause: 'Pause automatic slideshow', autoPlay: 'Start automatic slideshow',
+    dur: 'Duration in minutes (optional)', first: 'First play (incl. rules explanation)', clubTime: 'At our club: ~{m} min ({p} pl.)', firstTag: 'First play', errDur: 'Please enter a duration between 1 and 1440 minutes, or leave the field empty.',
+    errRate: 'Too many attempts. Please try again in a few minutes.', admLink: 'Admin', admOut: 'Log out', admPw: 'Admin password', admIn: 'Sign in', admBad: 'Wrong password or too many attempts.',
+    admGl: 'GeekList check', admGlNote: 'Compares the BGG GeekList with the games on this page. The list is fetched automatically every night.', admGlRefresh: 'Fetch from BGG now',
+    admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
+    gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
+    ptIntro: 'Want to play something specific on a game night? Offer a game and others sign up. Afterwards you can log the play in one click.',
+    ptUpcoming: 'Planned games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
+    ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
+    ptLog: 'Log the play', ptLogged: 'Play logged ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
+    ptErrFull: 'Sorry, this game is already full.', ptCreated: 'Game created.', ptNoteAuto: 'Players: {n}', ptToday: 'Today', ptTomorrow: 'Tomorrow', ptHostTag: 'host', tabCollection: 'Collection', tabStats: 'Statistics', logGuest: 'Log a guest game', guestCta: 'Someone brought their own game? Log the play as a guest game.',
+    guestTag: 'Guest game', clubTag: 'Collection', bggSearch: 'Search BoardGameGeek', bggPh: 'Type a name, e.g. Cascadia', change: 'Change',
+    gHintIdx: 'Searching the BGG catalog ({n} games, as of {d}). Use arrow keys and Enter to pick.', gHintNoIdx: 'The BGG catalog isn’t loaded yet. You can still enter the name.',
+    gNone: 'No match.', gUseName: 'Use “{q}” without a BGG entry', gInColl: 'also in our collection', gNoBgg: 'no BGG entry', errPick: 'Please pick a game first.',
+    stPeriod: 'Period', stSource: 'Games', stPeriods: ['All time', 'This year', 'Last 90 days'], stSources: ['All', 'From the collection', 'Guest games'],
+    stPlays: 'plays', stGames: 'different games', stNights: 'game days', stGuestShare: 'guest games', stAvgP: 'players per play (avg.)',
+    stRank: 'Most played', stMonths: 'Plays per month', stAsTable: 'Show as table', stMonth: 'Month', stTotal: 'Total', stLast: 'last {d}',
+    stPlaysN: '{n} plays', stPlays1: '1 play', stMoreRank: 'Show full ranking ({n})', stEmpty: 'No plays for this selection yet.',
+    stNever: 'Never played', stNeverNote: '{n} of {m} games in the collection have never been logged. Maybe your next one is among them:',
+    stNeverAll: 'Every game in the collection has been played at least once.' },
+};
+const EXPB = { 412735: 342444, 324767: 322656, 324766: 322656, 276044: 260934, 275923: 260934, 242993: 186751, 349606: 319910, 226162: 184287, 325: 13, 926: 13, 181336: 143884, 342274: 160477, 219326: 160477 };
+const CODE_SALT = 'n3-club:';
+const PAGE = 24;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fill = (s, o) => s.replace(/\{(\w+)\}/g, (m, k) => (o[k] != null ? o[k] : m));
+const fmt = (a, b) => (b >= 99 ? a + '+' : a === b ? String(a) : a + '–' + b);
+const rg = (s) => String(s || '').split(',').filter(Boolean).map((x) => { const p = x.replace('+', '-99').split('-').map(Number); return [p[0], p[1] || p[0]]; });
+
+const D = JSON.parse($('gameData').textContent);
+const all = D.g.map((x) => {
+  const [id, nDe, y, p1, p2, t1, t2, a, r, br, u, w, rank, best, rec, lang, cats, mechs, des, own, exp, nEnRaw] = x;
+  const suffix = (nDe.match(/ \((deutsch|englisch, KS)\)$/) || [''])[0];
+  const nEn = (nEnRaw || nDe).replace(/ \((deutsch|englisch, KS)\)$/, '') + (suffix === ' (deutsch)' ? ' (German)' : suffix ? ' (English, KS)' : '');
+  const bestR = rg(best), recR = rg(rec), t = t2 || t1;
+  const mechN = mechs.map((m) => D.mechs[m]), catN = cats.map((c) => D.cats[c]);
+  const feel = [];
+  if (mechN.includes('Cooperative Game')) feel.push('coop');
+  if (catN.includes('Party Game')) feel.push('party');
+  if (catN.includes('Deduction') || mechN.includes('Hidden Roles') || catN.includes('Bluffing')) feel.push('deduct');
+  if (mechN.includes('Scenario / Mission / Campaign Game') || mechN.includes('Legacy Game')) feel.push('camp');
+  if (p1 === 1) feel.push('solo');
+  if (bestR.some(([lo, hi]) => lo <= 2 && 2 <= hi)) feel.push('duo');
+  const desc = D.desc[id];
+  return { key: id + (suffix ? suffix : ''), id, nDe, nEn, y, p1, p2, t1, t2, t, a, r, br, u, w, rank, bestR, recR, cats, mechs, exp, feel,
+    types: String(D.sd[id] || '').split('').filter(Boolean), descDe: desc ? desc[0] : '', descEn: desc ? desc[1] : '',
+    wl: w ? (w < 1.8 ? 0 : w < 2.4 ? 1 : w < 3.2 ? 2 : w < 4 ? 3 : 4) : 1, tl: t <= 30 ? 0 : t <= 60 ? 1 : t <= 120 ? 2 : 3,
+    cover: D.cov[id] ? 'covers/' + D.cov[id] : '', link: 'https://boardgamegeek.com/boardgame/' + id, expList: [] };
+});
+const byId = {}; all.forEach((g) => { byId[g.id] = g; });
+all.forEach((g) => { const b = byId[EXPB[g.id]]; if (b) b.expList.push(g); });
+const games = all.filter((g) => !EXPB[g.id]);
+const top = (key) => { const c = {}; games.forEach((g) => g[key].forEach((k) => { c[k] = (c[k] || 0) + 1; })); return Object.keys(c).sort((a, b) => c[b] - c[a]).slice(0, 18).map((k) => ({ idx: +k, n: c[k] })); };
+const topCats = top('cats'), topMechs = top('mechs');
+const defaultHl = games.filter((g) => !g.exp).sort((a, b) => b.br - a.br).slice(0, 15);
+let hlCfg = null, highlights = defaultHl, canEdit = false, hlDraft = null, hlDirty = false, playDocs = [], pendingDel = null;
+const descFor = (g) => { const c = hlCfg && hlCfg.desc && hlCfg.desc[g.id]; return c ? c : [g.descDe, g.descEn]; };
+function applyHl() {
+  const ids = hlCfg && Array.isArray(hlCfg.ids) ? hlCfg.ids : null;
+  const list = ids ? ids.map((i) => byId[i]).filter((g) => g && !EXPB[g.id]) : [];
+  highlights = list.length ? list : defaultHl;
+}
+
+const S = { lang: 'de', slide: 0, players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
+try { const l = localStorage.getItem('n3-lang'); if (l === 'de' || l === 'en') S.lang = l; } catch (e) {}
+{ const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'de' || ql === 'en') S.lang = ql; }
+let clubTime = {};
+const median = (a) => { const s = a.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+function calcClubTime() {
+  const by = {};
+  plays.forEach((p) => { const d = Number(p.duration); if (!p.guest && d > 0 && d <= 1440) (by[p.gameId] = by[p.gameId] || []).push(p); });
+  clubTime = {};
+  Object.keys(by).forEach((id) => {
+    const all = by[id]; if (all.length < 3) return;
+    const regular = all.filter((p) => !p.firstPlay); const use = regular.length >= 3 ? regular : all;
+    clubTime[id] = { m: Math.round(median(use.map((p) => Number(p.duration))) / 5) * 5 || 5, p: Math.round(median(use.map((p) => Number(p.players) || 0))) };
+  });
+}
+const clubTimeTxt = (g) => { const c = clubTime[g.id]; return c ? fill(T().clubTime, { m: c.m, p: c.p }) : ''; };
+let plays = [], playCount = {}, db = null, dbState = 'loading', logGame = null;
+
+const T = () => TXT[S.lang];
+const de = () => S.lang === 'de';
+const name = (g) => (de() ? g.nDe : g.nEn);
+const typeTxt = (g) => g.types.map((k) => T().typeNames[k] || k).join(' · ');
+const badge = (g, size) => { const c = g.r >= 8 ? '#1e6b35' : g.r >= 7 ? '#2b7a40' : g.r >= 6 ? '#2c6aa0' : g.r >= 5 ? '#5a5f8a' : '#8a3b3b'; return '<span class="badge" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size / 2.9) + 'px;background:' + c + '">' + (g.r ? g.r.toFixed(1) : '–') + '</span>'; };
+const tTxt = (g) => (g.t1 === g.t2 || !g.t2 ? g.t : g.t1 + '–' + g.t2) + ' ' + T().min;
+const bestTxt = (g) => (g.bestR.length ? g.bestR.map(([lo, hi]) => fmt(lo, hi)).join(', ') : fmt(g.p1, g.p2));
+const expTxt = (g) => { if (!g.expList.length) return ''; const bn = name(g).split(':')[0]; const ns = g.expList.map((e) => name(e).replace(bn + ': ', '').replace(/^.*? – /, '')); return (ns.length > 1 ? T().expN : T().exp1) + ns.join(', '); };
+const playGame = (p) => (p.guest ? null : byId[p.gameId]);
+const playName = (p) => { const g = playGame(p); return g ? name(g) : String(p.game || '?'); };
+const srcTag = (p) => (p.guest ? '<span class="src guest">' + esc(T().guestTag) + '</span>' : '<span class="src club">' + esc(T().clubTag) + '</span>');
+const catNames = (g) => g.cats.map((c) => (de() ? D.catsDe : D.cats)[c]);
+
+function match(g) {
+  if (S.q) { const q = S.q.toLowerCase(); if (!g.nDe.toLowerCase().includes(q) && !g.nEn.toLowerCase().includes(q)) return false; }
+  if (S.players.length) {
+    const ok = S.players.some((p) => {
+      if (p === 'only2') return g.p1 === 2 && g.p2 === 2;
+      if (S.pMode === 'box') return p === 7 ? g.p2 >= 7 : g.p1 <= p && p <= g.p2;
+      const rs = S.pMode === 'best' ? g.bestR : g.recR;
+      return rs.some(([lo, hi]) => (p === 7 ? hi >= 7 : lo <= p && p <= hi));
+    });
+    if (!ok) return false;
+  }
+  if (S.weight.length && !S.weight.includes(g.wl)) return false;
+  if (S.time.length && !S.time.includes(g.tl)) return false;
+  if (S.types.length && !S.types.some((k) => g.types.includes(k))) return false;
+  if (S.feel.length && !S.feel.some((f) => g.feel.includes(f))) return false;
+  if (g.r < S.minRating) return false;
+  if (S.minVotes && g.u < S.minVotes) return false;
+  if (S.rankMax && !(g.rank && g.rank <= S.rankMax)) return false;
+  if (g.w && (g.w < S.wMin || g.w > S.wMax)) return false;
+  if (S.maxTime < 240 && g.t > S.maxTime) return false;
+  if (S.maxAge && g.a > S.maxAge) return false;
+  if (S.yearFrom && g.y < S.yearFrom) return false;
+  if (S.cats.length && !S.cats.some((c) => g.cats.includes(c))) return false;
+  if (S.mechs.length && !S.mechs.some((m) => g.mechs.includes(m))) return false;
+  return true;
+}
+
+function chips(key, items) {
+  return items.map(([v, label]) => '<button type="button" class="chip" data-key="' + key + '" data-v="' + esc(v) + '" aria-pressed="' + S[key].includes(v) + '">' + esc(label) + '</button>').join('');
+}
+
+function sortN() { const ps = S.players; if (ps.length !== 1) return null; return ps[0] === 'only2' ? 2 : ps[0]; }
+function renderSortOpts() {
+  const t = T(), n = sortN();
+  if (n == null && S.sort === 'bestFor') S.sort = 'rating';
+  const sv = ['rating', 'rank', 'name', 'weightAsc', 'timeAsc', 'year', 'played'];
+  const opts = sv.map((v, i) => [v, t.sorts[i]]);
+  if (n != null) opts.unshift(['bestFor', n === 1 ? t.bestForSolo : fill(t.bestFor, { n: n === 7 ? '7+' : n })]);
+  $('sort').innerHTML = opts.map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('sort').value = S.sort;
+}
+const inR = (rs, n) => rs.some(([lo, hi]) => (n === 7 ? hi >= 7 : lo <= n && n <= hi));
+const fitTier = (g, n) => (inR(g.bestR, n) ? 0 : inR(g.recR, n) ? 1 : 2);
+function renderStatic() {
+  const t = T();
+  document.documentElement.lang = S.lang;
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t[el.dataset.t]; });
+  document.querySelectorAll('#langGroup button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
+  $('langGroup').setAttribute('aria-label', de() ? 'Sprache' : 'Language');
+  $('prev').setAttribute('aria-label', t.prev); $('next').setAttribute('aria-label', t.next);
+  $('q').placeholder = t.searchPh; $('gQ').placeholder = t.bggPh; $('pQ').placeholder = t.bggPh;
+  $('tabs').setAttribute('aria-label', de() ? 'Bereiche' : 'Sections');
+  $('fWinner').placeholder = t.winnerPh; $('fNote').placeholder = t.notePh; $('fCode').placeholder = t.codePh;
+  renderSortOpts();
+  $('minVotes').innerHTML = [[0, t.any], [500, '500+'], [2000, '2.000+'], [10000, '10.000+']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('minVotes').value = S.minVotes;
+  $('rankMax').innerHTML = [[0, t.any], [100, 'Top 100'], [500, 'Top 500'], [1000, 'Top 1.000'], [2500, 'Top 2.500']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('rankMax').value = S.rankMax;
+  $('maxAge').innerHTML = '<option value="0">' + esc(t.any) + '</option>' + [6, 8, 10, 12, 14].map((v) => '<option value="' + v + '">' + v + ' ' + esc(t.years) + '</option>').join(''); $('maxAge').value = S.maxAge;
+  $('yearFrom').innerHTML = '<option value="0">' + esc(t.any) + '</option>' + [2000, 2010, 2015, 2020, 2023].map((v) => '<option value="' + v + '">' + v + '</option>').join(''); $('yearFrom').value = S.yearFrom;
+}
+
+function renderFilters() {
+  const t = T();
+  const groups = [
+    [t.gPlayers, chips('players', [[1, t.solo], ['only2', t.only2], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7+']])],
+    [t.gWeight, chips('weight', t.weights.map((w, i) => [i, w]))],
+    [t.gTime, chips('time', t.times.map((w, i) => [i, w]))],
+    [t.gType, chips('types', ['S', 'T', 'F', 'P', 'A', 'K', 'W'].map((k) => [k, t.typeNames[k]]))],
+    [t.gFeel, chips('feel', ['coop', 'party', 'deduct', 'camp', 'solo', 'duo'].map((k, i) => [k, t.feels[i]]))],
+  ];
+  $('quick').innerHTML = groups.map(([l, c]) => '<div class="group" style="margin-bottom:10px"><span class="group-label">' + esc(l) + '</span>' + c + '</div>').join('');
+  $('modes').innerHTML = ['box', 'rec', 'best'].map((v, i) => '<button type="button" class="chip" data-mode="' + v + '" aria-pressed="' + (S.pMode === v) + '">' + esc(t.modes[i]) + '</button>').join('');
+  $('cats').innerHTML = chips('cats', topCats.map((c) => [c.idx, (de() ? D.catsDe : D.cats)[c.idx] + ' (' + c.n + ')']));
+  $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
+  $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !S.adv;
+  $('recPctL').textContent = fill(t.recPct, { p: S.recPct });
+  $('minRatingL').textContent = fill(t.minRating, { v: S.minRating ? S.minRating.toFixed(1) : t.any });
+  $('weightL').textContent = fill(t.weightRange, { a: S.wMin.toFixed(1), b: S.wMax.toFixed(1) });
+  $('maxTimeL').textContent = fill(t.maxTime, { v: S.maxTime >= 240 ? t.any : S.maxTime + ' ' + t.min });
+}
+
+let builtFor = null, lastInfoId = null, infoTimer = null;
+const STEP_DEG = 30, FOCUS_SCALE = 1.25;
+function ringOffset(i, idx, N) { let d = i - idx; if (d > N / 2) d -= N; if (d < -N / 2) d += N; return d; }
+function renderSlider() {
+  const t = T(), N = highlights.length, idx = ((S.slide % N) + N) % N, track = $('track');
+  if (builtFor !== highlights) {
+    track.innerHTML = highlights.map((g, i) => '<button type="button" class="slide" data-i="' + i + '"><span class="cv"><img src="' + esc(g.cover) + '" alt="">' + badge(g, 52) + '</span></button>').join('');
+    builtFor = highlights; lastInfoId = null;
+  }
+  const narrow = track.clientWidth < 600;
+  const R = Math.max(220, Math.min(560, track.clientWidth * (narrow ? 0.62 : 0.42)));
+  const maxVisible = narrow ? 1 : 2;
+  track.querySelectorAll('.slide').forEach((el) => {
+    const i = Number(el.dataset.i), g = highlights[i], d = ringOffset(i, idx, N), a = Math.abs(d), n = name(g);
+    const th = d * STEP_DEG * Math.PI / 180;
+    const x = R * Math.sin(th), z = R * (Math.cos(th) - 1);
+    el.style.transform = 'translate3d(' + x.toFixed(1) + 'px, 0, ' + z.toFixed(1) + 'px) rotateY(' + (d * STEP_DEG) + 'deg) scale(' + (a === 0 ? FOCUS_SCALE : 1) + ')';
+    el.style.opacity = a === 0 ? 1 : a <= maxVisible ? (a === 1 ? 0.85 : 0.5) : 0;
+    el.style.filter = a === 0 ? 'none' : 'brightness(' + (a === 1 ? 0.8 : 0.6) + ')';
+    el.style.zIndex = String(100 - a);
+    el.classList.toggle('center', a === 0);
+    el.classList.toggle('off', a > maxVisible);
+    el.tabIndex = a > maxVisible ? -1 : 0;
+    el.setAttribute('aria-hidden', a > maxVisible ? 'true' : 'false');
+    el.setAttribute('aria-label', fill(a === 0 ? t.current : t.jump, { n }));
+    el.querySelector('img').alt = fill(t.cover, { n });
+  });
+  const cg = highlights[idx];
+  const info = $('hlInfo');
+  const html = '<span class="nm">' + esc(name(cg)) + ' <span class="yr">(' + cg.y + ')</span></span>' +
+    '<span>' + esc(fmt(cg.p1, cg.p2) + ' ' + t.players + ' · ' + tTxt(cg) + ' · ' + t.weights[cg.wl] + ' · ' + t.bestWith + ' ' + bestTxt(cg)) + '</span>' +
+    ((descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) ? '<span class="desc">' + esc(descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) + '</span>' : '') +
+    (cg.expList.length ? '<span class="exp">' + esc(expTxt(cg)) + '</span>' : '');
+  clearTimeout(infoTimer);
+  if (lastInfoId !== null && lastInfoId !== cg.id && !reduceMotionQ()) {
+    info.classList.add('fading');
+    infoTimer = setTimeout(() => { info.innerHTML = html; info.classList.remove('fading'); }, 300);
+  } else { info.innerHTML = html; info.classList.remove('fading'); }
+  lastInfoId = cg.id;
+  $('hlBgg').href = cg.link; $('hlLog').onclick = () => openLog(cg);
+}
+function reduceMotionQ() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+window.addEventListener('resize', () => { renderSlider(); });
+
+function renderGrid() {
+  const t = T();
+  let list = games.filter(match);
+  const sn = sortN();
+  const sorters = { bestFor: (a, b) => (sn == null ? 0 : fitTier(a, sn) - fitTier(b, sn)) || b.r - a.r, rating: (a, b) => b.r - a.r, rank: (a, b) => (a.rank || 1e9) - (b.rank || 1e9), name: (a, b) => name(a).localeCompare(name(b), S.lang),
+    weightAsc: (a, b) => (a.w || 9) - (b.w || 9), timeAsc: (a, b) => a.t - b.t, year: (a, b) => b.y - a.y, played: (a, b) => (playCount[b.id] || 0) - (playCount[a.id] || 0) || b.r - a.r };
+  list.sort(sorters[S.sort] || sorters.rating);
+  $('count').textContent = list.length + ' ' + t.of + ' ' + games.length + ' ' + t.games;
+  $('grid').innerHTML = list.slice(0, S.limit).map((g) => {
+    const n = name(g), pc = playCount[g.id] || 0;
+    return '<article class="card"><div class="cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + badge(g, 44) +
+      (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + '</div><div class="body">' +
+      '<h3>' + esc(n) + '</h3><span class="meta">' + g.y + ' · ' + esc(catNames(g).slice(0, 2).join(', ')) + '</span>' +
+      '<div class="pills"><span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span><span class="pill">' + esc(tTxt(g)) + '</span><span class="pill">' + esc(t.weights[g.wl]) + '</span></div>' +
+      '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' +
+      (g.expList.length ? '<span class="played">' + esc(expTxt(g)) + '</span>' : '') + (pc ? '<span class="meta">' + esc(fill(t.playedN, { n: pc })) + '</span>' : '') +
+      '<div class="actions"><button type="button" class="btn btn-primary" data-log="' + esc(g.key) + '">' + esc(t.logPlay) + '</button><a class="bgg" target="_blank" rel="noopener" href="' + g.link + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a></div></div></article>';
+  }).join('');
+  const rest = list.length - S.limit;
+  $('moreBtn').hidden = rest <= 0; $('moreBtn').textContent = fill(t.more, { n: rest });
+}
+
+function renderPlays() {
+  const t = T();
+  $('recentState').textContent = dbState === 'off' ? t.recentOff : plays.length ? '' : dbState === 'ready' ? t.recentEmpty : '…';
+  $('recentState').hidden = !$('recentState').textContent;
+  $('plays').innerHTML = plays.slice(0, 20).map((p) => {
+    return '<div class="play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<span>' + esc(String(p.date || '').split('-').reverse().join('.')) + '</span><span>' + esc(p.players + ' ' + t.players) + '</span>' +
+      (Number(p.duration) > 0 ? '<span>' + esc(p.duration + ' ' + t.min) + '</span>' : '') + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') +
+      (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') +
+      (canEdit && p.id ? '<button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px;margin-left:auto" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button>' : '') + '</div>';
+  }).join('');
+}
+$('plays').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-hdel]'); if (!b) return;
+  const id = b.dataset.hdel;
+  if (pendingDel !== id) { pendingDel = id; renderPlays(); return; }
+  pendingDel = null;
+  try { await api('DELETE', '/plays/' + id); refreshAll(); } catch (err) {} renderPlays();
+});
+
+function renderAdmin() {
+  $('admin').hidden = !canEdit;
+  if (!canEdit) return;
+  const t = T();
+  if (!hlDraft) hlDraft = { ids: highlights.map((g) => g.id), desc: Object.fromEntries(highlights.map((g) => [g.id, descFor(g).slice()])) };
+  $('hlList').innerHTML = hlDraft.ids.map((id, i) => {
+    const g = byId[id]; if (!g) return ''; const d = hlDraft.desc[id] || ['', ''];
+    return '<div class="hl-row" data-id="' + id + '"><img src="' + esc(g.cover) + '" alt=""><div><strong>' + (i + 1) + '. ' + esc(name(g)) + '</strong>' +
+      '<div class="txts"><label class="field" style="font-weight:600">' + esc(t.descDe) + '<textarea data-lang="0" maxlength="400">' + esc(d[0]) + '</textarea></label>' +
+      '<label class="field" style="font-weight:600">' + esc(t.descEn) + '<textarea data-lang="1" maxlength="400">' + esc(d[1]) + '</textarea></label></div></div>' +
+      '<div class="ctrl"><button type="button" class="icon-btn" data-act="up" aria-label="' + esc(t.up) + '"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+      '<button type="button" class="icon-btn" data-act="down" aria-label="' + esc(t.down) + '"' + (i === hlDraft.ids.length - 1 ? ' disabled' : '') + '>↓</button>' +
+      '<button type="button" class="icon-btn danger" data-act="rm" aria-label="' + esc(t.remove) + '">✕</button></div></div>';
+  }).join('');
+  const avail = games.filter((g) => !hlDraft.ids.includes(g.id)).sort((a, b) => name(a).localeCompare(name(b), S.lang));
+  $('hlAdd').innerHTML = avail.map((g) => '<option value="' + g.id + '">' + esc(name(g)) + '</option>').join('');
+  if (hlDirty && !$('hlMsg').textContent) { $('hlMsg').className = 'note'; $('hlMsg').textContent = t.unsaved; }
+  $('admPlays').innerHTML = playDocs.length ? playDocs.slice(0, 100).map(({ id, p }) => {
+    return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<span>' + esc(String(p.date || '').split('-').reverse().join('.')) + '</span><span>' + esc(p.players + ' ' + t.players) + '</span>' +
+      (Number(p.duration) > 0 ? '<span>' + esc(p.duration + ' ' + t.min) + '</span>' : '') + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') +
+      (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') +
+      '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></div>';
+  }).join('') : '<p class="meta" style="margin:0">' + esc(t.admNoPlays) + '</p>';
+}
+
+function renderAll() { renderStatic(); renderFilters(); renderSlider(); renderGrid(); renderPlays(); renderAdmin(); renderStats(); renderParties(); renderView(); renderAdminLink(); if (logGame === GUEST_PENDING || (logGame && logGame.guest)) renderPick(); if (typeof renderAutoBtn === 'function') renderAutoBtn(); }
+
+$('hlList').addEventListener('input', (e) => {
+  const ta = e.target.closest('textarea'); if (!ta) return;
+  const id = Number(ta.closest('.hl-row').dataset.id); const d = hlDraft.desc[id] || (hlDraft.desc[id] = ['', '']);
+  d[Number(ta.dataset.lang)] = ta.value; hlDirty = true; $('hlMsg').className = 'note'; $('hlMsg').textContent = T().unsaved;
+});
+$('hlList').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const id = Number(b.closest('.hl-row').dataset.id); const ids = hlDraft.ids; const i = ids.indexOf(id);
+  if (b.dataset.act === 'up' && i > 0) { ids.splice(i, 1); ids.splice(i - 1, 0, id); }
+  if (b.dataset.act === 'down' && i < ids.length - 1) { ids.splice(i, 1); ids.splice(i + 1, 0, id); }
+  if (b.dataset.act === 'rm') ids.splice(i, 1);
+  hlDirty = true; $('hlMsg').textContent = ''; renderAdmin();
+});
+$('hlAddBtn').onclick = () => {
+  const id = Number($('hlAdd').value); if (!id || hlDraft.ids.includes(id)) return;
+  const g = byId[id]; hlDraft.ids.push(id); hlDraft.desc[id] = [g.descDe, g.descEn]; hlDirty = true; $('hlMsg').textContent = ''; renderAdmin();
+};
+$('hlSave').onclick = async () => {
+  const t = T();
+  const desc = {}; hlDraft.ids.forEach((id) => { const d = hlDraft.desc[id] || ['', '']; desc[id] = [String(d[0] || '').slice(0, 400), String(d[1] || '').slice(0, 400)]; });
+  try { await api('PUT', '/config/highlights', { ids: hlDraft.ids.slice(0, 30), desc }); hlDirty = false; refreshAll(); $('hlMsg').className = 'ok'; $('hlMsg').textContent = t.hlSaved; }
+  catch (err) { $('hlMsg').className = 'err'; $('hlMsg').textContent = t.hlErr; }
+};
+$('hlReset').onclick = async () => {
+  const t = T();
+  try { await api('DELETE', '/config/highlights'); hlCfg = null; applyHl(); hlDraft = null; hlDirty = false; $('hlMsg').className = 'ok'; $('hlMsg').textContent = t.hlReset; S.slide = 0; renderSlider(); renderAdmin(); }
+  catch (err) { $('hlMsg').className = 'err'; $('hlMsg').textContent = t.hlErr; }
+};
+$('codeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const t = T(), msg = $('codeMsg'), code = $('newCode').value.replace(/\D/g, '');
+  if (code.length !== 4) { msg.className = 'err'; msg.textContent = t.errLen; return; }
+  try { await api('PUT', '/config/club', { code }); $('newCode').value = ''; msg.className = 'ok'; msg.textContent = t.codeSaved; }
+  catch (err) { msg.className = 'err'; msg.textContent = t.codeErr; }
+});
+$('newCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+$('admPlays').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-del]'); if (!b) return;
+  const id = b.dataset.del;
+  if (pendingDel !== id) { pendingDel = id; renderAdmin(); return; }
+  pendingDel = null;
+  try { await api('DELETE', '/plays/' + id); refreshAll(); } catch (err) { /* Liste wird beim nächsten Abruf aktualisiert */ }
+});
+
+function openLog(g) {
+  logGame = g;
+  const guest = g === GUEST_PENDING || !!g.guest;
+  $('gPick').hidden = !guest; $('logGame').hidden = guest;
+  if (guest) { $('gQ').value = ''; gResults = []; gActive = -1; renderPick(); } else $('logGame').textContent = name(g);
+  const d = new Date(); $('fDate').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  $('fPlayers').value = Math.min(Math.max(4, g.p1), Math.min(g.p2, 30)); $('fWinner').value = ''; $('fNote').value = ''; $('fCode').value = ''; $('fDur').value = ''; $('fFirst').checked = false;
+  $('fMsg').textContent = ''; $('fMsg').className = ''; $('save').disabled = false;
+  $('modal').hidden = false; (guest ? $('gQ') : $('fDate')).focus();
+}
+function closeLog() { $('modal').hidden = true; logGame = null; logParty = null; }
+const codeErr = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave);
+async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join(''); }
+
+$('logForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const t = T(), msg = $('fMsg'), code = $('fCode').value.replace(/\D/g, '');
+  msg.className = 'err';
+  if (code.length !== 4) { msg.textContent = t.errLen; return; }
+  const durRaw = $('fDur').value.trim(); const dur = durRaw ? Math.round(Number(durRaw)) : null;
+  if (durRaw && !(dur >= 1 && dur <= 1440)) { msg.textContent = t.errDur; return; }
+  if (!logGame || logGame === GUEST_PENDING) { msg.textContent = t.errPick; $('gQ').focus(); return; }
+  $('save').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    await api('POST', '/plays', { guest: !!logGame.guest, year: logGame.guest ? (logGame.y || null) : null, gameId: logGame.id, game: logGame.nDe, date: $('fDate').value, players: Number($('fPlayers').value) || 0,
+      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined }, { 'X-Club-Code': code });
+    refreshAll();
+    msg.textContent = t.saved; setTimeout(closeLog, 600);
+  } catch (err) { msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
+});
+$('cancel').onclick = closeLog;
+$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeLog(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeLog(); if (e.key === 'Escape' && !$('pModal').hidden) closeParty(); });
+$('fCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+
+$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); });
+const AUTO_MS = 5000;
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let autoOn = !reduceMotion, hoverPause = false, autoTimer = null;
+function renderAutoBtn() {
+  const b = $('autoBtn'); b.setAttribute('aria-pressed', String(!autoOn));
+  b.setAttribute('aria-label', autoOn ? T().autoPause : T().autoPlay);
+  b.innerHTML = autoOn
+    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>'
+    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>';
+}
+function restartAuto() {
+  clearInterval(autoTimer); autoTimer = null;
+  if (autoOn) autoTimer = setInterval(() => {
+    if (hoverPause || document.hidden || !$('modal').hidden || currentView() !== 'collection') return;
+    S.slide++; renderSlider();
+  }, AUTO_MS);
+}
+$('autoBtn').onclick = () => { autoOn = !autoOn; renderAutoBtn(); restartAuto(); };
+const stage = document.querySelector('.hl');
+stage.addEventListener('mouseenter', () => { hoverPause = true; });
+stage.addEventListener('mouseleave', () => { hoverPause = false; });
+stage.addEventListener('focusin', () => { hoverPause = true; });
+stage.addEventListener('focusout', (e) => { if (!stage.contains(e.relatedTarget)) hoverPause = false; });
+$('prev').onclick = () => { S.slide--; renderSlider(); restartAuto(); };
+$('next').onclick = () => { S.slide++; renderSlider(); restartAuto(); };
+$('track').addEventListener('click', (e) => {
+  const b = e.target.closest('.slide'); if (!b) return;
+  const N = highlights.length, idx = ((S.slide % N) + N) % N, d = ringOffset(Number(b.dataset.i), idx, N);
+  if (d) { S.slide += d; renderSlider(); restartAuto(); }
+});
+document.querySelector('.filters').addEventListener('click', (e) => {
+  const c = e.target.closest('button.chip');
+  if (!c) return;
+  if (c.dataset.mode) { S.pMode = c.dataset.mode; }
+  else { const key = c.dataset.key; const raw = c.dataset.v; const v = isNaN(Number(raw)) ? raw : Number(raw); S[key] = S[key].includes(v) ? S[key].filter((x) => x !== v) : S[key].concat([v]);
+    if (key === 'players') { if (sortN() != null && S.sort === 'rating') S.sort = 'bestFor'; renderSortOpts(); } }
+  S.limit = PAGE; renderFilters(); renderGrid();
+});
+$('advBtn').onclick = () => { S.adv = !S.adv; renderFilters(); };
+$('q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = PAGE; renderGrid(); });
+$('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
+const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
+[['recPct', 'recPct'], ['minRating', 'minRating'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
+$('reset').onclick = () => {
+  Object.assign(S, { players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  $('q').value = ''; ['recPct', 'minRating', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
+  renderAll();
+};
+$('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
+$('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-log]'); if (!b) return; const g = all.find((x) => x.key === b.dataset.log); if (g) openLog(g); });
+
+/* ---------- Gastspiele: BGG-Suche ---------- */
+const GUEST_PENDING = { guest: true, pending: true, p1: 1, p2: 30 };
+let bggIdx = null, bggIdxTried = false, gResults = [], gActive = -1;
+function loadBggIdx() {
+  if (bggIdxTried) return bggIdx; bggIdxTried = true;
+  try {
+    const el = $('bggIndex'); if (!el) return null;
+    const raw = JSON.parse(el.textContent);
+    bggIdx = { asOf: raw.asOf, n: raw.g.length, g: raw.g.map(([id, n, y, e]) => ({ id, n, y, e: !!e, k: fold(n) })) };
+  } catch (e) { bggIdx = null; }
+  return bggIdx;
+}
+function fold(s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function searchGames(q) {
+  const f = fold(q); if (!f) return [];
+  const words = f.split(' ');
+  const out = [], seen = new Set();
+  const score = (k, pop) => (k === f ? 0 : k.startsWith(f) ? 1 : (' ' + k).includes(' ' + f) ? 2 : 3) * 1e6 + pop;
+  const push = (r) => { const key = r.id || r.n; if (seen.has(key)) return; seen.add(key); out.push(r); };
+  // Sammlung zuerst nach Namen durchsuchen (deutsche Titel)
+  all.forEach((g, i) => { const k = fold(g.nDe + ' ' + g.nEn); if (words.every((w) => k.includes(w))) push({ id: g.id, n: name(g), y: g.y, e: !!g.exp, inColl: true, s: score(fold(name(g)), i) }); });
+  const idx = loadBggIdx();
+  if (idx) {
+    for (let i = 0; i < idx.g.length && out.length < 400; i++) { const r = idx.g[i]; if (words.every((w) => r.k.includes(w))) push({ id: r.id, n: r.n, y: r.y, e: r.e, inColl: !!byId[r.id], s: score(r.k, i) + (r.e ? 5e5 : 0) }); }
+  }
+  return out.sort((a, b) => a.s - b.s).slice(0, 12);
+}
+function renderPick() {
+  const t = T(), sel = logGame && logGame !== GUEST_PENDING ? logGame : null;
+  $('gSel').hidden = !sel; $('gSearchBox').hidden = !!sel;
+  if (sel) { $('gSelName').textContent = sel.nDe; $('gSelMeta').textContent = sel.id ? (sel.y ? '(' + sel.y + ') · ' : '') + 'BGG #' + sel.id : '(' + t.gNoBgg + ')'; return; }
+  const q = $('gQ').value.trim();
+  $('gHint').textContent = gRemote === 'loading' ? t.gHintLoading : gRemote === 'off' ? t.gHintOff : t.gHintLive;
+  let html = gResults.map((r, i) => '<li role="option" id="gOpt' + i + '" data-i="' + i + '" aria-selected="' + (i === gActive) + '"><span>' + esc(r.n) + (r.inColl ? ' <span class="inc">· ' + esc(t.gInColl) + '</span>' : '') + '</span><span class="yr">' + (r.y || '') + '</span></li>').join('');
+  if (q) html += '<li role="option" id="gOpt' + gResults.length + '" data-i="' + gResults.length + '" aria-selected="' + (gActive === gResults.length) + '"><span class="meta">' + esc((gResults.length ? '' : t.gNone + ' ') + fill(t.gUseName, { q })) + '</span></li>';
+  $('gRes').innerHTML = html;
+  $('gQ').setAttribute('aria-expanded', String(!!q));
+  if (gActive >= 0) $('gQ').setAttribute('aria-activedescendant', 'gOpt' + gActive); else $('gQ').removeAttribute('aria-activedescendant');
+}
+function pickResult(i) {
+  const q = $('gQ').value.trim();
+  if (i < gResults.length) { const r = gResults[i]; logGame = r.inColl && byId[r.id] ? byId[r.id] : { guest: true, id: r.id, nDe: r.n, nEn: r.n, y: r.y, p1: 1, p2: 30 }; }
+  else if (q) logGame = { guest: true, id: null, nDe: q.slice(0, 120), nEn: q.slice(0, 120), y: null, p1: 1, p2: 30 };
+  else return;
+  $('fMsg').textContent = ''; renderPick(); $('fPlayers').focus();
+}
+let gTimer = null, gRemote = 'idle', liveTimer = null, liveSeq = 0;
+async function searchRemote(q) { try { return await api('GET', '/bgg/search?q=' + encodeURIComponent(q)); } catch (e) { return null; } }
+function mergeResults(local, remote) {
+  const seen = new Set(local.map((r) => r.id)), add = [];
+  remote.forEach((r) => { if (!seen.has(r.id)) { seen.add(r.id); add.push({ id: r.id, n: r.n, y: r.y, e: r.e, inColl: !!byId[r.id], s: 0 }); } });
+  return local.concat(add).slice(0, 15);
+}
+function startLive(q, apply) {
+  clearTimeout(liveTimer); const seq = ++liveSeq, local = searchGames(q), long = fold(q).length >= 2;
+  apply(local, long ? 'loading' : 'idle');
+  if (!long) return;
+  liveTimer = setTimeout(async () => { const rem = await searchRemote(q.trim()); if (seq !== liveSeq) return; apply(rem ? mergeResults(local, rem) : local, rem ? 'idle' : 'off'); }, 300);
+}
+$('gQ').addEventListener('input', () => { gActive = 0; startLive($('gQ').value, (r, st) => { gResults = r; gRemote = st; gActive = r.length ? Math.max(0, Math.min(gActive, r.length - 1)) : -1; renderPick(); }); });
+$('gQ').addEventListener('keydown', (e) => {
+  const max = gResults.length + ($('gQ').value.trim() ? 1 : 0) - 1;
+  if (e.key === 'ArrowDown') { e.preventDefault(); gActive = Math.min(max, gActive + 1); renderPick(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); gActive = Math.max(0, gActive - 1); renderPick(); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (gActive >= 0) pickResult(gActive); }
+});
+$('gRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pickResult(Number(li.dataset.i)); });
+$('gChange').onclick = () => { logGame = GUEST_PENDING; renderPick(); $('gQ').focus(); };
+document.addEventListener('click', (e) => { if (e.target.closest('[data-guest-log]')) openLog(GUEST_PENDING); });
+
+/* ---------- Statistik ---------- */
+const ST = { period: 'all', source: 'all', rankLimit: 20 };
+const isoDay = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const dmy = (s) => String(s || '').split('-').reverse().join('.');
+function stPlays() {
+  const now = new Date(); let from = '';
+  if (ST.period === 'year') from = now.getFullYear() + '-01-01';
+  if (ST.period === '90') { const d = new Date(now); d.setDate(d.getDate() - 89); from = isoDay(d); }
+  return plays.filter((p) => (!from || String(p.date || '') >= from) && (ST.source === 'all' || (ST.source === 'guest') === !!p.guest));
+}
+function renderStats() {
+  const t = T(), loc = de() ? 'de-DE' : 'en-GB';
+  $('stPeriod').innerHTML = ['all', 'year', '90'].map((v, i) => '<button type="button" class="chip" data-st="period" data-v="' + v + '" aria-pressed="' + (ST.period === v) + '">' + esc(t.stPeriods[i]) + '</button>').join('');
+  $('stSource').innerHTML = ['all', 'club', 'guest'].map((v, i) => '<button type="button" class="chip" data-st="source" data-v="' + v + '" aria-pressed="' + (ST.source === v) + '">' + esc(t.stSources[i]) + '</button>').join('');
+  const leg = '<span><i style="background:var(--club)"></i>' + esc(t.clubTag) + '</span><span><i style="background:var(--guest)"></i>' + esc(t.guestTag) + '</span>';
+  $('stLegend1').innerHTML = leg; $('stLegend2').innerHTML = leg;
+  const ps = stPlays();
+  $('stState').textContent = dbState === 'off' ? t.recentOff : dbState !== 'ready' ? '…' : ps.length ? '' : t.stEmpty;
+  $('stState').hidden = !$('stState').textContent;
+  // Kennzahlen
+  const keyOf = (p) => (p.guest ? 'g:' + (p.gameId || fold(p.game)) : 'c:' + p.gameId);
+  const groups = {};
+  ps.forEach((p) => { const k = keyOf(p); const gr = groups[k] || (groups[k] = { p, n: 0, last: '', players: 0, guest: !!p.guest }); gr.n++; if (String(p.date) > gr.last) gr.last = String(p.date); });
+  const nights = new Set(ps.map((p) => p.date)).size, nGuest = ps.filter((p) => p.guest).length;
+  const pl = ps.map((p) => Number(p.players)).filter((x) => x > 0), avg = pl.length ? pl.reduce((a, b) => a + b, 0) / pl.length : 0;
+  const kpi = (v, l) => '<div class="kpi"><span class="v">' + esc(v) + '</span><span class="l">' + esc(l) + '</span></div>';
+  $('stKpis').innerHTML = kpi(ps.length.toLocaleString(loc), t.stPlays) + kpi(Object.keys(groups).length.toLocaleString(loc), t.stGames) + kpi(nights.toLocaleString(loc), t.stNights) +
+    kpi(ps.length ? Math.round(nGuest / ps.length * 100) + ' %' : '–', t.stGuestShare) + kpi(avg ? avg.toLocaleString(loc, { maximumFractionDigits: 1 }) : '–', t.stAvgP);
+  // Rangliste
+  const ranked = Object.values(groups).sort((a, b) => b.n - a.n || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0) || playName(a.p).localeCompare(playName(b.p)));
+  const maxN = ranked.length ? ranked[0].n : 1;
+  let pos = 0, prevN = null;
+  $('stRank').innerHTML = ranked.slice(0, ST.rankLimit).map((gr, i) => {
+    if (gr.n !== prevN) { pos = i + 1; prevN = gr.n; }
+    const g = playGame(gr.p), nm = playName(gr.p);
+    const th = g && g.cover ? '<img class="th" src="' + esc(g.cover) + '" alt="" loading="lazy">' : '<span class="th" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</span>';
+    const link = gr.p.gameId ? '<a class="meta" target="_blank" rel="noopener" href="https://boardgamegeek.com/boardgame/' + Number(gr.p.gameId) + '" aria-label="' + esc(fill(t.onBgg, { n: nm })) + '">BGG</a>' : '';
+    return '<li><span class="pos">' + pos + '</span>' + th + '<div><div class="ln"><strong>' + esc(nm) + '</strong>' + srcTag(gr.p) + '<span class="meta">' + esc(fill(t.stLast, { d: dmy(gr.last) })) + '</span>' + link + '</div>' +
+      '<div class="barrow"><span class="bar" style="width:' + Math.max(2, gr.n / maxN * 70) + '%;background:var(' + (gr.guest ? '--guest' : '--club') + ')"></span><span class="cnt">' + esc(gr.n === 1 ? t.stPlays1 : fill(t.stPlaysN, { n: gr.n })) + '</span></div></div></li>';
+  }).join('');
+  $('stMore').hidden = ranked.length <= ST.rankLimit; $('stMore').textContent = fill(t.stMoreRank, { n: ranked.length });
+  // Partien pro Monat (letzte 12 Monate bzw. Jahr)
+  const now = new Date(), months = [];
+  for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push({ k: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), d, c: 0, g: 0 }); }
+  const mk = {}; months.forEach((m) => { mk[m.k] = m; });
+  plays.filter((p) => ST.source === 'all' || (ST.source === 'guest') === !!p.guest).forEach((p) => { const m = mk[String(p.date || '').slice(0, 7)]; if (m) { if (p.guest) m.g++; else m.c++; } });
+  const mMax = Math.max(1, ...months.map((m) => m.c + m.g));
+  const mName = (m, long) => m.d.toLocaleDateString(loc, long ? { month: 'long', year: 'numeric' } : { month: 'short' });
+  $('stMonths').innerHTML = months.map((m, i) => {
+    const tot = m.c + m.g, hC = m.c / mMax * 170, hG = m.g / mMax * 170;
+    return '<div class="col" data-i="' + i + '" tabindex="0" aria-label="' + esc(mName(m, true) + ': ' + tot + ' ' + t.stPlays + ' (' + t.clubTag + ' ' + m.c + ', ' + t.guestTag + ' ' + m.g + ')') + '">' + (tot ? '<span class="tot">' + tot + '</span>' : '') +
+      (m.g ? '<span class="seg top" style="height:' + hG + 'px;background:var(--guest)"></span>' : '') +
+      (m.c ? '<span class="seg' + (m.g ? '' : ' top') + '" style="height:' + hC + 'px;background:var(--club)"></span>' : '') + '</div>';
+  }).join('');
+  $('stMLabels').innerHTML = months.map((m) => '<span>' + esc(mName(m)) + '</span>').join('');
+  $('stMTable').innerHTML = '<thead><tr><th>' + esc(t.stMonth) + '</th><th>' + esc(t.clubTag) + '</th><th>' + esc(t.guestTag) + '</th><th>' + esc(t.stTotal) + '</th></tr></thead><tbody>' +
+    months.map((m) => '<tr><td>' + esc(mName(m, true)) + '</td><td>' + m.c + '</td><td>' + m.g + '</td><td>' + (m.c + m.g) + '</td></tr>').join('') + '</tbody>';
+  stMonthsData = months; stMonthName = mName;
+  // Noch nie gespielt (immer gesamt)
+  const played = new Set(plays.filter((p) => !p.guest).map((p) => p.gameId));
+  const never = games.filter((g) => !g.exp && !played.has(g.id)).sort((a, b) => b.br - a.br);
+  const base = games.filter((g) => !g.exp).length;
+  $('stNeverNote').textContent = dbState !== 'ready' ? '' : never.length ? fill(t.stNeverNote, { n: never.length, m: base }) : t.stNeverAll;
+  $('stNeverList').innerHTML = dbState !== 'ready' ? '' : never.slice(0, 30).map((g) => '<span class="pill">' + esc(name(g)) + '</span>').join('');
+}
+let stMonthsData = [], stMonthName = null;
+function showTip(col) {
+  const m = stMonthsData[Number(col.dataset.i)], t = T(), tip = $('stTip'); if (!m) return;
+  tip.innerHTML = '<strong>' + esc(stMonthName(m, true)) + '</strong><br>' + esc(t.clubTag) + ': ' + m.c + ' · ' + esc(t.guestTag) + ': ' + m.g;
+  const box = $('stMonths').getBoundingClientRect(), cb = col.getBoundingClientRect();
+  tip.hidden = false;
+  const half = tip.offsetWidth / 2; let x = cb.left - box.left + cb.width / 2; x = Math.max(half, Math.min(box.width - half, x));
+  tip.style.left = x + 'px'; tip.style.top = '0px';
+}
+$('stMonths').addEventListener('mouseover', (e) => { const c = e.target.closest('.col'); if (c) showTip(c); });
+$('stMonths').addEventListener('focusin', (e) => { const c = e.target.closest('.col'); if (c) showTip(c); });
+$('stMonths').addEventListener('mouseleave', () => { $('stTip').hidden = true; });
+$('stMonths').addEventListener('focusout', () => { $('stTip').hidden = true; });
+$('viewStats').addEventListener('click', (e) => { const c = e.target.closest('button[data-st]'); if (!c) return; ST[c.dataset.st] = c.dataset.v; ST.rankLimit = 20; renderStats(); });
+$('stMore').onclick = () => { ST.rankLimit = 1000; renderStats(); };
+
+/* ---------- Mitspieler finden (Runden) ---------- */
+let parties = [], partyState = 'loading', logParty = null, pGame = null, pResults = [], pActive = -1, joinOpen = null, pendingPDel = null;
+const MINE_KEY = 'n3-party-mine';
+const mine = () => { try { return JSON.parse(localStorage.getItem(MINE_KEY) || '{}'); } catch (e) { return {}; } };
+const setMine = (m) => { try { localStorage.setItem(MINE_KEY, JSON.stringify(m)); } catch (e) {} };
+const rid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const todayIso = () => isoDay(new Date());
+function whoIn(p) { return Object.entries(p.attendees || {}).filter(([, a]) => a && !a.out && a.name).sort((a, b) => String(a[1].at).localeCompare(String(b[1].at))); }
+function partyGame(p) { return p.guest ? null : byId[p.gameId]; }
+function partyName(p) { const g = partyGame(p); return g ? name(g) : String(p.game || '?'); }
+function dayLabel(iso) {
+  const t = T(), td = todayIso(), tm = isoDay(new Date(Date.now() + 864e5));
+  if (iso === td) return t.ptToday; if (iso === tm) return t.ptTomorrow;
+  const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? dmy(iso) : d.toLocaleDateString(de() ? 'de-DE' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
+}
+function partyCard(x, past) {
+  const t = T(), p = x.p, g = partyGame(p), nm = partyName(p), ins = whoIn(p), seats = Math.max(2, Number(p.seats) || 2);
+  const taken = ins.length + 1, free = Math.max(0, seats - taken), my = mine()[x.id];
+  const th = g && g.cover ? '<img class="th" src="' + esc(g.cover) + '" alt="" loading="lazy">' : '<span class="th" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</span>';
+  const dots = Array.from({ length: Math.min(seats, 30) }, (_, i) => '<span class="seat' + (i < taken ? ' on' : '') + '"></span>').join('');
+  let actions = '';
+  if (!past) {
+    if (my && my.att && p.attendees && p.attendees[my.att] && !p.attendees[my.att].out) actions += '<button type="button" class="btn btn-quiet" data-pleave="' + esc(x.id) + '">' + esc(t.ptLeave) + '</button>';
+    else if (free > 0 && joinOpen !== x.id && !(my && my.host)) actions += '<button type="button" class="btn btn-primary" data-pjoin="' + esc(x.id) + '">' + esc(t.ptJoin) + '</button>';
+  }
+  if (String(p.date) <= todayIso()) actions += p.playId ? '<span class="done">' + esc(t.ptLogged) + '</span>' : '<button type="button" class="btn ' + (past ? 'btn-primary' : 'btn-outline') + '" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
+  if (canEdit || (my && my.host)) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
+  const join = joinOpen === x.id ? '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
+  return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + '</div></div>' +
+    '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
+    '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => '<span class="pill">' + esc(a.name) + '</span>').join('') + '</div>' +
+    (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') + join + '<div class="actions">' + actions + '</div></div></article>';
+}
+function renderParties() {
+  const t = T(), td = todayIso();
+  $('ptState').textContent = partyState === 'off' || dbState === 'off' ? t.recentOff : partyState !== 'ready' ? '…' : '';
+  $('ptState').hidden = !$('ptState').textContent;
+  const up = parties.filter((x) => String(x.p.date) >= td).sort((a, b) => (String(a.p.date) + (a.p.time || '')).localeCompare(String(b.p.date) + (b.p.time || '')));
+  const lim = isoDay(new Date(Date.now() - 30 * 864e5));
+  const past = parties.filter((x) => String(x.p.date) < td && String(x.p.date) >= lim);
+  $('ptUpcoming').innerHTML = up.length ? up.map((x) => partyCard(x, false)).join('') : partyState === 'ready' ? '<p class="st-empty">' + esc(t.ptNone) + '</p>' : '';
+  $('ptPast').innerHTML = past.map((x) => partyCard(x, true)).join('');
+  $('ptPastH').hidden = !past.length;
+}
+$('viewParties').addEventListener('click', async (e) => {
+  const t = T(); let b;
+  if ((b = e.target.closest('[data-pjoin]'))) { joinOpen = b.dataset.pjoin; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
+  if (e.target.closest('[data-pjoincancel]')) { joinOpen = null; renderParties(); return; }
+  if ((b = e.target.closest('[data-pleave]'))) {
+    const id = b.dataset.pleave, m = mine(), my = m[id]; if (!my) return;
+    try { await api('POST', '/parties/' + id + '/leave', { key: my.att }); delete my.att; setMine(m); refreshAll(); } catch (x) {} return;
+  }
+  if ((b = e.target.closest('[data-plog]'))) {
+    const x = parties.find((y) => y.id === b.dataset.plog); if (!x) return; const p = x.p;
+    const g = partyGame(p) || { guest: true, id: p.gameId || null, nDe: p.game, nEn: p.game, y: p.year || null, p1: 1, p2: 30 };
+    openLog(g); logParty = x.id;
+    const names = [p.host].concat(whoIn(p).map(([, a]) => a.name)).filter(Boolean);
+    $('fDate').value = p.date; $('fPlayers').value = names.length || 1; $('fNote').value = fill(t.ptNoteAuto, { n: names.join(', ') }).slice(0, 200);
+    return;
+  }
+  if ((b = e.target.closest('[data-pdel]'))) {
+    const id = b.dataset.pdel; if (pendingPDel !== id) { pendingPDel = id; renderParties(); return; }
+    pendingPDel = null; try { const my = mine()[id]; await api('DELETE', '/parties/' + id, undefined, my && my.hostKey ? { 'X-Host-Key': my.hostKey } : {}); refreshAll(); } catch (x) {} renderParties(); return;
+  }
+});
+$('viewParties').addEventListener('submit', async (e) => {
+  const f = e.target.closest('[data-pjoinform]'); if (!f) return; e.preventDefault();
+  const t = T(), id = f.dataset.pjoinform, nm = f.querySelector('input').value.trim().slice(0, 40), msg = f.parentNode.querySelector('[data-pjoinmsg]');
+  if (!nm) { msg.textContent = t.ptErrName; return; }
+  const x = parties.find((y) => y.id === id); if (!x) { msg.textContent = t.errOff; return; }
+  if (whoIn(x.p).length + 1 >= (Number(x.p.seats) || 2)) { msg.textContent = t.ptErrFull; return; }
+  const key = rid();
+  try { await api('POST', '/parties/' + id + '/join', { key, name: nm }); const m = mine(); m[id] = Object.assign(m[id] || {}, { att: key }); setMine(m); try { localStorage.setItem('n3-name', nm); } catch (y) {} joinOpen = null; refreshAll(); renderParties(); }
+  catch (y) { msg.textContent = y && y.status === 409 ? t.ptErrFull : y && y.code === 'rate_limited' ? t.errRate : t.errSave; refreshAll(); }
+});
+
+function renderPPick() {
+  const t = T();
+  $('pSel').hidden = !pGame; $('pSearchBox').hidden = !!pGame;
+  if (pGame) { $('pSelName').textContent = pGame.n; $('pSelTag').innerHTML = srcTag(pGame); return; }
+  const q = $('pQ').value.trim();
+  let html = pResults.map((r, i) => '<li role="option" id="pOpt' + i + '" data-i="' + i + '" aria-selected="' + (i === pActive) + '"><span>' + esc(r.n) + ' ' + (r.inColl ? '<span class="src club">' + esc(t.clubTag) + '</span>' : '<span class="src guest">' + esc(t.guestTag) + '</span>') + '</span><span class="yr">' + (r.y || '') + '</span></li>').join('');
+  if (q) html += '<li role="option" id="pOpt' + pResults.length + '" data-i="' + pResults.length + '" aria-selected="' + (pActive === pResults.length) + '"><span class="meta">' + esc((pResults.length ? '' : t.gNone + ' ') + fill(t.gUseName, { q })) + '</span></li>';
+  $('pRes').innerHTML = html; $('pQ').setAttribute('aria-expanded', String(!!q));
+  if (pActive >= 0) $('pQ').setAttribute('aria-activedescendant', 'pOpt' + pActive); else $('pQ').removeAttribute('aria-activedescendant');
+}
+function pPick(i) {
+  const q = $('pQ').value.trim();
+  if (i < pResults.length) { const r = pResults[i]; pGame = { n: r.n, gameId: r.id, guest: !r.inColl, y: r.y }; }
+  else if (q) pGame = { n: q.slice(0, 120), gameId: null, guest: true, y: null }; else return;
+  const g = !pGame.guest && byId[pGame.gameId];
+  if (g && !$('pSeats').value) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
+  $('pMsg').textContent = ''; renderPPick(); $('pDate').focus();
+}
+let pTimer = null;
+$('pQ').addEventListener('input', () => { pActive = 0; startLive($('pQ').value, (r) => { pResults = r; pActive = r.length ? Math.max(0, Math.min(pActive, r.length - 1)) : -1; renderPPick(); }); });
+$('pQ').addEventListener('keydown', (e) => {
+  const max = pResults.length + ($('pQ').value.trim() ? 1 : 0) - 1;
+  if (e.key === 'ArrowDown') { e.preventDefault(); pActive = Math.min(max, pActive + 1); renderPPick(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); pActive = Math.max(0, pActive - 1); renderPPick(); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (pActive >= 0) pPick(pActive); }
+});
+$('pRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pPick(Number(li.dataset.i)); });
+$('pChange').onclick = () => { pGame = null; renderPPick(); $('pQ').focus(); };
+function nextTuesday() { const d = new Date(); d.setDate(d.getDate() + ((2 - d.getDay() + 7) % 7)); return isoDay(d); }
+function openParty() {
+  pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextTuesday(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
+  $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = ''; $('pMsg').textContent = ''; $('pSave').disabled = false;
+  try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
+  renderPPick(); $('pModal').hidden = false; $('pQ').focus();
+}
+function closeParty() { $('pModal').hidden = true; }
+$('ptNew').onclick = openParty; $('pCancel').onclick = closeParty;
+$('pModal').addEventListener('click', (e) => { if (e.target === $('pModal')) closeParty(); });
+$('pCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+$('pForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const t = T(), msg = $('pMsg'), code = $('pCode').value.replace(/\D/g, ''), seats = Math.round(Number($('pSeats').value)), host = $('pHost').value.trim().slice(0, 40);
+  msg.className = 'err';
+  if (!pGame) { msg.textContent = t.errPick; $('pQ').focus(); return; }
+  if (!(seats >= 2 && seats <= 30)) { msg.textContent = t.ptErrSeats; return; }
+  if (!host) { msg.textContent = t.ptErrName; return; }
+  if (code.length !== 4) { msg.textContent = t.errLen; return; }
+  $('pSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    const r = await api('POST', '/parties', { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date: $('pDate').value, time: $('pTime').value || '', seats, host, note: $('pNote').value.trim().slice(0, 200) }, { 'X-Club-Code': code });
+    const m = mine(); m[r.id] = { host: true, hostKey: r.hostKey }; setMine(m); try { localStorage.setItem('n3-name', host); } catch (x) {}
+    refreshAll(); msg.textContent = t.ptCreated; setTimeout(closeParty, 500);
+  } catch (err) { msg.className = 'err'; msg.textContent = codeErr(err); $('pSave').disabled = false; }
+});
+
+/* ---------- Ansichten (Tabs) ---------- */
+const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : 'collection');
+function renderView() {
+  const v = currentView();
+  $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties';
+  document.querySelectorAll('#tabs a').forEach((a) => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+}
+$('tabs').addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-view]'); if (!a) return; e.preventDefault();
+  const hs = { stats: '#statistik', parties: '#partys' }[a.dataset.view] || '';
+  try { history.replaceState(null, '', hs || location.pathname + location.search); } catch (x) { location.hash = hs.slice(1); }
+  renderView(); if (a.dataset.view === 'stats') renderStats(); else if (a.dataset.view === 'parties') renderParties(); else renderSlider(); window.scrollTo(0, 0);
+});
+window.addEventListener('hashchange', () => { renderView(); renderSlider(); });
+
+/* ---------- API-Anbindung (Cloudflare Worker) ---------- */
+const adminTok = () => { try { return sessionStorage.getItem('n3-admin') || ''; } catch (e) { return ''; } };
+async function api(method, path, body, extra) {
+  const hd = Object.assign({ Accept: 'application/json' }, extra || {});
+  if (body !== undefined) hd['Content-Type'] = 'application/json';
+  const at = adminTok(); if (at) hd['X-Admin-Token'] = at;
+  const res = await fetch('/api' + path, { method, headers: hd, body: body === undefined ? undefined : JSON.stringify(body) });
+  let data = null; try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw Object.assign(new Error((data && data.error) || 'http_' + res.status), { status: res.status, code: data && data.error });
+  return data;
+}
+const watchers = [];
+function watch(path, onData, onErr, ms) {
+  const w = { busy: false };
+  w.run = async () => { if (w.busy) return; w.busy = true; try { onData(await api('GET', path)); } catch (e) { onErr(e); } finally { w.busy = false; } };
+  watchers.push(w); w.run(); setInterval(() => { if (!document.hidden) w.run(); }, ms);
+}
+const refreshAll = () => watchers.forEach((w) => w.run());
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
+
+/* Einbettung: Höhe an die umgebende Seite melden, sichtbaren Ausschnitt von dort empfangen */
+const embedded = (() => { try { return window.self !== window.top; } catch (e) { return true; } })() || new URLSearchParams(location.search).get('embed') === '1';
+if (embedded) document.documentElement.classList.add('embed');
+let lastH = 0;
+function postHeight() {
+  if (window.parent === window) return;
+  const hgt = Math.ceil(document.documentElement.getBoundingClientRect().height);
+  if (hgt && hgt !== lastH) { lastH = hgt; window.parent.postMessage({ type: 'n3-games-height', height: hgt }, '*'); }
+}
+if (window.ResizeObserver) new ResizeObserver(postHeight).observe(document.documentElement);
+window.addEventListener('load', postHeight);
+window.addEventListener('message', (e) => {
+  const d = e.data; if (!d || d.type !== 'n3-games-viewport') return;
+  const top = Number(d.top), vh = Number(d.height);
+  if (isFinite(top) && isFinite(vh)) { document.documentElement.style.setProperty('--vp-top', Math.max(0, top) + 'px'); document.documentElement.style.setProperty('--vp-h', Math.max(240, vh) + 'px'); }
+});
+
+/* Verwaltung: Anmeldung mit Admin-Passwort (liegt als Secret im Worker) */
+function renderAdminLink() { renderPlays(); $('admLink').textContent = canEdit ? T().admOut : T().admLink; }
+$('admLink').onclick = () => {
+  if (canEdit) { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} canEdit = false; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); return; }
+  $('admForm').hidden = !$('admForm').hidden; if (!$('admForm').hidden) $('admPw').focus();
+};
+$('admForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
+  try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); }
+  catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
+});
+async function loadGeeklist() {
+  if (!canEdit) return; const t = T();
+  try {
+    const gl = await api('GET', '/admin/geeklist');
+    if (!gl) { $('glMsg').textContent = t.admGlNone; $('glList').innerHTML = ''; return; }
+    const missing = gl.items.filter((i) => !byId[i.id]), d = String(gl.fetchedAt || '').slice(0, 10).split('-').reverse().join('.');
+    $('glMsg').textContent = missing.length ? fill(t.admGlMissing, { n: missing.length, d }) : fill(t.admGlOk, { n: gl.items.length, d });
+    $('glList').innerHTML = missing.map((i) => '<a class="pill" target="_blank" rel="noopener" href="https://boardgamegeek.com/boardgame/' + i.id + '">' + esc(i.n) + '</a>').join('');
+  } catch (e) { $('glMsg').textContent = ''; }
+}
+$('glRefresh').onclick = async () => {
+  const t = T(); $('glMsg').textContent = '…';
+  try { await api('POST', '/admin/geeklist/refresh'); await loadGeeklist(); } catch (e) { $('glMsg').textContent = fill(t.admGlErr, { c: (e && e.code) || '?' }); }
+};
+
+renderAll();
+restartAuto();
+
+watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); partyState = 'ready'; renderParties(); }, () => { partyState = 'off'; renderParties(); }, 15000);
+watch('/plays', (rows) => {
+  playDocs = rows.map((p) => ({ id: p.id, p })); plays = rows; playCount = {};
+  plays.forEach((p) => { if (!p.guest) playCount[p.gameId] = (playCount[p.gameId] || 0) + 1; });
+  calcClubTime();
+  dbState = 'ready'; renderPlays(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
+}, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
+watch('/config/highlights', (cfg) => {
+  hlCfg = cfg; applyHl(); renderSlider();
+  if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
+}, () => {}, 60000);
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+})();
+</script>
+
+</body></html>

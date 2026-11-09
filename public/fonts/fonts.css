@@ -1,0 +1,6 @@
+/* Lokal ausgelieferte Schriften (Karla, Rubik; SIL OFL via Fontsource). Kein Abruf bei Google. */
+@font-face { font-family: "Karla"; font-weight: 400; font-style: normal; font-display: swap; src: url(karla-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Karla"; font-weight: 600; font-style: normal; font-display: swap; src: url(karla-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Karla"; font-weight: 700; font-style: normal; font-display: swap; src: url(karla-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Rubik"; font-weight: 500; font-style: normal; font-display: swap; src: url(rubik-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Rubik"; font-weight: 700; font-style: normal; font-display: swap; src: url(rubik-latin-700-normal.woff2) format("woff2"); }

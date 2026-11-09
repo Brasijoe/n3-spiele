@@ -1,0 +1,3 @@
+# Nur für `npm run dev` (lokal). Echte Werte gehören als Secrets in Cloudflare, nie ins Repo.
+ADMIN_TOKEN=lokales-testpasswort
+BGG_TOKEN=
