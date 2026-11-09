@@ -96,3 +96,13 @@ Die Spieledaten selbst (Bewertungen, Spielerzahlen, Kategorien, Texte) stehen al
 
 - **Discord-Bot** im selben Worker: Endpunkt `/api/discord` (Slash-Befehle `/party` und `/log`, Beitreten-Button, Erinnerung am Tag danach). Er arbeitet auf denselben Tabellen, die Runden aus Discord erscheinen also auch auf der Seite. Dafür braucht es eine Discord-App (Application-ID, Public Key, Bot-Token als Secrets) und einen Kanal.
 - Spieledaten automatisch aus der GeekList neu bauen.
+
+## Discord-Bot
+
+Der Bot läuft im selben Worker (kein extra Server). Endpoint: `https://<worker>/api/discord/interactions`.
+
+- Befehle: `/party spiel [datum] [uhrzeit] [plaetze] [hinweis]` legt eine Runde an (Standard: nächster Dienstag 18:00, 4 Plätze), die Nachricht hat Buttons *Ich bin dabei*, *Absagen* und (Gastgeber) *Partie eintragen*. `/log spiel spieler [datum] [sieger] [dauer] [hinweis]` trägt direkt eine Partie ein. Spielnamen werden live bei BGG vorgeschlagen.
+- Die Runden liegen in derselben Tabelle wie auf der Webseite (Reiter „Mitspieler finden“).
+- Variablen in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (nur dieser Server darf den Bot nutzen). Secret: `DISCORD_BOT_TOKEN`.
+- Befehle registrieren (nach jeder Änderung an `COMMANDS`): `POST /api/admin/discord/register` mit Header `X-Admin-Token`.
+- Im Developer Portal unter *General Information* als **Interactions Endpoint URL** die URL oben eintragen.

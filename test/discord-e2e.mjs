@@ -1,0 +1,34 @@
+// Läuft gegen einen lokalen Worker (test/reset.sh) mit DISCORD_PUBLIC_KEY aus /tmp/dk.json und DISCORD_GUILD_ID=g1.
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const { priv } = JSON.parse(fs.readFileSync('/tmp/dk.json', 'utf8'));
+const key = await crypto.subtle.importKey('pkcs8', Buffer.from(priv, 'base64'), 'Ed25519', false, ['sign']);
+const post = async (obj, bad) => {
+  const body = JSON.stringify(obj), ts = String(Date.now());
+  const sig = Buffer.from(await crypto.subtle.sign('Ed25519', key, new TextEncoder().encode(ts + body))).toString('hex');
+  const r = await fetch('http://localhost:8799/api/discord/interactions', { method: 'POST', headers: { 'x-signature-ed25519': bad ? '00'.repeat(64) : sig, 'x-signature-timestamp': ts }, body });
+  return { status: r.status, json: r.status === 200 ? await r.json() : null };
+};
+const user = (id, name) => ({ member: { user: { id, username: name } } });
+assert.equal((await post({ type: 1 }, true)).status, 401);
+assert.equal((await post({ type: 1 })).json.type, 1);
+let r = await post({ type: 2, guild_id: 'g1', ...user('111', 'Hans'), data: { name: 'party', options: [{ name: 'spiel', value: '295947|Cascadia|2021' }, { name: 'plaetze', value: 3 }] } });
+assert.equal(r.json.type, 4); const e = r.json.data.embeds[0];
+assert.equal(e.title, 'Cascadia (2021)'); console.log('party ok:', e.fields.map((f) => f.name + '=' + f.value.replace(/\n/g, '|')).join(' ; '));
+const pid = r.json.data.components[0].components[0].custom_id.split(':')[1];
+const click = (act, id, name) => post({ type: 3, guild_id: 'g1', ...user(id, name), data: { custom_id: act + ':' + pid } });
+r = await click('join', '222', 'Anna'); assert.equal(r.json.type, 7);
+r = await click('join', '333', 'Bernd'); assert.equal(r.json.type, 7);
+r = await click('join', '444', 'Carl'); assert.match(r.json.data.content, /voll/);
+r = await click('leave', '222', 'Anna'); assert.equal(r.json.type, 7);
+r = await click('join', '444', 'Carl'); assert.equal(r.json.type, 7);
+r = await click('log', '222', 'Anna'); assert.match(r.json.data.content, /Gastgeber/);
+r = await click('log', '111', 'Hans'); assert.equal(r.json.type, 7); assert.equal(r.json.data.components.length, 0);
+const plays = await (await fetch('http://localhost:8799/api/plays')).json();
+assert.equal(plays[0].players, 3); assert.equal(plays[0].game, 'Cascadia');
+const parties = await (await fetch('http://localhost:8799/api/parties')).json();
+assert.equal(parties[0].playId, plays[0].id);
+r = await post({ type: 2, guild_id: 'g1', ...user('111', 'Hans'), data: { name: 'log', options: [{ name: 'spiel', value: 'Skat' }, { name: 'spieler', value: 3 }, { name: 'datum', value: '01.11.2026' }] } });
+assert.match(r.json.data.content, /Eingetragen/);
+r = await post({ type: 2, guild_id: 'other', ...user('111', 'Hans'), data: { name: 'log', options: [] } }); assert.match(r.json.data.content, /nicht freigeschaltet/);
+console.log('discord e2e ok');

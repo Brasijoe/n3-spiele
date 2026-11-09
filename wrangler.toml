@@ -15,6 +15,10 @@ database_id = "7ee93ce3-f3db-49cc-9edc-e6d67cd3b731"
 
 [vars]
 GEEKLIST_ID = "387061"
+# Discord (öffentliche Werte). DISCORD_GUILD_ID = Server-ID; leer lassen = Befehle auf allen Servern.
+DISCORD_APP_ID = "1569483072687050792"
+DISCORD_PUBLIC_KEY = "406f0af0c45c85e1130fb884e163c343f2200d83ed217248701170934d2a6938"
+DISCORD_GUILD_ID = ""
 
 # Täglich 03:17 UTC: GeekList von BGG lesen und für die Verwaltung zwischenspeichern.
 [triggers]
@@ -22,4 +26,5 @@ crons = ["17 3 * * *"]
 
 # Secrets (nicht hier eintragen, sondern mit `wrangler secret put ...` oder im Cloudflare-Dashboard):
 #   BGG_TOKEN    Token der BGG-XML-API
+#   DISCORD_BOT_TOKEN  Bot-Token aus dem Discord Developer Portal
 #   ADMIN_TOKEN  Passwort für die Verwaltungsansicht der Seite

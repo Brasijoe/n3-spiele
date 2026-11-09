@@ -1,4 +1,5 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
+import { handleInteraction, registerCommands } from './discord.js';
 
 const SALT = 'n3-club:';
 const enc = new TextEncoder();
@@ -149,6 +150,12 @@ async function route(req, env, ctx, url) {
     if (code.length !== 4) return fail(400, 'invalid');
     await env.DB.prepare("INSERT INTO config(key, value) VALUES('club_code_hash', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(await sha256(SALT + code)).run();
     return json({ ok: true });
+  }
+
+  if (path === '/discord/interactions' && m === 'POST') return handleInteraction(req, env, ctx);
+  if (path === '/admin/discord/register' && m === 'POST') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    try { return json({ ok: true, count: await registerCommands(env) }); } catch (e) { return fail(502, e.code || 'discord_error'); }
   }
 
   if (path === '/admin/check' && m === 'GET') return (await isAdmin(req, env, ip)) ? json({ ok: true }) : fail(403, 'forbidden');

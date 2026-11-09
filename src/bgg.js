@@ -36,14 +36,14 @@ export function parseGeeklist(xml) {
 
 const headers = (env) => ({ Authorization: 'Bearer ' + env.BGG_TOKEN, 'User-Agent': 'n3-spiele/1.0 (Nerd Nexus Nuernberg, non-commercial)', Accept: 'application/xml' });
 
-export async function bggSearch(env, ctx, q) {
+export async function bggSearch(env, ctx, q, opts = {}) {
   q = q.trim().slice(0, 80);
   if (q.length < 2) return [];
   if (!env.BGG_TOKEN) throw Object.assign(new Error('no_token'), { code: 'no_token' });
   const cache = caches.default, key = new Request('https://cache.invalid/bgg-search/' + encodeURIComponent(fold(q)));
   const cached = await cache.match(key);
   if (cached) return cached.json();
-  const res = await fetchRetry('https://boardgamegeek.com/xmlapi2/search?type=boardgame,boardgameexpansion&query=' + encodeURIComponent(q), { headers: headers(env) });
+  const res = await fetchRetry('https://boardgamegeek.com/xmlapi2/search?type=boardgame,boardgameexpansion&query=' + encodeURIComponent(q), { headers: headers(env) }, opts.tries || 4);
   if (res.status === 429 || res.status === 202) throw Object.assign(new Error('busy'), { code: 'bgg_busy' });
   if (!res.ok) throw Object.assign(new Error('bgg ' + res.status), { code: 'bgg_error' });
   const items = parseSearch(await res.text(), q);

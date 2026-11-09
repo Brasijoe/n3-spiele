@@ -9,7 +9,7 @@
     "db:init:local": "wrangler d1 execute n3-spiele --local --file=schema.sql && wrangler d1 execute n3-spiele --local --file=seed.sql",
     "db:init": "wrangler d1 execute n3-spiele --remote --file=schema.sql && wrangler d1 execute n3-spiele --remote --file=seed.sql",
     "deploy": "wrangler deploy",
-    "test": "node test/bgg.test.mjs"
+    "test": "node test/bgg.test.mjs && node test/discord.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.159.0"
