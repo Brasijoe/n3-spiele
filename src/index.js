@@ -1,4 +1,5 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
+import { syncExtras, listExtras, coverResponse } from './games.js';
 import { handleInteraction, registerCommands, ensureCols, discordOn, announceParty, syncParty, cancelPartyMessage } from './discord.js';
 
 const SALT = 'n3-club:';
@@ -174,8 +175,18 @@ async function route(req, env, ctx, url) {
   }
   if (path === '/admin/geeklist/refresh' && m === 'POST') {
     if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
-    try { return json({ ok: true, count: await refreshGeeklist(env) }); } catch (e) { return fail(502, e.code || 'bgg_error'); }
+    try {
+      const count = await refreshGeeklist(env);
+      let added = 0, syncErr = null;
+      try { added = await syncExtras(env); } catch (e) { syncErr = e.code || 'sync_error'; console.log('extras sync failed', e && e.message); }
+      return json({ ok: true, count, added, syncErr });
+    } catch (e) { return fail(502, e.code || 'bgg_error'); }
   }
+
+  if (path === '/games/extra' && m === 'GET') {
+    const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
+  }
+  if ((g = path.match(/^\/cover\/(\d+)$/)) && m === 'GET') return coverResponse(env, ctx, +g[1]);
 
   if (path === '/bgg/search' && m === 'GET') {
     if (!(await allow(env, 'bgg:' + ip, 60, 60))) return fail(429, 'rate_limited');
@@ -193,7 +204,7 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
       await env.DB.prepare('DELETE FROM rate WHERE ts < ?1').bind(Date.now() - 864e5).run();
-      try { await refreshGeeklist(env); } catch (e) { console.log('geeklist refresh failed', e.code || e.message); }
+      try { await refreshGeeklist(env); await syncExtras(env); } catch (e) { console.log('geeklist refresh/sync failed', e.code || e.message); }
     })());
   },
 };
