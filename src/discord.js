@@ -28,7 +28,7 @@ export async function verifySignature(pubKeyHex, sigHex, timestamp, bodyText) {
 // ---- Datum (Europe/Berlin) ----
 const berlin = (d = new Date()) => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' }).formatToParts(d).map((x) => [x.type, x.value]));
-  return { date: `${p.year}-${p.month}-${p.day}`, hour: +p.hour, wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday) };
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: +p.hour, minute: +p.minute, wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday) };
 };
 const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export function nextTuesday(now = new Date()) {
@@ -51,6 +51,11 @@ export function parseDate(input, now = new Date()) {
   }
   return null;
 }
+export function hasStarted(r, now = new Date()) {
+  const b = berlin(now);
+  if (r.date !== b.date) return r.date < b.date;
+  return !r.time || r.time <= `${String(b.hour).padStart(2, '0')}:${String(b.minute).padStart(2, '0')}`;
+}
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
 
@@ -66,12 +71,12 @@ function view(r) {
     { name: 'Dabei', value: [`${r.host} (Gastgeber)`, ...names].join('\n').slice(0, 1000) },
   ];
   if (r.note) fields.push({ name: 'Hinweis', value: r.note });
-  const embed = { title: r.game + (r.year ? ` (${r.year})` : ''), color: logged ? 0x2e7d32 : 0xe8a33d, fields, footer: { text: logged ? 'Partie eingetragen ✓' : 'N3 Spielrunde' } };
+  const embed = { title: r.game + (r.year ? ` (${r.year})` : ''), color: logged ? 0x2e7d32 : 0xe8a33d, fields, footer: { text: logged ? 'Als gespielt registriert ✓' : 'N3 Spielrunde' } };
   if (r.game_id) embed.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
   const components = logged ? [] : [{ type: 1, components: [
     { type: 2, style: 3, label: 'Ich bin dabei', custom_id: 'join:' + r.id, disabled: !free },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
-    { type: 2, style: 1, label: 'Partie eintragen', custom_id: 'log:' + r.id },
+    { type: 2, style: 1, label: 'Als gespielt registrieren', custom_id: 'log:' + r.id },
   ] }];
   return { embeds: [embed], components };
 }
@@ -130,7 +135,8 @@ async function button(i, env) {
     if (isHost) return say('Als Gastgeber kannst du die Runde nur löschen (über die Webseite).');
     await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, id).run();
   } else if (act === 'log') {
-    if (!isHost) return say('Nur der Gastgeber kann die Partie eintragen.');
+    if (!isHost) return say('Nur der Gastgeber kann die Runde als gespielt registrieren.');
+    if (!hasStarted(row)) return say(`Das geht erst, wenn der vereinbarte Termin erreicht ist (${fmtDate(row.date)}${row.time ? ', ' + row.time + ' Uhr' : ''}).`);
     if (!row.play_id) {
       const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
       const pid = newId();
