@@ -297,7 +297,16 @@ export async function ensureCols(env) {
 
 const getParty = (env, id) => env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
 
-export async function announceParty(env, id, channelId) {
+// Schutz vor Spam über die Webseite: globale Obergrenzen für Nachrichten des Bots (Tabelle `rate`).
+// Neue Runden: max. 5 pro Stunde und 15 pro Tag. Aktualisierungen: max. 60 pro Stunde. Darüber schweigt der Bot,
+// die Webseite funktioniert unverändert weiter.
+async function budget(env, name, max, windowSec) {
+  const k = 'dc:' + name + ':' + Math.floor(Date.now() / 1000 / windowSec);
+  const row = await env.DB.prepare('INSERT INTO rate(k, n, ts) VALUES(?1, 1, ?2) ON CONFLICT(k) DO UPDATE SET n = n + 1 RETURNING n').bind(k, Date.now()).first();
+  return row.n <= max;
+}
+export async function announceParty(env, id, channelId, fromWeb = false) {
+  if (fromWeb && !((await budget(env, 'new-h', 5, 3600)) && (await budget(env, 'new-d', 15, 86400)))) { console.log('discord: announce limit reached, skipped'); return null; }
   channelId = channelId || env.DISCORD_CHANNEL_ID;
   const row = await getParty(env, id); if (!row) return null;
   const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
@@ -305,11 +314,13 @@ export async function announceParty(env, id, channelId) {
   return msg.id;
 }
 export async function syncParty(env, id) {
+  if (!(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   const row = await getParty(env, id);
   if (!row || !row.discord_msg) return;
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
 }
 export async function cancelPartyMessage(env, row) {
   if (!row || !row.discord_msg) return;
+  if (!(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] });
 }

@@ -14,4 +14,9 @@ const j = calls.at(-1); assert.equal(j.m, 'PATCH'); assert.equal(j.u, '/channels
 assert.match(j.b.embeds[0].fields[2].value, /Bob/); console.log('join sync ok');
 await fetch(W + `/parties/${r.id}`, { method: 'DELETE', headers: { 'x-admin-token': 'test-admin-pw' } }); await wait();
 assert.match(calls.at(-1).b.content, /storniert/); console.log('delete sync ok');
+const before = calls.filter((c) => c.m === 'POST').length;
+for (let i = 0; i < 7; i++) await fetch(W + '/parties', { method: 'POST', headers: H, body: JSON.stringify({ game: 'G' + i, date: '2099-01-05', seats: 4, host: 'Spam' }) });
+await wait();
+const posted = calls.filter((c) => c.m === 'POST').length - before;
+assert.equal(posted + before, 5, 'Obergrenze 5 pro Stunde'); console.log('spam limit ok, posts total', posted + before);
 process.exit(0);

@@ -101,7 +101,7 @@ async function route(req, env, ctx, url) {
     const id = newId(), hostKey = newId() + newId();
     await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12)')
       .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString()).run();
-    if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id)));
+    if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id, null, true)));
     return json({ id, hostKey });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)\/join$/)) && m === 'POST') {
