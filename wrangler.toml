@@ -23,7 +23,7 @@ DISCORD_GUILD_ID = "1569484372112052305"
 # Optional: Kanal-ID(s), mehrere durch Komma getrennt. Gesetzt = Bot reagiert nur dort (der erste Kanal ist das Ziel für Runden von der Webseite); leer = überall auf dem Server.
 DISCORD_CHANNEL_ID = "1569484372757848238"
 # Link, der im Info-Fenster beim persönlichen Code erscheint (Einladungs- oder Kanallink; leer = kein Button).
-DISCORD_URL = "https://discord.com/channels/1569484372112052305/1569484372757848238"
+DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 # --- VORGEMERKT für den Umzug auf den echten N3-Server (noch NICHT aktiv, Test läuft auf dem Testserver) ---
 # DISCORD_GUILD_ID   = "1168441429345972285"
 # DISCORD_CHANNEL_ID = "1172228534194946148"
