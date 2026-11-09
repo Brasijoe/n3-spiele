@@ -77,8 +77,31 @@ function view(r) {
     { type: 2, style: 3, label: 'Ich bin dabei', custom_id: 'join:' + r.id, disabled: !free },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
     { type: 2, style: 1, label: 'Als gespielt registrieren', custom_id: 'log:' + r.id },
+    { type: 2, style: 2, label: 'Bearbeiten', custom_id: 'edit:' + r.id },
+    { type: 2, style: 4, label: 'Stornieren', custom_id: 'cancel:' + r.id },
   ] }];
   return { embeds: [embed], components };
+}
+
+function confirmView(r) {
+  const v = view(r);
+  v.components = [{ type: 1, components: [
+    { type: 2, style: 4, label: 'Ja, Runde stornieren', custom_id: 'cancelyes:' + r.id },
+    { type: 2, style: 2, label: 'Zurück', custom_id: 'cancelno:' + r.id },
+  ] }];
+  v.embeds[0].footer = { text: 'Wirklich stornieren? Das löscht die Runde auch auf der Webseite.' };
+  v.embeds[0].color = 0xc62828;
+  return v;
+}
+function editModal(r) {
+  const row = (custom_id, label, value, extra = {}) => ({ type: 1, components: [{ type: 4, custom_id, label, style: 1, value: String(value == null ? '' : value), required: true, ...extra }] });
+  return { type: 9, data: { custom_id: 'edit:' + r.id, title: 'Spielrunde bearbeiten', components: [
+    row('spiel', 'Spiel', r.game, { max_length: 120 }),
+    row('datum', 'Datum (z. B. 17.11. oder 2026-11-17)', fmtDate(r.date), { max_length: 20 }),
+    row('uhrzeit', 'Uhrzeit (HH:MM)', r.time || '18:00', { max_length: 5, min_length: 5 }),
+    row('plaetze', 'Plätze inkl. Gastgeber (2–30)', r.seats, { max_length: 2 }),
+    row('hinweis', 'Hinweis', r.note || '', { required: false, max_length: 200 }),
+  ] } };
 }
 
 const who = (i) => {
@@ -144,7 +167,42 @@ async function button(i, env) {
         .bind(pid, row.game_id, row.game, row.guest, row.year, row.date, att, '', 'Über Discord eingetragen', new Date().toISOString()).run();
       await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(pid, id).run();
     }
+  } else if (act === 'edit') {
+    if (!isHost) return say('Nur der Gastgeber kann die Runde bearbeiten.');
+    if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
+    return reply(editModal(row));
+  } else if (act === 'cancel') {
+    if (!isHost) return say('Nur der Gastgeber kann die Runde stornieren.');
+    return reply({ type: 7, data: confirmView(row) });
+  } else if (act === 'cancelno') {
+    if (!isHost) return say('Nur der Gastgeber kann das entscheiden.');
+  } else if (act === 'cancelyes') {
+    if (!isHost) return say('Nur der Gastgeber kann die Runde stornieren.');
+    await env.DB.prepare('DELETE FROM parties WHERE id = ?1').bind(id).run();
+    return reply({ type: 7, data: { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] } });
   } else return say('Unbekannte Aktion.');
+  const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
+  return reply({ type: 7, data: view(fresh) });
+}
+
+async function editSubmit(i, env) {
+  const id = String(i.data.custom_id).split(':')[1];
+  const w = who(i);
+  const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
+  if (!row) return say('Diese Runde gibt es nicht mehr.');
+  if ((await sha256('discord:' + w.id)) !== row.host_key_hash) return say('Nur der Gastgeber kann die Runde bearbeiten.');
+  if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
+  const f = {};
+  for (const r of i.data.components || []) for (const c of r.components || []) f[c.custom_id] = c.value;
+  const game = str(f.spiel, 120); if (!game) return say('Das Spiel darf nicht leer sein.');
+  const date = parseDate(f.datum); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17 oder 17.11.');
+  const time = str(f.uhrzeit, 5); if (!/^\d{2}:\d{2}$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.');
+  const seats = Number(f.plaetze);
+  const taken = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
+  if (!(seats >= 2 && seats <= 30) || seats < taken) return say(`Plätze: 2 bis 30, mindestens ${taken} (so viele sind schon dabei).`);
+  const same = game === row.game;
+  await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, date = ?4, time = ?5, seats = ?6, note = ?7 WHERE id = ?8')
+    .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, str(f.hinweis, 200), id).run();
   const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   return reply({ type: 7, data: view(fresh) });
 }
@@ -178,6 +236,7 @@ export async function handleInteraction(req, env, ctx) {
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : say('Unbekannter Befehl.');
     if (i.type === 3) return await button(i, env);
+    if (i.type === 5) return await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
   return say('Nicht unterstützt.');
 }
