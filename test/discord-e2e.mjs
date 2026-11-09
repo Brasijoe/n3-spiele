@@ -28,6 +28,7 @@ console.log('log before date blocked ok');
 r = await click('manage', '222', 'Anna'); assert.match(r.json.data.content, /Ersteller/);
 r = await click('manage', '111', 'Hans'); assert.equal(r.json.data.flags, 64); assert.equal(r.json.data.components[0].components.length, 3);
 r = await click('edit', '222', 'Anna'); assert.match(r.json.data.content, /Ersteller/);
+r = await post({ type: 3, guild_id: 'g1', member: { permissions: '32', user: { id: '999', username: 'Mod' } }, data: { custom_id: 'manage:' + pid } }); assert.equal(r.json.data.flags, 64); console.log('mod can manage ok');
 r = await click('edit', '111', 'Hans'); assert.equal(r.json.type, 9); assert.equal(r.json.data.components.length, 5);
 const sub = (vals) => post({ type: 5, guild_id: 'g1', ...user('111', 'Hans'), data: { custom_id: 'edit:' + pid, components: Object.entries(vals).map(([k, v]) => ({ type: 1, components: [{ type: 4, custom_id: k, value: v }] })) } });
 r = await sub({ spiel: 'Cascadia', datum: '24.11.2026', uhrzeit: '19:30', plaetze: '2', hinweis: 'x' }); assert.match(r.json.data.content, /mindestens 3/);

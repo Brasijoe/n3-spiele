@@ -99,6 +99,7 @@ function editModal(r) {
   ] } };
 }
 
+const modOf = (i) => { const p = BigInt((i.member && i.member.permissions) || '0'); return (p & 0x20n) !== 0n || (p & 0x8n) !== 0n; };
 const who = (i) => {
   const u = (i.member && i.member.user) || i.user || {};
   return { id: u.id, name: str((i.member && i.member.nick) || u.global_name || u.username || 'Spieler', 40) };
@@ -146,23 +147,28 @@ async function button(i, env) {
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   if (!row) return say('Diese Runde gibt es nicht mehr.');
   if (!row.discord_msg && i.message && i.channel_id && !(i.message.flags & 64)) await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(i.channel_id, i.message.id, id).run();
-  const isHost = (await sha256('discord:' + w.id)) === row.host_key_hash;
+  // Verwalten dürfen: der Ersteller (bei Runden aus Discord) und Personen mit der Serverrecht „Server verwalten“ oder Administrator
+  // (bei Runden von der Webseite ist das die einzige Möglichkeit in Discord; dort verwaltet der Ersteller sie im Browser).
+  const perms = BigInt((i.member && i.member.permissions) || '0');
+  const isMod = (perms & 0x20n) !== 0n || (perms & 0x8n) !== 0n;
+  const isHost = isMod || (await sha256('discord:' + w.id)) === row.host_key_hash;
+  const isOwner = (await sha256('discord:' + w.id)) === row.host_key_hash;
   const key = 'd' + w.id;
   if (act === 'join') {
-    if (isHost) return say('Du bist der Gastgeber und hast schon einen Platz.');
+    if (isOwner) return say('Du bist der Gastgeber und hast schon einen Platz.');
     const r = await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2))
       WHERE id = ?3 AND play_id IS NULL AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0 AND key != ?1) + 1 < seats`)
       .bind(key, JSON.stringify({ name: w.name, at: new Date().toISOString() }), id).run();
     if (!r.meta.changes) return say('Leider schon voll.');
   } else if (act === 'leave') {
-    if (isHost) return say('Als Gastgeber kannst du die Runde nur löschen (über die Webseite).');
+    if (isOwner) return say('Als Gastgeber kannst du nicht absagen, sondern die Runde über „Verwalten“ stornieren.');
     await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, id).run();
   } else if (act === 'manage') {
-    if (!isHost) return say('Nur der Ersteller kann die Runde verwalten.');
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde verwalten.');
     if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
     return reply({ type: 4, data: { ...managePanel(row).data, flags: 64 } });
   } else if (act === 'log') {
-    if (!isHost) return say('Nur der Ersteller kann die Runde als gespielt registrieren.');
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde als gespielt registrieren.');
     if (!hasStarted(row)) return say(`Das geht erst, wenn der vereinbarte Termin erreicht ist (${fmtDate(row.date)}${row.time ? ', ' + row.time + ' Uhr' : ''}).`);
     if (!row.play_id) {
       const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
@@ -174,20 +180,20 @@ async function button(i, env) {
     await syncParty(env, id, true);
     return done('Als gespielt registriert ✓');
   } else if (act === 'edit') {
-    if (!isHost) return say('Nur der Ersteller kann die Runde bearbeiten.');
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde bearbeiten.');
     if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
     return reply(editModal(row));
   } else if (act === 'cancel') {
-    if (!isHost) return say('Nur der Ersteller kann die Runde stornieren.');
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde stornieren.');
     return reply({ type: 7, data: { content: `**Wirklich stornieren?** ${row.game} (${fmtDate(row.date)}). Das löscht die Runde auch auf der Webseite.`, components: [{ type: 1, components: [
       { type: 2, style: 4, label: 'Ja, Runde stornieren', custom_id: 'cancelyes:' + id },
       { type: 2, style: 2, label: 'Zurück', custom_id: 'cancelno:' + id },
     ] }] } });
   } else if (act === 'cancelno') {
-    if (!isHost) return say('Nur der Ersteller kann das entscheiden.');
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können das entscheiden.');
     return reply(managePanel(row));
   } else if (act === 'cancelyes') {
-    if (!isHost) return say('Nur der Ersteller kann die Runde stornieren.');
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde stornieren.');
     await env.DB.prepare('DELETE FROM parties WHERE id = ?1').bind(id).run();
     await cancelPartyMessage(env, row, true);
     return done('Runde storniert ✓');
