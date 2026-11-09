@@ -20,7 +20,7 @@ GEEKLIST_ID = "387061"
 DISCORD_APP_ID = "1569483072687050792"
 DISCORD_PUBLIC_KEY = "406f0af0c45c85e1130fb884e163c343f2200d83ed217248701170934d2a6938"
 DISCORD_GUILD_ID = "1569484372112052305"
-# Optional: Kanal-ID. Gesetzt = Bot reagiert nur in diesem Kanal; leer = überall auf dem Server.
+# Optional: Kanal-ID(s), mehrere durch Komma getrennt. Gesetzt = Bot reagiert nur dort (der erste Kanal ist das Ziel für Runden von der Webseite); leer = überall auf dem Server.
 DISCORD_CHANNEL_ID = "1569484372757848238"
 
 # Täglich 03:17 UTC: GeekList von BGG lesen und für die Verwaltung zwischenspeichern.

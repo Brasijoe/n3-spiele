@@ -246,8 +246,9 @@ export async function handleInteraction(req, env, ctx) {
   if (i.type === 1) return reply({ type: 1 });
   if (env.DISCORD_GUILD_ID && i.guild_id !== env.DISCORD_GUILD_ID) return say('Dieser Bot ist für diesen Server nicht freigeschaltet.');
   // Optional: nur ein Kanal. Buttons an alten Nachrichten gelten ebenfalls nur dort.
-  if (env.DISCORD_CHANNEL_ID && i.channel_id !== env.DISCORD_CHANNEL_ID) {
-    return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur im Kanal <#${env.DISCORD_CHANNEL_ID}>.`);
+  const chans = channelIds(env);
+  if (chans.length && !chans.includes(i.channel_id)) {
+    return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur in ${chans.map((c) => `<#${c}>`).join(', ')}.`);
   }
   try {
     await ensureCols(env);
@@ -294,7 +295,9 @@ async function discord(env, method, path, body) {
   if (!res.ok) throw new Error('discord ' + res.status + ' ' + (await res.text()).slice(0, 160));
   return res.json();
 }
-export const discordOn = (env) => !!(env.DISCORD_BOT_TOKEN && env.DISCORD_CHANNEL_ID);
+// DISCORD_CHANNEL_ID: eine oder mehrere Kanal-IDs, durch Komma getrennt. Der erste Kanal ist das Ziel für Runden von der Webseite.
+export const channelIds = (env) => String(env.DISCORD_CHANNEL_ID || '').split(',').map((x) => x.trim()).filter(Boolean);
+export const discordOn = (env) => !!(env.DISCORD_BOT_TOKEN && channelIds(env).length);
 
 // Spalten für die Verknüpfung mit der Discord-Nachricht (einmal pro Worker-Instanz prüfen).
 let colsOk = false;
@@ -319,7 +322,7 @@ async function budget(env, name, max, windowSec) {
 }
 export async function announceParty(env, id, channelId, fromWeb = false) {
   if (fromWeb && !((await budget(env, 'new-h', 5, 3600)) && (await budget(env, 'new-d', 15, 86400)))) { console.log('discord: announce limit reached, skipped'); return null; }
-  channelId = channelId || env.DISCORD_CHANNEL_ID;
+  channelId = channelId || channelIds(env)[0];
   const row = await getParty(env, id); if (!row) return null;
   const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
