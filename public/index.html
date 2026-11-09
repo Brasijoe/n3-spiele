@@ -329,6 +329,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
       <h3 data-t="admGl"></h3>
       <p class="note" data-t="admGlNote" style="margin:0"></p>
       <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="glRefresh" data-t="admGlRefresh"></button><span id="glMsg" role="status" class="note"></span></div>
+      <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="dcReg">Discord-Befehle registrieren</button><span id="dcMsg" role="status" class="note"></span></div>
       <div class="gl-list pills" id="glList"></div>
     </div>
   </section>
@@ -1277,6 +1278,10 @@ async function loadGeeklist() {
     $('glList').innerHTML = missing.map((i) => '<a class="pill" target="_blank" rel="noopener" href="https://boardgamegeek.com/boardgame/' + i.id + '">' + esc(i.n) + '</a>').join('');
   } catch (e) { $('glMsg').textContent = ''; }
 }
+$('dcReg').onclick = async () => {
+  $('dcMsg').textContent = '…';
+  try { const r = await api('POST', '/admin/discord/register'); $('dcMsg').textContent = r.count + ' Befehle registriert ✓'; } catch (e) { $('dcMsg').textContent = 'Fehler: ' + ((e && e.code) || '?'); }
+};
 $('glRefresh').onclick = async () => {
   const t = T(); $('glMsg').textContent = '…';
   try { await api('POST', '/admin/geeklist/refresh'); await loadGeeklist(); } catch (e) { $('glMsg').textContent = fill(t.admGlErr, { c: (e && e.code) || '?' }); }
