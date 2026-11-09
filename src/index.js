@@ -1,5 +1,5 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
-import { handleInteraction, registerCommands } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, discordOn, announceParty, syncParty, cancelPartyMessage } from './discord.js';
 
 const SALT = 'n3-club:';
 const enc = new TextEncoder();
@@ -56,6 +56,9 @@ const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, createdAt: r.created_at });
 const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), playId: r.play_id, createdAt: r.created_at });
 
+// Discord-Aktualisierungen laufen im Hintergrund; Fehler dürfen die Webseite nie stören.
+const bg = (ctx, p) => ctx.waitUntil(p.catch((e) => console.log('discord sync failed', e && e.message)));
+
 async function route(req, env, ctx, url) {
   const ip = req.headers.get('cf-connecting-ip') || 'local';
   const path = url.pathname.replace(/^\/api/, '') || '/';
@@ -76,7 +79,7 @@ async function route(req, env, ctx, url) {
     const id = newId();
     await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)')
       .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString()).run();
-    if (b.partyId) await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run();
+    if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
     return json({ id });
   }
   if ((g = path.match(/^\/plays\/([\w-]+)$/)) && m === 'DELETE') {
@@ -98,6 +101,7 @@ async function route(req, env, ctx, url) {
     const id = newId(), hostKey = newId() + newId();
     await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12)')
       .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString()).run();
+    if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id)));
     return json({ id, hostKey });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)\/join$/)) && m === 'POST') {
@@ -109,12 +113,14 @@ async function route(req, env, ctx, url) {
       WHERE id = ?3 AND date >= ?4 AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0) + 1 < seats`)
       .bind(key, JSON.stringify({ name, at: new Date().toISOString() }), g[1], new Date(Date.now() - 864e5).toISOString().slice(0, 10)).run();
     if (!r.meta.changes) return fail(409, 'full_or_gone');
+    if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
     return json({ ok: true });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)\/leave$/)) && m === 'POST') {
     const b = await body(req), key = str(b.key, 32);
     if (!KEY_RE.test(key)) return fail(400, 'invalid');
     await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, g[1]).run();
+    if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
     return json({ ok: true });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)$/)) && m === 'DELETE') {
@@ -123,7 +129,9 @@ async function route(req, env, ctx, url) {
     const hk = req.headers.get('x-host-key') || '';
     const okHost = hk && safeEq(await sha256(hk), row.host_key_hash);
     if (!okHost && !(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    let old = null; if (discordOn(env)) { await ensureCols(env); old = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first(); }
     await env.DB.prepare('DELETE FROM parties WHERE id = ?1').bind(g[1]).run();
+    if (old) bg(ctx, cancelPartyMessage(env, old));
     return json({ ok: true });
   }
 

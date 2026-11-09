@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS parties (
   note TEXT NOT NULL DEFAULT '',
   attendees TEXT NOT NULL DEFAULT '{}',
   play_id TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  discord_channel TEXT,
+  discord_msg TEXT
 );
 CREATE INDEX IF NOT EXISTS parties_date ON parties(date);
 

@@ -103,6 +103,6 @@ Der Bot läuft im selben Worker (kein extra Server). Endpoint: `https://<worker>
 
 - Befehle: `/party spiel [datum] [uhrzeit] [plaetze] [hinweis]` legt eine Runde an (Standard: nächster Dienstag 18:00, 4 Plätze), die Nachricht hat Buttons *Ich bin dabei*, *Absagen* und (Gastgeber) *Partie eintragen*. `/log spiel spieler [datum] [sieger] [dauer] [hinweis]` trägt direkt eine Partie ein. Spielnamen werden live bei BGG vorgeschlagen.
 - Die Runden liegen in derselben Tabelle wie auf der Webseite (Reiter „Mitspieler finden“).
-- Variablen in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (nur dieser Server darf den Bot nutzen), optional `DISCORD_CHANNEL_ID` (nur dieser Kanal). Secret: `DISCORD_BOT_TOKEN`.
+- Variablen in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (nur dieser Server darf den Bot nutzen), optional `DISCORD_CHANNEL_ID` (nur dieser Kanal; hierhin postet der Bot auch Runden, die auf der Webseite angelegt werden). Secret: `DISCORD_BOT_TOKEN`.
 - Befehle registrieren (nach jeder Änderung an `COMMANDS`): `POST /api/admin/discord/register` mit Header `X-Admin-Token`.
 - Im Developer Portal unter *General Information* als **Interactions Endpoint URL** die URL oben eintragen.

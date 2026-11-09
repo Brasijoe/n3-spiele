@@ -125,6 +125,10 @@ async function cmdParty(i, env) {
   await env.DB.prepare("INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'{}',?12)")
     .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), str(opt(i, 'hinweis'), 200), new Date().toISOString()).run();
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
+  // Per REST posten, damit wir die Nachricht später aktualisieren können; sonst normale Antwort.
+  try {
+    if (i.channel_id && env.DISCORD_BOT_TOKEN) { await announceParty(env, id, i.channel_id); return say('Runde angelegt ✓ – sie steht jetzt im Kanal.'); }
+  } catch (e) { console.log('announce failed', e && e.message); }
   return reply({ type: 4, data: { content: `**${w.name}** sucht Mitspielende!`, ...view(row) } });
 }
 
@@ -146,6 +150,7 @@ async function button(i, env) {
   const w = who(i);
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   if (!row) return say('Diese Runde gibt es nicht mehr.');
+  if (!row.discord_msg && i.message && i.channel_id) await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(i.channel_id, i.message.id, id).run();
   const isHost = (await sha256('discord:' + w.id)) === row.host_key_hash;
   const key = 'd' + w.id;
   if (act === 'join') {
@@ -233,6 +238,7 @@ export async function handleInteraction(req, env, ctx) {
     return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur im Kanal <#${env.DISCORD_CHANNEL_ID}>.`);
   }
   try {
+    await ensureCols(env);
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : say('Unbekannter Befehl.');
     if (i.type === 3) return await button(i, env);
@@ -267,4 +273,43 @@ export async function registerCommands(env) {
   const res = await fetch(url, { method: 'PUT', headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN, 'content-type': 'application/json' }, body: JSON.stringify(COMMANDS) });
   if (!res.ok) throw Object.assign(new Error('discord ' + res.status + ' ' + (await res.text()).slice(0, 200)), { code: 'discord_' + res.status });
   return (await res.json()).length;
+}
+
+// ---- Nachrichten über die REST-API (Webseite -> Kanal, Aktualisierungen) ----
+const api = (env) => env.DISCORD_API_BASE || 'https://discord.com/api/v10';
+async function discord(env, method, path, body) {
+  const res = await fetch(api(env) + path, { method, headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  if (!res.ok) throw new Error('discord ' + res.status + ' ' + (await res.text()).slice(0, 160));
+  return res.json();
+}
+export const discordOn = (env) => !!(env.DISCORD_BOT_TOKEN && env.DISCORD_CHANNEL_ID);
+
+// Spalten für die Verknüpfung mit der Discord-Nachricht (einmal pro Worker-Instanz prüfen).
+let colsOk = false;
+export async function ensureCols(env) {
+  if (colsOk) return;
+  const { results } = await env.DB.prepare("SELECT name FROM pragma_table_info('parties')").all();
+  const have = new Set(results.map((r) => r.name));
+  if (!have.has('discord_channel')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_channel TEXT').run();
+  if (!have.has('discord_msg')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_msg TEXT').run();
+  colsOk = true;
+}
+
+const getParty = (env, id) => env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
+
+export async function announceParty(env, id, channelId) {
+  channelId = channelId || env.DISCORD_CHANNEL_ID;
+  const row = await getParty(env, id); if (!row) return null;
+  const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
+  await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
+  return msg.id;
+}
+export async function syncParty(env, id) {
+  const row = await getParty(env, id);
+  if (!row || !row.discord_msg) return;
+  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
+}
+export async function cancelPartyMessage(env, row) {
+  if (!row || !row.discord_msg) return;
+  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] });
 }
