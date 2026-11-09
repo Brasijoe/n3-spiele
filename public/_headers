@@ -1,4 +1,4 @@
 /*
-  Content-Security-Policy: frame-ancestors *
+  Content-Security-Policy: frame-ancestors 'self' https://nerd-nexus.de https://www.nerd-nexus.de
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
