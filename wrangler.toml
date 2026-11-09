@@ -22,6 +22,13 @@ DISCORD_PUBLIC_KEY = "406f0af0c45c85e1130fb884e163c343f2200d83ed217248701170934d
 DISCORD_GUILD_ID = "1569484372112052305"
 # Optional: Kanal-ID(s), mehrere durch Komma getrennt. Gesetzt = Bot reagiert nur dort (der erste Kanal ist das Ziel für Runden von der Webseite); leer = überall auf dem Server.
 DISCORD_CHANNEL_ID = "1569484372757848238"
+# Link, der im Info-Fenster beim persönlichen Code erscheint (Einladungs- oder Kanallink; leer = kein Button).
+DISCORD_URL = "https://discord.com/channels/1569484372112052305/1569484372757848238"
+# --- VORGEMERKT für den Umzug auf den echten N3-Server (noch NICHT aktiv, Test läuft auf dem Testserver) ---
+# DISCORD_GUILD_ID   = "1168441429345972285"
+# DISCORD_CHANNEL_ID = "1172228534194946148"
+# DISCORD_URL        = "https://discord.com/channels/1168441429345972285/1172228534194946148"  (besser: dauerhafter Einladungslink)
+# Danach in der Verwaltung „Discord-Befehle registrieren“ klicken und den Bot auf den N3-Server einladen.
 
 # Täglich 03:17 UTC: GeekList von BGG lesen und für die Verwaltung zwischenspeichern.
 [triggers]

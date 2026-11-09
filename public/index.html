@@ -57,6 +57,14 @@ main.wrap { padding-block: 32px 64px; display: flex; flex-direction: column; gap
 .btn-dark { background: var(--band); color: #fff; border: 0; }
 .filters { padding: 26px 28px; display: flex; flex-direction: column; gap: 18px; }
 .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.lbl { display: flex; align-items: center; gap: 8px; }
+.info-btn { width: 26px; height: 26px; min-width: 26px; border-radius: 50%; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--fg); font: italic 700 14px/1 Georgia, serif; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.info-btn:hover, .info-btn:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
+dialog.info { max-width: min(460px, calc(100vw - 32px)); border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--text); padding: 22px 24px; }
+dialog.info::backdrop { background: rgba(0,0,0,.6); }
+dialog.info h3 { margin: 0 0 10px; font-size: 22px; color: var(--fg); }
+dialog.info p { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; padding-top: 6px; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text); }
 .field input, .field select { height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font-weight: 400; font-size: 15px; }
 .field input[type=range] { height: auto; padding: 0; border: 0; accent-color: #c67c00; }
@@ -400,7 +408,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <label style="display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600;color:var(--fg)"><input type="checkbox" id="fFirst" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="first"></span></label>
     <label class="field"><span data-t="winner"></span><input type="text" id="fWinner" maxlength="80"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="fNote" maxlength="200"></label>
-    <label class="field code"><span data-t="code"></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
+    <label class="field code"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="fMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
       <button type="button" class="btn btn-quiet" id="cancel" data-t="cancel"></button>
@@ -422,7 +430,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
     <label class="field" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="pNote" maxlength="200"></label>
-    <label class="field code"><span data-t="code"></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
+    <label class="field code"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="pMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
       <button type="button" class="btn btn-quiet" id="pCancel" data-t="cancel"></button>
@@ -445,6 +453,7 @@ const TXT = {
     recent: 'Zuletzt im Club gespielt', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
+    ciTitle: 'Dein persönlicher Code', ciP1: 'Damit wir wissen, wer eine Spielrunde anlegt oder eine Partie einträgt, hat jedes Mitglied einen eigenen Code. Er ist mit deinem Discord-Konto verknüpft.', ciP2: 'So bekommst du ihn: Tritt dem N3-Discord-Server bei und tippe dort im Bot-Kanal /code. Der Bot schickt dir den Code als Nachricht, die nur du sehen kannst. Gib ihn hier ein; dein Browser merkt ihn sich.', ciP3: 'Gib den Code nicht weiter. Ein neues /code macht den alten ungültig, und wer den Server verlässt, verliert den Code.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
     code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Auf dem N3-Discord-Server mit /code abholen.', cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
     errLen: 'Bitte deinen persönlichen Code eingeben (8 Zeichen).', errCode: 'Der Code stimmt nicht. Hol dir mit /code auf dem Discord-Server einen neuen.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
     gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
@@ -490,6 +499,7 @@ const TXT = {
     recent: 'Recently played at the club', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
+    ciTitle: 'Your personal code', ciP1: 'So we know who creates a game round or logs a play, every member has their own code. It is linked to your Discord account.', ciP2: 'How to get it: join the N3 Discord server and type /code in the bot channel. The bot sends you the code in a message only you can see. Enter it here; your browser remembers it.', ciP3: 'Don’t share it. A new /code invalidates the old one, and anyone who leaves the server loses their code.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
     code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it on the N3 Discord server with /code.', cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
     errLen: 'Please enter your personal code (8 characters).', errCode: 'Wrong code. Get a new one with /code on the Discord server.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
     gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
@@ -1306,6 +1316,10 @@ $('glRefresh').onclick = async () => {
   try { const r = await api('POST', '/admin/geeklist/refresh'); if (r && r.added) { $('glMsg').textContent = r.added + ' neue Spiele übernommen – Seite lädt neu …'; setTimeout(() => location.reload(), 1200); return; } if (r && r.syncErr) { $('glMsg').textContent = 'Übernahme fehlgeschlagen: ' + r.syncErr; return; } await loadGeeklist(); } catch (e) { $('glMsg').textContent = fill(t.admGlErr, { c: (e && e.code) || '?' }); }
 };
 
+document.addEventListener('click', (e) => { if (e.target.closest('[data-codeinfo]')) { e.preventDefault(); $('codeInfo').showModal(); } });
+$('ciClose').onclick = () => $('codeInfo').close();
+$('codeInfo').addEventListener('click', (e) => { if (e.target === $('codeInfo')) $('codeInfo').close(); });
+api('GET', '/config/public').then((c) => { if (c && c.discordUrl) { $('ciLink').href = c.discordUrl; $('ciLink').hidden = false; } }).catch(() => {});
 renderAll();
 restartAuto();
 
@@ -1324,4 +1338,9 @@ if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAd
 })();
 </script>
 
+<dialog class="info" id="codeInfo" aria-labelledby="ciT">
+  <h3 id="ciT" data-t="ciTitle"></h3>
+  <p data-t="ciP1"></p><p data-t="ciP2"></p><p data-t="ciP3"></p>
+  <div class="acts"><a class="btn btn-primary" id="ciLink" href="#" target="_blank" rel="noopener" data-t="ciLink" hidden></a><button type="button" class="btn btn-quiet" id="ciClose" data-t="ciClose"></button></div>
+</dialog>
 </body></html>

@@ -196,6 +196,7 @@ async function route(req, env, ctx, url) {
     } catch (e) { return fail(502, e.code || 'bgg_error'); }
   }
 
+  if (path === '/config/public' && m === 'GET') { const r = json({ discordUrl: env.DISCORD_URL || '' }); r.headers.set('cache-control', 'public, max-age=300'); return r; }
   if (path === '/games/extra' && m === 'GET') {
     const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
   }
