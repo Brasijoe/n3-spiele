@@ -1206,9 +1206,18 @@ $('pQ').addEventListener('keydown', (e) => {
 });
 $('pRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) pPick(Number(li.dataset.i)); });
 $('pChange').onclick = () => { pGame = null; renderPPick(); $('pQ').focus(); };
-function nextTuesday() { const d = new Date(); d.setDate(d.getDate() + ((2 - d.getDay() + 7) % 7)); return isoDay(d); }
+// Vorbelegung für neue Runden: der nächste Termin aus „Dienstag 18:00“ und „erster Samstag im Monat“.
+function nextEventDay() {
+  const now = new Date(), at18 = (d) => { const x = new Date(d); x.setHours(18, 0, 0, 0); return x; };
+  const tue = new Date(now); tue.setHours(0, 0, 0, 0); tue.setDate(tue.getDate() + ((2 - tue.getDay() + 7) % 7));
+  if (at18(tue) <= now) tue.setDate(tue.getDate() + 7);
+  const firstSat = (y, m) => { const d = new Date(y, m, 1); d.setDate(1 + ((6 - d.getDay() + 7) % 7)); return d; };
+  let sat = firstSat(now.getFullYear(), now.getMonth());
+  if (at18(sat) <= now) sat = firstSat(now.getFullYear(), now.getMonth() + 1);
+  return isoDay(sat < tue ? sat : tue);
+}
 function openParty() {
-  pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextTuesday(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
+  pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextEventDay(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
   $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
   try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
   renderPPick(); $('pModal').hidden = false; $('pQ').focus();

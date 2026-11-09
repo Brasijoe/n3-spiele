@@ -45,9 +45,17 @@ export function nextTuesday(now = new Date()) {
   if (add === 0 && b.hour >= 18) add = 7;
   return addDays(b.date, add);
 }
+// Standardtermin: der nächste von „Dienstag 18:00“ und „erster Samstag im Monat 18:00“.
+export function nextEventDate(now = new Date()) {
+  const b = berlin(now), tue = nextTuesday(now);
+  const firstSat = (y, m) => { const d = new Date(Date.UTC(y, m, 1, 12)); d.setUTCDate(1 + ((6 - d.getUTCDay() + 7) % 7)); return d.toISOString().slice(0, 10); };
+  let y = +b.date.slice(0, 4), m = +b.date.slice(5, 7) - 1, sat = firstSat(y, m);
+  if (sat < b.date || (sat === b.date && b.hour >= 18)) sat = firstSat(m === 11 ? y + 1 : y, (m + 1) % 12);
+  return sat < tue ? sat : tue;
+}
 export function parseDate(input, now = new Date()) {
   const s = str(input, 20).toLowerCase(); const b = berlin(now);
-  if (!s) return nextTuesday(now);
+  if (!s) return nextEventDate(now);
   if (s === 'heute') return b.date;
   if (s === 'morgen') return addDays(b.date, 1);
   if (isDate(s)) return s;
@@ -272,7 +280,7 @@ export const COMMANDS = [
   { name: 'code', description: 'Persönlichen Code für die Webseite abholen (nur für dich sichtbar)' },
   { name: 'party', description: 'Spielrunde anlegen und Mitspielende suchen', options: [
     GAME,
-    { type: 3, name: 'datum', description: 'Standard: nächster Dienstag. Format 2026-11-17, 17.11., heute, morgen' },
+    { type: 3, name: 'datum', description: 'Standard: nächster Termin (Di 18:00 oder erster Sa im Monat). Format 2026-11-17, 17.11., heute, morgen' },
     { type: 3, name: 'uhrzeit', description: 'HH:MM, Standard 18:00' },
     { type: 4, name: 'plaetze', description: 'Plätze inkl. dir, Standard 4', min_value: 2, max_value: 30 },
     { type: 3, name: 'hinweis', description: 'Zusatzinfo, z. B. Regeln erklärt' },

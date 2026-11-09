@@ -14,6 +14,11 @@ assert.equal(parseDate('01.01.', new Date('2026-11-09T12:00:00Z')), '2027-01-01'
 assert.equal(parseDate('morgen', new Date('2026-11-09T12:00:00Z')), '2026-11-10');
 assert.equal(parseDate('quatsch'), null);
 assert.equal(COMMANDS.length, 3);
+import { nextEventDate } from '../src/discord.js';
+assert.equal(nextEventDate(new Date('2026-12-01T19:00:00Z')), '2026-12-05');
+assert.equal(nextEventDate(new Date('2026-11-04T10:00:00Z')), '2026-11-07');
+assert.equal(nextEventDate(new Date('2026-11-09T12:00:00Z')), '2026-11-10');
+assert.equal(parseDate('', new Date('2026-11-04T10:00:00Z')), '2026-11-07');
 console.log('discord ok');
 import { hasStarted } from '../src/discord.js';
 assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11-10T06:00:00Z')), true);   // am Tag selbst, vor der Uhrzeit
