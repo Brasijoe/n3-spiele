@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS plays (
   note TEXT NOT NULL DEFAULT '',
   duration INTEGER,
   first_play INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  logged_by TEXT,
+  via TEXT
 );
 CREATE INDEX IF NOT EXISTS plays_created ON plays(created_at);
 

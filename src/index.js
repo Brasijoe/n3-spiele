@@ -57,6 +57,29 @@ async function checkMember(req, env, ip) {
   return { member: m };
 }
 
+// Club-Schlüssel aus dem QR-Code im Club: erlaubt Partien eintragen ohne Discord. Gibt null oder einen Fehlercode zurück.
+async function checkLogKey(req, env, ip) {
+  const key = String(req.headers.get('x-log-key') || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const row = key.length >= 8 && key.length <= 32 ? await env.DB.prepare("SELECT value FROM config WHERE key = 'log_key'").first() : null;
+  if (row && safeEq(key, row.value)) return null;
+  // Nur Fehlversuche zählen: im Club teilen sich alle dieselbe IP (WLAN), der Schlüssel selbst hat ~60 Bit.
+  return (await allow(env, 'keyfail:' + ip, 20, 600)) ? 'bad_key' : 'rate_limited';
+}
+const KEY_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
+function newLogKey() {
+  const r = crypto.getRandomValues(new Uint8Array(12));
+  return Array.from(r, (x) => KEY_CHARS[x % KEY_CHARS.length]).join('');
+}
+let playColsOk = false;
+async function ensurePlayCols(env) {
+  if (playColsOk) return;
+  const { results } = await env.DB.prepare("SELECT name FROM pragma_table_info('plays')").all();
+  const have = new Set(results.map((r) => r.name));
+  if (!have.has('logged_by')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN logged_by TEXT').run();
+  if (!have.has('via')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN via TEXT').run();
+  playColsOk = true;
+}
+
 async function body(req) {
   const text = await req.text();
   if (text.length > 16000) throw Object.assign(new Error('too_large'), { status: 413 });
@@ -67,7 +90,7 @@ const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
 const int = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.round(Number(v)) : null);
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 
-const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, createdAt: r.created_at });
+const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', createdAt: r.created_at });
 const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), playId: r.play_id, createdAt: r.created_at });
 
 // Discord-Aktualisierungen laufen im Hintergrund; Fehler dürfen die Webseite nie stören.
@@ -84,15 +107,30 @@ async function route(req, env, ctx, url) {
     return json(results.map(playOut));
   }
   if (path === '/plays' && m === 'POST') {
-    const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
+    // Zwei Wege: persönlicher Code (Discord) oder Club-Schlüssel aus dem QR-Code (dann ist ein Name Pflicht).
+    const viaQr = req.headers.has('x-log-key');
+    let by;
+    if (viaQr) {
+      const err = await checkLogKey(req, env, ip); if (err) return fail(err === 'rate_limited' ? 429 : 403, err);
+    } else {
+      const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
+      by = auth.member.name;
+    }
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req);
+    if (viaQr) {
+      by = str(b.by, 40);
+      if (!by) return fail(400, 'name_missing');
+      // Spam-Bremse für den QR-Weg: 40 Partien pro Stunde und IP (Club-WLAN = eine IP für alle), 150 pro Tag insgesamt.
+      if (!(await allow(env, 'qr:' + ip, 40, 3600)) || !(await allow(env, 'qrall', 150, 86400))) return fail(429, 'rate_limited');
+    }
+    await ensurePlayCols(env);
     const game = str(b.game, 120), date = str(b.date, 10), players = int(b.players), duration = b.duration == null ? null : int(b.duration);
     if (!game || !isDate(date) || !(players >= 1 && players <= 99)) return fail(400, 'invalid');
     if (duration != null && !(duration >= 1 && duration <= 1440)) return fail(400, 'invalid');
     const id = newId();
-    await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString()).run();
+    await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)')
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString(), by, viaQr ? 'qr' : 'web').run();
     if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
     return json({ id });
   }
@@ -107,9 +145,24 @@ async function route(req, env, ctx, url) {
     return json(results.map(partyOut));
   }
   if (path === '/parties' && m === 'POST') {
-    const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
+    // Zwei Wege: persönlicher Code (Discord) oder Club-Schlüssel aus dem QR-Code (dann ist ein Name Pflicht).
+    const viaQr = req.headers.has('x-log-key');
+    let by;
+    if (viaQr) {
+      const err = await checkLogKey(req, env, ip); if (err) return fail(err === 'rate_limited' ? 429 : 403, err);
+    } else {
+      const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
+      by = auth.member.name;
+    }
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req);
+    if (viaQr) {
+      by = str(b.by, 40);
+      if (!by) return fail(400, 'name_missing');
+      // Spam-Bremse für den QR-Weg: 40 Partien pro Stunde und IP (Club-WLAN = eine IP für alle), 150 pro Tag insgesamt.
+      if (!(await allow(env, 'qr:' + ip, 40, 3600)) || !(await allow(env, 'qrall', 150, 86400))) return fail(429, 'rate_limited');
+    }
+    await ensurePlayCols(env);
     const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = auth.member.name;
     if (!game || !host || !isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     const id = newId(), hostKey = newId() + newId();
@@ -178,6 +231,21 @@ async function route(req, env, ctx, url) {
   if (path === '/admin/discord/register' && m === 'POST') {
     if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
     try { return json({ ok: true, count: await registerCommands(env) }); } catch (e) { return fail(502, e.code || 'discord_error'); }
+  }
+
+  if (path === '/admin/logkey' && (m === 'GET' || m === 'POST')) {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    if (m === 'POST') {
+      const key = newLogKey();
+      await env.DB.prepare("INSERT INTO config(key, value) VALUES('log_key', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(key).run();
+      return json({ key });
+    }
+    const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'log_key'").first();
+    return json({ key: row ? row.value : null });
+  }
+  if (path === '/logkey/check' && m === 'GET') {
+    const err = await checkLogKey(req, env, ip);
+    return err ? fail(err === 'rate_limited' ? 429 : 403, err) : json({ ok: true });
   }
 
   if (path === '/admin/check' && m === 'GET') return (await isAdmin(req, env, ip)) ? json({ ok: true }) : fail(403, 'forbidden');

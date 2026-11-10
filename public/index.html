@@ -98,7 +98,7 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .bgglogo { display: inline-flex; background: #fff; border-radius: 8px; padding: 10px 16px; }
 .bgglogo img { height: 48px; width: auto; display: block; }
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 300; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 .dialog { background: var(--surface); border-radius: 8px; width: 100%; max-width: 480px; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; max-height: 100%; overflow: auto; }
 .code input { width: 150px; font-size: 22px; letter-spacing: .3em; }
 .err { color: var(--error); font-weight: 600; font-size: 14px; }
@@ -209,6 +209,12 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .embed .band .wrap { padding-block: 14px 22px; }
 .embed .band h1, .embed .band p { display: none; }
 .embed .modal { position: absolute; inset: auto; left: 0; right: 0; top: var(--vp-top, 0px); height: var(--vp-h, 100vh); }
+.qr-adm { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; }
+.qr-img { width: 168px; height: 168px; background: #fff; padding: 8px; border-radius: 8px; box-sizing: border-box; }
+.qr-img:empty { display: none; }
+.qr-img svg { width: 100%; height: 100%; display: block; }
+.qr-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.qr-url { word-break: break-all; font-weight: 600; }
 .foot-admin .btn { min-height: 36px; font-size: 13px; }
 .gl-list { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 720px) { .st-panel, .st-filters { padding-inline: 18px; } .months { gap: 3px; } .mlabels { gap: 3px; font-size: 10px; } }
@@ -330,6 +336,13 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
       </div>
     </div>
     <div class="adm-block">
+      <h3 data-t="admQr"></h3>
+      <p class="note" data-t="admQrNote" style="margin:0"></p>
+      <div class="qr-adm" id="qrAdm"><div class="qr-img" id="qrImg"></div><div class="qr-side"><a id="qrUrl" class="qr-url" target="_blank" rel="noopener"></a>
+        <div class="row" style="align-items:center"><a class="btn btn-primary" id="qrPrint" target="_blank" rel="noopener" data-t="admQrPrint"></a><button type="button" class="btn btn-quiet" id="qrCopy" data-t="admQrCopy"></button><button type="button" class="btn btn-quiet" id="qrNew"></button></div>
+        <span id="qrMsg" role="status" class="note"></span></div></div>
+    </div>
+    <div class="adm-block">
       <h3 data-t="admPlays"></h3>
       <div id="admPlays"></div>
     </div>
@@ -397,7 +410,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <div class="gpick" id="gPick" hidden>
       <div class="gsel" id="gSel" hidden><span><strong id="gSelName"></strong> <span class="meta" id="gSelMeta"></span></span><button type="button" class="btn btn-quiet" id="gChange" data-t="change" style="min-height:40px"></button></div>
       <div id="gSearchBox" class="gpick">
-        <label class="field"><span data-t="bggSearch"></span><input type="search" id="gQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="gRes"></label>
+        <label class="field"><span data-t="ptGame"></span><input type="search" id="gQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="gRes"></label>
         <ul class="gres" id="gRes" role="listbox"></ul>
         <span class="note" id="gHint"></span>
       </div>
@@ -408,7 +421,8 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <label style="display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600;color:var(--fg)"><input type="checkbox" id="fFirst" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="first"></span></label>
     <label class="field"><span data-t="winner"></span><input type="text" id="fWinner" maxlength="80"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="fNote" maxlength="200"></label>
-    <label class="field code"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
+    <label class="field" id="fByWrap" hidden><span data-t="byName"></span><input type="text" id="fBy" maxlength="40" autocomplete="nickname"><span class="note" data-t="byHint"></span></label>
+    <label class="field code" id="fCodeWrap"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="fMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
       <button type="button" class="btn btn-quiet" id="cancel" data-t="cancel"></button>
@@ -454,7 +468,9 @@ const TXT = {
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
     ciTitle: 'Dein persönlicher Code', ciP1: 'Damit wir wissen, wer eine Spielrunde anlegt oder eine Partie einträgt, hat jedes Mitglied einen eigenen Code. Er ist mit deinem Discord-Konto verknüpft.', ciP2: 'So bekommst du ihn: Tritt dem N3-Discord-Server bei, akzeptiere die Brettspiel-Rolle und tippe dann im Bot-Kanal /code. Der Bot schickt dir den Code als Nachricht, die nur du sehen kannst. Gib ihn hier ein; dein Browser merkt ihn sich.', ciP3: 'Gib den Code nicht weiter. Ein neues /code macht den alten ungültig, und wer den Server verlässt, verliert den Code.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
-    code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Auf dem N3-Discord-Server mit /code abholen.', cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
+    code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Auf dem N3-Discord-Server mit /code abholen.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
+    admQr: 'Eintragen per QR-Code', admQrNote: 'Wer den QR-Code im Club scannt, kann Partien ohne Discord eintragen (mit Namen). Ein neuer Schlüssel macht alte Ausdrucke sofort ungültig.', admQrPrint: 'Aushang drucken', admQrCopy: 'Link kopieren', admQrCopied: 'Link kopiert.', admQrMake: 'Schlüssel erzeugen', admQrRenew: 'Neuen Schlüssel erzeugen', admQrRenewSure: 'Alte Ausdrucke werden ungültig – wirklich?', admQrNone: 'Noch kein Schlüssel. Erst erzeugen, dann drucken.', admQrRenewed: 'Neuer Schlüssel aktiv. Bitte den neuen Aushang drucken.', admQrErr: 'Das hat nicht geklappt.', byTag: 'von {n}',
+    cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
     errLen: 'Bitte deinen persönlichen Code eingeben (8 Zeichen).', errCode: 'Der Code stimmt nicht. Hol dir mit /code auf dem Discord-Server einen neuen.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
     gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
     weights: ['Einsteiger', 'Leicht', 'Mittel', 'Anspruchsvoll', 'Sehr komplex'], times: ['bis 30 Min', '30–60 Min', '1–2 Std', 'über 2 Std'],
@@ -500,7 +516,9 @@ const TXT = {
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
     ciTitle: 'Your personal code', ciP1: 'So we know who creates a game round or logs a play, every member has their own code. It is linked to your Discord account.', ciP2: 'How to get it: join the N3 Discord server, accept the board game role, then type /code in the bot channel. The bot sends you the code in a message only you can see. Enter it here; your browser remembers it.', ciP3: 'Don’t share it. A new /code invalidates the old one, and anyone who leaves the server loses their code.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
-    code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it on the N3 Discord server with /code.', cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
+    code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it on the N3 Discord server with /code.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
+    admQr: 'Logging via QR code', admQrNote: 'Anyone who scans the QR code at the club can log plays without Discord (with their name). A new key instantly invalidates old printouts.', admQrPrint: 'Print poster', admQrCopy: 'Copy link', admQrCopied: 'Link copied.', admQrMake: 'Create key', admQrRenew: 'Create new key', admQrRenewSure: 'Old printouts stop working – sure?', admQrNone: 'No key yet. Create one, then print.', admQrRenewed: 'New key active. Please print the new poster.', admQrErr: 'That didn’t work.', byTag: 'by {n}',
+    cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
     errLen: 'Please enter your personal code (8 characters).', errCode: 'Wrong code. Get a new one with /code on the Discord server.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
     gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
     weights: ['Beginner', 'Light', 'Medium', 'Demanding', 'Very complex'], times: ['up to 30 min', '30–60 min', '1–2 h', 'over 2 h'],
@@ -543,6 +561,15 @@ const showCode = (v) => { const c = normCode(v); return c.length > 4 ? c.slice(0
 const savedCode = () => { try { return localStorage.getItem('n3-member-code') || ''; } catch (e) { return ''; } };
 const saveCode = (c) => { try { localStorage.setItem('n3-member-code', c); } catch (e) {} };
 const forgetCode = () => { try { localStorage.removeItem('n3-member-code'); } catch (e) {} };
+// Club-Schlüssel aus dem QR-Code im Club (?log=…): wird auf dem Gerät gemerkt und ersetzt dort den persönlichen Code.
+const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const lsSet = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
+let logKey = lsGet('n3-log-key');
+const qrParam = new URLSearchParams(location.search).get('log');
+if (qrParam) {
+  logKey = qrParam.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 32); lsSet('n3-log-key', logKey);
+  try { const u = new URL(location.href); u.searchParams.delete('log'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) {}
+}
 const PAGE = 24;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -819,6 +846,7 @@ function renderAdmin() {
     return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<span>' + esc(String(p.date || '').split('-').reverse().join('.')) + '</span><span>' + esc(p.players + ' ' + t.players) + '</span>' +
       (Number(p.duration) > 0 ? '<span>' + esc(p.duration + ' ' + t.min) + '</span>' : '') + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') +
       (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') +
+      (p.loggedBy ? '<span class="meta">' + esc(fill(t.byTag, { n: p.loggedBy }) + (p.via === 'qr' ? ' (QR)' : '')) + '</span>' : '') +
       '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></div>';
   }).join('') : '<p class="meta" style="margin:0">' + esc(t.admNoPlays) + '</p>';
 }
@@ -877,6 +905,7 @@ function openLog(g) {
   const d = new Date(); $('fDate').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   $('fPlayers').value = Math.min(Math.max(4, g.p1), Math.min(g.p2, 30)); $('fWinner').value = ''; $('fNote').value = ''; $('fCode').value = showCode(savedCode()); $('fDur').value = ''; $('fFirst').checked = false;
   $('fMsg').textContent = ''; $('fMsg').className = ''; $('save').disabled = false;
+  $('fByWrap').hidden = !logKey; $('fCodeWrap').hidden = !!logKey; $('fBy').value = lsGet('n3-log-name');
   $('modal').hidden = false; (guest ? $('gQ') : $('fDate')).focus();
 }
 function closeLog() { $('modal').hidden = true; logGame = null; logParty = null; }
@@ -885,26 +914,29 @@ async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new Text
 
 $('logForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const t = T(), msg = $('fMsg'), code = normCode($('fCode').value);
+  const t = T(), msg = $('fMsg'), code = normCode($('fCode').value), by = $('fBy').value.trim().slice(0, 40), useKey = !!logKey;
   msg.className = 'err';
-  if (code.length !== 8) { msg.textContent = t.errLen; return; }
+  if (useKey && !by) { msg.textContent = t.errBy; $('fBy').focus(); return; }
+  if (!useKey && code.length !== 8) { msg.textContent = t.errLen; return; }
   const durRaw = $('fDur').value.trim(); const dur = durRaw ? Math.round(Number(durRaw)) : null;
   if (durRaw && !(dur >= 1 && dur <= 1440)) { msg.textContent = t.errDur; return; }
   if (!logGame || logGame === GUEST_PENDING) { msg.textContent = t.errPick; $('gQ').focus(); return; }
   $('save').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   try {
     await api('POST', '/plays', { guest: !!logGame.guest, year: logGame.guest ? (logGame.y || null) : null, gameId: logGame.id, game: logGame.nDe, date: $('fDate').value, players: Number($('fPlayers').value) || 0,
-      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined }, { 'X-Member-Code': code });
-    saveCode(code); refreshAll();
-    msg.textContent = t.saved; setTimeout(closeLog, 600);
-  } catch (err) { if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
+      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined, by: useKey ? by : undefined }, useKey ? { 'X-Log-Key': logKey } : { 'X-Member-Code': code });
+    if (useKey) lsSet('n3-log-name', by); else saveCode(code); refreshAll();
+    msg.textContent = t.saved; setTimeout(() => { closeLog(); if (useKey) $('recH').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 600);
+  } catch (err) {
+    if (err && err.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); $('fByWrap').hidden = true; $('fCodeWrap').hidden = false; msg.className = 'err'; msg.textContent = t.errKey; $('save').disabled = false; return; }
+    if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
 });
 $('cancel').onclick = closeLog;
 $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeLog(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeLog(); if (e.key === 'Escape' && !$('pModal').hidden) closeParty(); });
 $('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
 
-$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); });
+$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); if (canEdit) renderQr(); });
 const AUTO_MS = 5000;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let autoOn = !reduceMotion, hoverPause = false, autoTimer = null;
@@ -1308,9 +1340,31 @@ $('admLink').onclick = () => {
 $('admForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
   try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
-  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); }
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); }
   catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
 });
+/* ---------- QR-Code zum Eintragen (Verwaltung) ---------- */
+let qrKey = null, qrSure = false, qrLib = null;
+const qrLink = (k) => location.origin + '/?log=' + k;
+function loadQrLib() { return qrLib || (qrLib = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/qrcode.js'; s.onload = () => res(window.qrcode); s.onerror = rej; document.head.appendChild(s); })); }
+async function renderQr() {
+  const t = T();
+  $('qrNew').textContent = qrSure ? t.admQrRenewSure : qrKey ? t.admQrRenew : t.admQrMake;
+  $('qrNew').className = 'btn ' + (qrSure || !qrKey ? 'btn-primary' : 'btn-quiet');
+  ['qrUrl', 'qrPrint', 'qrCopy'].forEach((id) => { $(id).hidden = !qrKey; });
+  if (!qrKey) { $('qrImg').innerHTML = ''; if (!$('qrMsg').textContent) $('qrMsg').textContent = t.admQrNone; return; }
+  const url = qrLink(qrKey); $('qrUrl').href = url; $('qrUrl').textContent = url; $('qrPrint').href = 'qr.html#' + qrKey;
+  try { const q = (await loadQrLib())(0, 'M'); q.addData(url); q.make(); $('qrImg').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); } catch (e) { $('qrImg').innerHTML = ''; }
+}
+async function loadQr() { try { qrKey = (await api('GET', '/admin/logkey')).key; } catch (e) { qrKey = null; } renderQr(); }
+$('qrNew').onclick = async () => {
+  const t = T();
+  if (qrKey && !qrSure) { qrSure = true; renderQr(); return; }
+  qrSure = false;
+  try { qrKey = (await api('POST', '/admin/logkey')).key; $('qrMsg').textContent = t.admQrRenewed; } catch (e) { $('qrMsg').textContent = t.admQrErr; }
+  renderQr();
+};
+$('qrCopy').onclick = async () => { try { await navigator.clipboard.writeText(qrLink(qrKey)); $('qrMsg').textContent = T().admQrCopied; } catch (e) { $('qrMsg').textContent = qrLink(qrKey); } };
 async function loadGeeklist() {
   if (!canEdit) return; const t = T();
   try {
@@ -1336,6 +1390,12 @@ $('codeInfo').addEventListener('click', (e) => { if (e.target === $('codeInfo'))
 api('GET', '/config/public').then((c) => { if (c && c.discordUrl) { $('ciLink').href = c.discordUrl; $('ciLink').hidden = false; } }).catch(() => {});
 renderAll();
 restartAuto();
+if (qrParam && logKey) {
+  // Direkt nach dem Scannen: Dialog öffnen. Ist der Schlüssel veraltet, gleich Bescheid geben.
+  if (currentView() !== 'collection') location.hash = '';
+  openLog(GUEST_PENDING);
+  api('GET', '/logkey/check', undefined, { 'X-Log-Key': logKey }).catch((e) => { if (e && e.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); $('fByWrap').hidden = true; $('fCodeWrap').hidden = false; $('fMsg').className = 'err'; $('fMsg').textContent = T().errKey; } });
+}
 
 watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); partyState = 'ready'; renderParties(); }, () => { partyState = 'off'; renderParties(); }, 15000);
 watch('/plays', (rows) => {
@@ -1348,7 +1408,7 @@ watch('/config/highlights', (cfg) => {
   hlCfg = cfg; applyHl(); renderSlider();
   if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
 }, () => {}, 60000);
-if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
 })();
 </script>
 
