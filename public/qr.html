@@ -11,42 +11,55 @@
 :root { --accent: #f09b19; --ink: #1b1b1b; --muted: #555; --band: #1b1b1b; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #e9e9e9; color: var(--ink); font-family: Karla, system-ui, sans-serif; }
-.bar { display: flex; gap: 10px; justify-content: center; align-items: center; padding: 16px; flex-wrap: wrap; }
+.bar { display: flex; gap: 10px; justify-content: center; align-items: center; padding: 16px; flex-wrap: wrap; text-align: center; }
 .bar button { font: 700 16px Karla, sans-serif; min-height: 44px; padding: 0 20px; border-radius: 8px; border: 0; background: var(--accent); color: var(--ink); cursor: pointer; }
-.bar label { display: flex; gap: 8px; align-items: center; font-weight: 600; }
-.sheet { width: 186mm; min-height: 271mm; margin: 0 auto 24px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 14mm 12mm 10mm; gap: 7mm; box-shadow: 0 4px 18px rgba(0,0,0,.15); }
-.band { width: 100%; background: var(--band); color: #fff; border-radius: 6mm; padding: 8mm 6mm 7mm; }
+.bar span { font-size: 14px; color: var(--muted); }
+.sheet { width: 186mm; height: 271mm; margin: 0 auto 24px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12mm 12mm 10mm; gap: 6mm; box-shadow: 0 4px 18px rgba(0,0,0,.15); overflow: hidden; }
+.band { width: 100%; background: var(--band); color: #fff; border-radius: 6mm; padding: 7mm 6mm 6mm; }
 .band small { display: block; color: var(--accent); font: 700 5mm Rubik, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-h1 { font: 700 14mm/1.05 Rubik, sans-serif; margin: 2mm 0 0; }
-.sub { font-size: 6mm; margin: 2mm 0 0; color: #d6d6d6; }
-.qr { width: 112mm; height: 112mm; padding: 4mm; border: 1.2mm solid var(--accent); border-radius: 5mm; }
+h1 { font: 700 13mm/1.05 Rubik, sans-serif; margin: 2mm 0 0; }
+.sub { font-size: 5.6mm; margin: 2.5mm 0 0; color: #e6e6e6; line-height: 1.3; }
+.why { width: 100%; background: #fdecd0; color: #5a3600; border-radius: 4mm; padding: 4mm 6mm; font-size: 4.8mm; line-height: 1.35; }
+.why b { font: 700 5.4mm Rubik, sans-serif; display: block; margin-bottom: 1mm; color: #7a4a00; }
+.qr { width: 90mm; height: 90mm; padding: 4mm; border: 1.2mm solid var(--accent); border-radius: 5mm; flex: none; }
 .qr svg { width: 100%; height: 100%; display: block; }
 ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; width: 100%; }
-li { background: #f5f5f5; border-radius: 4mm; padding: 4mm 3mm; font-size: 4.6mm; line-height: 1.3; }
-li b { display: block; font: 700 9mm Rubik, sans-serif; color: var(--accent); }
-.en { font-size: 4.2mm; color: var(--muted); margin: 0; }
+li { background: #f5f5f5; border-radius: 4mm; padding: 3.5mm 3mm; font-size: 4.4mm; line-height: 1.3; }
+li b { display: block; font: 700 8mm Rubik, sans-serif; color: var(--accent); }
+.thanks { font: 700 6mm Rubik, sans-serif; margin: auto 0 0; }
 .err { max-width: 520px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; font-size: 18px; }
-@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; width: auto; min-height: 0; height: 271mm; } }
+@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; width: auto; height: 271mm; page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; } }
 </style>
 </head>
 <body>
-<div class="bar"><button type="button" onclick="window.print()">Drucken</button><label><input type="checkbox" id="showEn" checked> Englische Zeile</label></div>
+<div class="bar"><button type="button" onclick="window.print()">Drucken</button><span>2 Seiten: vorne Deutsch, hinten Englisch – beidseitig drucken.</span></div>
 <div id="root"></div>
 <script src="vendor/qrcode.js"></script>
 <script>
 (function () {
-  // Der Schlüssel steht nur im #-Teil der Adresse und wird nie an den Server geschickt.
+  // Der Schlüssel steht nur im #-Teil der Adresse und wird nie an den Server geschickt. Auf dem Aushang steht er nur im QR-Code.
   var key = location.hash.slice(1).toLowerCase().replace(/[^a-z0-9]/g, '');
   var root = document.getElementById('root');
   if (key.length < 8) { root.innerHTML = '<p class="err">Kein Schlüssel angegeben. Diesen Aushang bitte über die Verwaltung der Spielesammlung öffnen (Eintragen per QR-Code → Aushang drucken).</p>'; document.querySelector('.bar').hidden = true; return; }
-  var url = location.origin + '/?log=' + key;
-  var q = qrcode(0, 'M'); q.addData(url); q.make();
-  root.innerHTML = '<section class="sheet">' +
-    '<div class="band"><small>Nerd Nexus · Spielesammlung</small><h1>Partie gespielt?<br>Hier eintragen!</h1><p class="sub">Ohne Discord, ohne Konto – einfach scannen.</p></div>' +
-    '<div class="qr">' + q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }) + '</div>' +
-    '<ol><li><b>1</b>Code mit der Handy-Kamera scannen</li><li><b>2</b>Spiel suchen, Spielerzahl und Namen eintragen</li><li><b>3</b>Speichern – fertig!</li></ol>' +
-    '<p class="en" id="en">Played a game? Scan to log it – no Discord or account needed.</p></section>';
-  document.getElementById('showEn').onchange = function (e) { document.getElementById('en').hidden = !e.target.checked; };
+  var q = qrcode(0, 'M'); q.addData(location.origin + '/?log=' + key); q.make();
+  var svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  var T = {
+    de: { lang: 'de', kicker: 'Nerd Nexus · Spielesammlung', h: 'Partie gespielt?<br>Trag sie ein!', sub: 'Ohne Discord, ohne Konto – einfach scannen.',
+      whyH: 'Wir wollen wissen, was ihr spielt!', why: 'Jede eingetragene Partie zeigt der ganzen Community, was im Club auf den Tisch kommt: die Lieblingsspiele, die Dauerbrenner und die vergessenen Schätze. Und je mehr eingetragen wird, desto besser werden Statistik und Spieletipps für alle.',
+      s: ['Code mit der Handy-Kamera scannen', 'Spiel suchen, Spielerzahl und deinen Namen eintragen', 'Speichern – dauert keine Minute!'], thanks: 'Danke, dass du mitmachst! 🎲' },
+    en: { lang: 'en', kicker: 'Nerd Nexus · Game collection', h: 'Played a game?<br>Log it!', sub: 'No Discord, no account – just scan.',
+      whyH: 'We want to know what you play!', why: 'Every logged play shows the whole community what hits the table at the club: the favourites, the evergreens and the forgotten gems. And the more plays get logged, the better the stats and game tips get for everyone.',
+      s: ['Scan the code with your phone camera', 'Find the game, enter player count and your name', 'Save – takes less than a minute!'], thanks: 'Thanks for joining in! 🎲' }
+  };
+  function sheet(t) {
+    return '<section class="sheet" lang="' + t.lang + '">' +
+      '<div class="band"><small>' + t.kicker + '</small><h1>' + t.h + '</h1><p class="sub">' + t.sub + '</p></div>' +
+      '<div class="why"><b>' + t.whyH + '</b>' + t.why + '</div>' +
+      '<div class="qr">' + svg + '</div>' +
+      '<ol>' + t.s.map(function (x, i) { return '<li><b>' + (i + 1) + '</b>' + x + '</li>'; }).join('') + '</ol>' +
+      '<p class="thanks">' + t.thanks + '</p></section>';
+  }
+  root.innerHTML = sheet(T.de) + sheet(T.en);
 })();
 </script>
 </body>
