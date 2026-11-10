@@ -83,18 +83,21 @@ function view(r, env = {}) {
   const hostTxt = r.host_discord ? `<@${r.host_discord}>` : r.host;
   const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬛'.repeat(Math.max(0, r.seats - taken));
   const gameTxt = r.game + (r.year ? ` (${r.year})` : '');
+  const gap = { name: '\u200b', value: '\u200b', inline: true }; // leeres Feld: erzwingt 2 Felder pro Zeile
+  const left = free ? `${bar}\nnoch **${free}** frei` : `${bar}\n🔒 **voll**`;
+  const dabei = [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x)].join('\n').slice(0, 1000);
   const fields = logged
-    ? [{ name: '✅ Gespielt am', value: `**${fmtDate(r.date)}**`, inline: true }, { name: '👥 Spielende', value: `**${taken}**`, inline: true }]
+    ? [{ name: '✅ Gespielt am', value: `**${fmtDate(r.date)}**`, inline: true }, { name: '👥 Spielende', value: `**${taken}**`, inline: true }, gap, { name: '👥 Dabei', value: dabei }]
     : [
       { name: '📅 Datum', value: `**${wdName(r.date)}, ${fmtDate(r.date)}**`, inline: true },
-      { name: '🕕 Uhrzeit', value: r.time ? `**${r.time} Uhr**` : '–', inline: true },
-      { name: `🪑 Plätze · ${taken}/${r.seats}`, value: bar, inline: true },
+      { name: '🕕 Uhrzeit', value: r.time ? `**${r.time} Uhr**` : '–', inline: true }, gap,
+      { name: `🪑 Plätze · ${taken}/${r.seats}`, value: left, inline: true },
+      { name: '👥 Dabei', value: dabei, inline: true }, gap,
     ];
-  fields.push({ name: '👥 Dabei', value: [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x)].join('\n').slice(0, 1000) });
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
   const embed = {
     title: '🎲 ' + gameTxt,
-    description: (logged ? '' : free ? `Noch **${free}** ${free === 1 ? 'Platz' : 'Plätze'} frei – komm dazu!` : '🔒 **Die Runde ist voll.**') + '\n' + '⠀'.repeat(55), // letzte Zeile unsichtbar: macht die Karte breiter
+    description: (logged ? '✅ **Die Runde wurde gespielt.**' : free ? `Noch **${free}** ${free === 1 ? 'Platz' : 'Plätze'} frei – komm dazu!` : '🔒 **Die Runde ist voll.**') + '\n' + '⠀'.repeat(55), // letzte Zeile unsichtbar: macht die Karte breiter
     color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
     fields,
     footer: { text: logged ? 'Als gespielt registriert · N3' : 'N3 · Nerd Nexus Nürnberg' },
