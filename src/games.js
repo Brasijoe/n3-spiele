@@ -122,18 +122,30 @@ export async function listExtras(env) {
   return results.map((r) => JSON.parse(r.data));
 }
 
-// Cover: gleiche Herkunft wie die Seite, damit der Browser keine Drittanbieter anspricht (24 h Edge-Cache).
+// Cover: gleiche Herkunft wie die Seite, damit der Browser keine Drittanbieter anspricht (Edge-Cache).
+// Reihenfolge: eingebautes Cover der Sammlung -> übernommenes Spiel (D1) -> Vorschaubild von BGG (für Gastspiele, 30 Tage gemerkt).
 export async function coverResponse(env, ctx, id) {
-  await ensureExtra(env);
-  const row = await env.DB.prepare('SELECT thumb FROM extra_games WHERE id = ?1').bind(id).first();
-  if (!row || !row.thumb) return new Response('not found', { status: 404 });
-  let u; try { u = new URL(row.thumb); } catch { return new Response('bad', { status: 404 }); }
-  if (u.protocol !== 'https:' || !/(^|\.)geekdo-images\.com$/.test(u.hostname)) return new Response('forbidden', { status: 403 });
   const cache = caches.default, key = new Request('https://cache.invalid/cover/' + id);
   const hit = await cache.match(key); if (hit) return hit;
+  const done = (res, maxAge) => {
+    const out = new Response(res.body, { headers: { 'content-type': res.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public, max-age=' + maxAge } });
+    ctx.waitUntil(cache.put(key, out.clone()));
+    return out;
+  };
+  for (const ext of ['jpg', 'png']) {
+    const a = await env.ASSETS.fetch(new Request(`https://assets.local/covers/${id}.${ext}`));
+    if (a.ok) return done(a, 604800);
+  }
+  await ensureExtra(env);
+  const row = await env.DB.prepare('SELECT thumb FROM extra_games WHERE id = ?1').bind(id).first();
+  let url = row && row.thumb;
+  if (!url && env.BGG_TOKEN) {
+    try { const g = (await fetchThings(env, [id]))[0]; url = g && g.thumb; } catch { /* kein Bild */ }
+  }
+  if (!url) return new Response('not found', { status: 404 });
+  let u; try { u = new URL(url); } catch { return new Response('bad', { status: 404 }); }
+  if (u.protocol !== 'https:' || !/(^|\.)geekdo-images\.com$/.test(u.hostname)) return new Response('forbidden', { status: 403 });
   const res = await fetch(u.toString(), { headers: { 'User-Agent': 'n3-spiele/1.0' } });
   if (!res.ok) return new Response('upstream', { status: 502 });
-  const out = new Response(res.body, { headers: { 'content-type': res.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public, max-age=604800' } });
-  ctx.waitUntil(cache.put(key, out.clone()));
-  return out;
+  return done(res, 2592000);
 }

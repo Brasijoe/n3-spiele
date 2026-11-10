@@ -75,25 +75,35 @@ const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.$
 const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
 
 // ---- Nachricht ----
-function view(r) {
+function view(r, env = {}) {
   const att = JSON.parse(r.attendees || '{}');
-  const names = Object.values(att).filter((a) => !a.out).map((a) => a.name);
-  const taken = names.length + 1, free = Math.max(0, r.seats - taken);
+  const people = Object.entries(att).filter(([, a]) => !a.out).map(([k, a]) => (/^d\d{5,}$/.test(k) ? `<@${k.slice(1)}>` : a.name));
+  const taken = people.length + 1, free = Math.max(0, r.seats - taken);
   const logged = !!r.play_id;
-  const fields = [
-    { name: 'Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ', ' + r.time + ' Uhr' : ''}`, inline: true },
-    { name: 'Plätze', value: `${taken}/${r.seats}${free ? ` (${free} frei)` : ' (voll)'}`, inline: true },
-    { name: 'Dabei', value: [`${r.host} (Gastgeber)`, ...names].join('\n').slice(0, 1000) },
-  ];
-  if (r.note) fields.push({ name: 'Hinweis', value: r.note });
-  const embed = { title: r.game + (r.year ? ` (${r.year})` : ''), color: logged ? 0x2e7d32 : 0xe8a33d, fields, footer: { text: logged ? 'Als gespielt registriert ✓' : 'N3 Spielrunde' } };
-  if (r.game_id) embed.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
+  const hostTxt = r.host_discord ? `<@${r.host_discord}>` : r.host;
+  const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬛'.repeat(Math.max(0, r.seats - taken));
+  const when = `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ' · ' + r.time + ' Uhr' : ''}`;
+  const embed = {
+    title: '🎲 ' + r.game + (r.year ? ` (${r.year})` : ''),
+    description: logged ? `✅ **Gespielt am ${fmtDate(r.date)}**` : `📅 **${when}**\n${free ? `Noch **${free}** ${free === 1 ? 'Platz' : 'Plätze'} frei – komm dazu!` : '🔒 **Die Runde ist voll.**'}`,
+    color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
+    fields: [
+      { name: `🪑 Plätze (${taken}/${r.seats})`, value: bar.slice(0, 1000) },
+      { name: '👥 Dabei', value: [`👑 ${hostTxt}`, ...people].join('\n').slice(0, 1000) },
+    ],
+    footer: { text: logged ? 'Als gespielt registriert' : 'N3 · Nerd Nexus Nürnberg' },
+  };
+  if (r.note) embed.fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
+  if (r.game_id) {
+    embed.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
+    if (env.PUBLIC_URL) embed.thumbnail = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}` };
+  }
   const components = logged ? [] : [{ type: 1, components: [
-    { type: 2, style: 3, label: 'Ich bin dabei', custom_id: 'join:' + r.id, disabled: !free },
+    { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
-    { type: 2, style: 1, label: 'Verwalten (Ersteller)', custom_id: 'manage:' + r.id },
+    { type: 2, style: 1, label: 'Verwalten (Ersteller)', emoji: { name: '⚙️' }, custom_id: 'manage:' + r.id },
   ] }];
-  return { embeds: [embed], components };
+  return { embeds: [embed], components, allowed_mentions: { parse: [] } };
 }
 
 // Nur der Ersteller sieht diese Schaltflächen (kurzlebige Nachricht, nur für ihn sichtbar).
@@ -140,7 +150,7 @@ async function cmdParty(i, env) {
   try {
     if (i.channel_id && env.DISCORD_BOT_TOKEN) { await announceParty(env, id, i.channel_id); return say('Runde angelegt ✓ – sie steht jetzt im Kanal.'); }
   } catch (e) { console.log('announce failed', e && e.message); }
-  return reply({ type: 4, data: { content: `**${w.name}** sucht Mitspielende!`, ...view(row) } });
+  return reply({ type: 4, data: { content: `**${w.name}** sucht Mitspielende!`, ...view(row, env) } });
 }
 
 async function cmdLog(i, env) {
@@ -214,7 +224,7 @@ async function button(i, env) {
     return done('Runde storniert ✓');
   } else return say('Unbekannte Aktion.');
   const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
-  return reply({ type: 7, data: view(fresh) });
+  return reply({ type: 7, data: view(fresh, env) });
 }
 
 async function editSubmit(i, env) {
@@ -342,7 +352,7 @@ export async function announceParty(env, id, channelId, fromWeb = false) {
   if (fromWeb && !((await budget(env, 'new-h', 5, 3600)) && (await budget(env, 'new-d', 15, 86400)))) { console.log('discord: announce limit reached, skipped'); return null; }
   channelId = channelId || channelIds(env)[0];
   const row = await getParty(env, id); if (!row) return null;
-  const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
+  const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row, env) });
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
   return msg.id;
 }
@@ -350,7 +360,7 @@ export async function syncParty(env, id, internal = false) {
   if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   const row = await getParty(env, id);
   if (!row || !row.discord_msg) return;
-  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row) });
+  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row, env) });
 }
 export async function cancelPartyMessage(env, row, internal = false) {
   if (!row || !row.discord_msg) return;

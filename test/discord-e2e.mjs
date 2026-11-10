@@ -14,7 +14,7 @@ assert.equal((await post({ type: 1 }, true)).status, 401);
 assert.equal((await post({ type: 1 })).json.type, 1);
 let r = await post({ type: 2, guild_id: 'g1', ...user('111', 'Hans'), data: { name: 'party', options: [{ name: 'spiel', value: '295947|Cascadia|2021' }, { name: 'plaetze', value: 3 }, { name: 'datum', value: '2099-01-05' }] } });
 assert.equal(r.json.type, 4); const e = r.json.data.embeds[0];
-assert.equal(e.title, 'Cascadia (2021)'); console.log('party ok:', e.fields.map((f) => f.name + '=' + f.value.replace(/\n/g, '|')).join(' ; '));
+assert.equal(e.title, '🎲 Cascadia (2021)'); console.log('party ok:', e.fields.map((f) => f.name + '=' + f.value.replace(/\n/g, '|')).join(' ; '));
 const pid = r.json.data.components[0].components[0].custom_id.split(':')[1];
 const click = (act, id, name) => post({ type: 3, guild_id: 'g1', ...user(id, name), data: { custom_id: act + ':' + pid } });
 r = await click('join', '222', 'Anna'); assert.equal(r.json.type, 7);
