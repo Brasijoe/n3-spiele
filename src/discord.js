@@ -1,6 +1,7 @@
 // Discord-Bot als HTTP-Interactions-Endpoint (kein dauerhaft laufender Prozess nötig).
 // Befehle: /party (Spielrunde anlegen), /log (Partie eintragen). Buttons: Dabei / Absagen / Partie eintragen.
 import { bggSearch } from './bgg.js';
+import { warmCover } from './games.js';
 
 const enc = new TextEncoder();
 const hex = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
@@ -93,22 +94,22 @@ function view(r, env = {}) {
       { name: '👥 Dabei', value: dabei },
     ];
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
-  const embed = {
-    title: '🎲 ' + gameTxt,
-    color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
-    fields,
-  };
-  if (logged) embed.footer = { text: 'Als gespielt registriert' };
+  const color = logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a;
+  const head = { title: '🎲 ' + gameTxt, color };
+  const body = { color, fields };
+  if (logged) body.footer = { text: 'Als gespielt registriert' };
+  let embeds;
   if (r.game_id) {
-    embed.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
-    if (env.PUBLIC_URL) embed.image = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}.jpg` }; // große Grafik; die Endung hilft Discord beim Erkennen
-  }
+    head.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
+    if (env.PUBLIC_URL) head.image = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}-big.jpg` };
+    embeds = [head, body]; // Titel und großes Bild oben, darunter die Angaben
+  } else { embeds = [{ ...head, fields, ...(logged ? { footer: body.footer } : {}) }]; }
   const components = logged ? [] : [{ type: 1, components: [
     { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
     { type: 2, style: 1, label: 'Verwalten (Ersteller)', emoji: { name: '⚙️' }, custom_id: 'manage:' + r.id },
   ] }];
-  return { embeds: [embed], components, allowed_mentions: { parse: [] } };
+  return { embeds, components, allowed_mentions: { parse: [] } };
 }
 
 // Nur der Ersteller sieht diese Schaltflächen (kurzlebige Nachricht, nur für ihn sichtbar).
@@ -357,6 +358,7 @@ export async function announceParty(env, id, channelId, fromWeb = false) {
   if (fromWeb && !((await budget(env, 'new-h', 5, 3600)) && (await budget(env, 'new-d', 15, 86400)))) { console.log('discord: announce limit reached, skipped'); return null; }
   channelId = channelId || channelIds(env)[0];
   const row = await getParty(env, id); if (!row) return null;
+  if (row.game_id) { try { await Promise.race([warmCover(env, row.game_id), new Promise((r) => setTimeout(r, 4000))]); } catch { /* ohne Vorwärmen */ } }
   const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row, env) });
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
   return msg.id;

@@ -44,6 +44,7 @@ export function parseThings(xml) {
     const rankV = ranks.find((x) => x[1] === 'boardgame');
     const types = ranks.filter((x) => SUB[x[1]] && /^\d+$/.test(x[2])).map((x) => SUB[x[1]]).join('');
     const links = (t) => [...b.matchAll(new RegExp('<link\\b[^>]*type="' + t + '"[^>]*>', 'g'))].map((x) => ({ id: +attr(x[0], /\bid="(\d+)"/), v: attr(x[0], /\bvalue="([^"]*)"/), inbound: /inbound="true"/.test(x[0]) }));
+    const img = /<image>\s*([^<\s]+)\s*<\/image>/.exec(b);
     const thumb = /<thumbnail>\s*([^<\s]+)\s*<\/thumbnail>/.exec(b) || /<image>\s*([^<\s]+)\s*<\/image>/.exec(b);
     const t1 = num(attr(b, /<minplaytime\b[^>]*value="(\d+)"/)) || num(attr(b, /<playingtime\b[^>]*value="(\d+)"/));
     const t2 = num(attr(b, /<maxplaytime\b[^>]*value="(\d+)"/)) || t1;
@@ -56,7 +57,7 @@ export function parseThings(xml) {
       rank: rankV && /^\d+$/.test(rankV[2]) ? +rankV[2] : 0, best: ranges(bestL), rec: ranges(recL),
       cats: links('boardgamecategory').map((x) => x.v), mechs: links('boardgamemechanic').map((x) => x.v),
       des: (links('boardgamedesigner')[0] || {}).v || '', exp: type === 'boardgameexpansion' ? 1 : 0,
-      base: (links('boardgameexpansion').find((x) => x.inbound) || {}).id || 0, types, thumb: thumb ? thumb[1] : '',
+      base: (links('boardgameexpansion').find((x) => x.inbound) || {}).id || 0, types, thumb: thumb ? thumb[1] : '', img: img ? img[1] : '',
     });
   }
   return games;
@@ -64,9 +65,9 @@ export function parseThings(xml) {
 
 const headers = (env) => ({ Authorization: 'Bearer ' + env.BGG_TOKEN, 'User-Agent': 'n3-spiele/1.0 (Nerd Nexus Nuernberg, non-commercial)', Accept: 'application/xml' });
 
-async function fetchThings(env, ids) {
+async function fetchThings(env, ids, tries = 4) {
   let res;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < tries; i++) {
     res = await fetch('https://boardgamegeek.com/xmlapi2/thing?stats=1&id=' + ids.join(','), { headers: headers(env) });
     if (res.status !== 202 && res.status !== 429) break;
     await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
@@ -124,17 +125,31 @@ export async function listExtras(env) {
 
 // Cover: gleiche Herkunft wie die Seite, damit der Browser keine Drittanbieter anspricht (Edge-Cache).
 // Reihenfolge: eingebautes Cover der Sammlung -> übernommenes Spiel (D1) -> Vorschaubild von BGG (für Gastspiele, 30 Tage gemerkt).
-export async function coverResponse(env, ctx, id) {
-  const cache = caches.default, key = new Request('https://cache.invalid/cover/' + id);
+export async function coverResponse(env, ctx, id, big = false) {
+  const cache = caches.default, key = new Request('https://cache.invalid/cover/' + id + (big ? '-big' : ''));
   const hit = await cache.match(key); if (hit) return hit;
   const done = (res, maxAge) => {
     const out = new Response(res.body, { headers: { 'content-type': res.headers.get('content-type') || 'image/jpeg', 'cache-control': 'public, max-age=' + maxAge } });
     ctx.waitUntil(cache.put(key, out.clone()));
     return out;
   };
+  if (big && env.BGG_TOKEN) {
+    // Große Version (für Discord): Originalbild von BGG in mittlerer Größe; bei Problemen weiter unten das kleine Cover.
+    try {
+      const g = (await fetchThings(env, [id], 1))[0], img = g && (g.img || g.thumb);
+      if (img) {
+        for (const cand of [img.replace('__original', '__itemrep'), img]) {
+          const u = new URL(cand);
+          if (u.protocol !== 'https:' || !/(^|\.)geekdo-images\.com$/.test(u.hostname)) continue;
+          const res = await fetch(u.toString(), { headers: { 'User-Agent': 'n3-spiele/1.0' } });
+          if (res.ok) return done(res, 2592000);
+        }
+      }
+    } catch { /* kleines Cover verwenden */ }
+  }
   for (const ext of ['jpg', 'png']) {
     const a = await env.ASSETS.fetch(new Request(`https://assets.local/covers/${id}.${ext}`));
-    if (a.ok) return done(a, 604800);
+    if (a.ok) return done(a, big ? 3600 : 604800);
   }
   await ensureExtra(env);
   const row = await env.DB.prepare('SELECT thumb FROM extra_games WHERE id = ?1').bind(id).first();
@@ -148,4 +163,11 @@ export async function coverResponse(env, ctx, id) {
   const res = await fetch(u.toString(), { headers: { 'User-Agent': 'n3-spiele/1.0' } });
   if (!res.ok) return new Response('upstream', { status: 502 });
   return done(res, 2592000);
+}
+
+// Bild vorab laden, damit es im Cache liegt, wenn Discord es abruft.
+export async function warmCover(env, id) {
+  const pending = [];
+  await coverResponse(env, { waitUntil: (p) => pending.push(p) }, id, true);
+  await Promise.allSettled(pending);
 }

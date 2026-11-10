@@ -200,9 +200,9 @@ async function route(req, env, ctx, url) {
   if (path === '/games/extra' && m === 'GET') {
     const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
   }
-  if ((g = path.match(/^\/cover\/(\d+)(?:\.\w+)?$/)) && m === 'GET') {
+  if ((g = path.match(/^\/cover\/(\d+)(-big)?(?:\.\w+)?$/)) && m === 'GET') {
     if (!(await allow(env, 'cover:' + ip, 120, 60))) return fail(429, 'rate_limited');
-    return coverResponse(env, ctx, +g[1]);
+    return coverResponse(env, ctx, +g[1], !!g[2]);
   }
 
   if (path === '/bgg/search' && m === 'GET') {
