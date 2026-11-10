@@ -41,7 +41,7 @@ const shots = process.env.SHOTS;
   if (shots) { await d.locator('#qrAdm').scrollIntoViewIfNeeded(); await d.locator('#admin .adm-block', { has: d.locator('#qrAdm') }).screenshot({ path: shots + '/admin.png' }); }
   await d.goto(B + '/' + href); await d.waitForTimeout(800);
   assert.equal(await d.locator('.qr svg').count(), 1);
-  assert.ok((await d.textContent('.url')).endsWith('/?log=' + cur));
+  assert.equal(await d.locator('.url').count(), 0); assert.ok(!(await d.textContent('body')).includes(cur), 'key not printed as text');
   if (shots) { await d.screenshot({ path: shots + '/poster.png', fullPage: true }); await d.pdf({ path: shots + '/poster.pdf', format: 'A4', printBackground: true }); }
   assert.deepEqual(errs, []);
   console.log('qr-log ok'); await b.close();
