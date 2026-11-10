@@ -81,25 +81,22 @@ function view(r, env = {}) {
   const taken = people.length + 1, free = Math.max(0, r.seats - taken);
   const logged = !!r.play_id;
   const hostTxt = r.host_discord ? `<@${r.host_discord}>` : r.host;
-  const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬛'.repeat(Math.max(0, r.seats - taken));
   const gameTxt = r.game + (r.year ? ` (${r.year})` : '');
-  // Layout B: Termin groß in einer Zeile, darunter Plätze, dann die Mitspielenden nebeneinander.
-  const dabei = [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x)].join('   ·   ').slice(0, 1500);
-  const lines = logged
-    ? [`✅ **Gespielt am ${fmtDate(r.date)}**`, '', `👥 **Spielende (${taken}):**   ${dabei}`]
+  // Klare Felder statt langer Textzeile: Feldnamen fett, Werte normal, keine Leerräume.
+  const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬜'.repeat(Math.max(0, r.seats - taken));
+  const dabei = [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x)].join('\n').slice(0, 1000);
+  const fields = logged
+    ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
-      `📅  **${wdName(r.date)}, ${fmtDate(r.date)}**${r.time ? `     🕕  **${r.time} Uhr**` : ''}`,
-      '',
-      `🪑  **Plätze ${taken}/${r.seats}**     ${bar}     ${free ? `noch **${free}** frei` : '🔒 **voll**'}`,
-      '',
-      `👥  **Dabei:**   ${dabei}`,
+      { name: '📅 Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ` · ${r.time} Uhr` : ''}` },
+      { name: `🪑 Plätze (${taken} von ${r.seats} belegt)`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
+      { name: '👥 Dabei', value: dabei },
     ];
-  if (r.note) lines.push('', `💬  ${r.note.slice(0, 500)}`);
-  lines.push('', '⠀'.repeat(55)); // unsichtbare Zeile: macht die Karte breiter
+  if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
   const embed = {
     title: '🎲 ' + gameTxt,
-    description: lines.join('\n').slice(0, 4000),
     color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
+    fields,
     footer: { text: logged ? 'Als gespielt registriert · N3' : 'N3 · Nerd Nexus Nürnberg' },
   };
   if (r.game_id) {
