@@ -89,7 +89,7 @@ function view(r, env = {}) {
     ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
       { name: '📅 Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ` · ${r.time} Uhr` : ''}` },
-      { name: `🪑 ${taken}/${r.seats} Plätze`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
+      { name: `🪑 ${r.seats} Plätze`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
       { name: '👥 Dabei', value: dabei },
     ];
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
