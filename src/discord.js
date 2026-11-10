@@ -89,19 +89,19 @@ function view(r, env = {}) {
     ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
       { name: '📅 Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ` · ${r.time} Uhr` : ''}` },
-      { name: `🪑 Plätze (${taken} von ${r.seats} belegt)`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
+      { name: '🪑 Plätze', value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
       { name: '👥 Dabei', value: dabei },
     ];
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
   const embed = {
-    title: '🎲 ' + gameTxt,
+    title: `🎲 ${taken}/${r.seats} · ${gameTxt}`,
     color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
     fields,
-    footer: { text: logged ? 'Als gespielt registriert · N3' : 'N3 · Nerd Nexus Nürnberg' },
   };
+  if (logged) embed.footer = { text: 'Als gespielt registriert' };
   if (r.game_id) {
     embed.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
-    if (env.PUBLIC_URL) embed.thumbnail = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}` };
+    if (env.PUBLIC_URL) embed.image = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}.jpg` }; // große Grafik; die Endung hilft Discord beim Erkennen
   }
   const components = logged ? [] : [{ type: 1, components: [
     { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free },
