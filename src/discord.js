@@ -82,22 +82,24 @@ function view(r, env = {}) {
   const logged = !!r.play_id;
   const hostTxt = r.host_discord ? `<@${r.host_discord}>` : r.host;
   const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬛'.repeat(Math.max(0, r.seats - taken));
-  const when = `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ' · ' + r.time + ' Uhr' : ''}`;
-  const embed = {
-    title: '🎲 ' + r.game + (r.year ? ` (${r.year})` : ''),
-    description: logged ? `✅ **Gespielt am ${fmtDate(r.date)}**` : `📅 **${when}**\n${free ? `Noch **${free}** ${free === 1 ? 'Platz' : 'Plätze'} frei – komm dazu!` : '🔒 **Die Runde ist voll.**'}`,
-    color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
-    fields: [
-      { name: `🪑 Plätze (${taken}/${r.seats})`, value: bar.slice(0, 1000) },
-      { name: '👥 Dabei', value: [`👑 ${hostTxt}`, ...people].join('\n').slice(0, 1000) },
-    ],
-    footer: { text: logged ? 'Als gespielt registriert' : 'N3 · Nerd Nexus Nürnberg' },
-  };
-  if (r.note) embed.fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
-  if (r.game_id) {
-    embed.url = 'https://boardgamegeek.com/boardgame/' + r.game_id;
-    if (env.PUBLIC_URL) embed.thumbnail = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}` };
+  const day = `${wdName(r.date)}, ${fmtDate(r.date)}`;
+  const gameTxt = r.game + (r.year ? ` (${r.year})` : '');
+  const head = '# 🎲 ' + (r.game_id ? `[${gameTxt}](https://boardgamegeek.com/boardgame/${r.game_id})` : gameTxt);
+  const lines = [head, ''];
+  if (logged) lines.push('## ✅ Gespielt', `**${fmtDate(r.date)}**`);
+  else {
+    lines.push('## 📅 Termin', `**${day}**`, ...(r.time ? [`🕕 **${r.time} Uhr**`] : []));
   }
+  lines.push('', `## 🪑 Plätze · ${taken} von ${r.seats}`, free ? `${bar}\nNoch **${free}** ${free === 1 ? 'Platz' : 'Plätze'} frei – komm dazu!` : `${bar}\n🔒 **Die Runde ist voll.**`);
+  lines.push('', '## 👥 Dabei', `👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x));
+  if (r.note) lines.push('', '## 💬 Hinweis', r.note.slice(0, 500));
+  lines.push('', '⠀'.repeat(61)); // unsichtbare Zeile: macht die Karte breiter
+  const embed = {
+    description: lines.join('\n').slice(0, 4000),
+    color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
+    footer: { text: logged ? 'Als gespielt registriert · N3' : 'N3 · Nerd Nexus Nürnberg' },
+  };
+  if (r.game_id && env.PUBLIC_URL) embed.image = { url: `${env.PUBLIC_URL.replace(/\/$/, '')}/api/cover/${r.game_id}` };
   const components = logged ? [] : [{ type: 1, components: [
     { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
