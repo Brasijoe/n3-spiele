@@ -627,6 +627,11 @@ const expTxt = (g) => { if (!g.expList.length) return ''; const bn = name(g).spl
 const playGame = (p) => (p.guest ? null : byId[p.gameId]);
 const playName = (p) => { const g = playGame(p); return g ? name(g) : String(p.game || '?'); };
 const srcTag = (p) => (p.guest ? '<span class="src guest">' + esc(T().guestTag) + '</span>' : '<span class="src club">' + esc(T().clubTag) + '</span>');
+// Cover für Partien/Runden: Sammlungsspiel -> eigenes Cover, Gastspiel mit BGG-ID -> Cover über den Worker (gleiche Quelle wie bei der Sammlung).
+const coverOf = (p, g) => (g && g.cover ? g.cover : p && p.guest && Number(p.gameId) > 0 ? '/api/cover/' + Number(p.gameId) : '');
+const thumbHtml = (p, g, nm) => { const c = coverOf(p, g), l = '<span class="th" aria-hidden="true">' + esc(String(nm).charAt(0).toUpperCase()) + '</span>';
+  return c ? '<img class="th" src="' + esc(c) + '" alt="" loading="lazy" data-l="' + esc(String(nm).charAt(0).toUpperCase()) + '">' : l; };
+document.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.classList.contains('th') && im.dataset.l != null) { const s = document.createElement('span'); s.className = 'th'; s.setAttribute('aria-hidden', 'true'); s.textContent = im.dataset.l; im.replaceWith(s); } }, true);
 const catNames = (g) => g.cats.map((c) => (de() ? D.catsDe : D.cats)[c]);
 
 function match(g) {
@@ -1056,7 +1061,7 @@ function renderStats() {
   $('stRank').innerHTML = ranked.slice(0, ST.rankLimit).map((gr, i) => {
     if (gr.n !== prevN) { pos = i + 1; prevN = gr.n; }
     const g = playGame(gr.p), nm = playName(gr.p);
-    const th = g && g.cover ? '<img class="th" src="' + esc(g.cover) + '" alt="" loading="lazy">' : '<span class="th" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</span>';
+    const th = thumbHtml(gr.p, g, nm);
     const link = gr.p.gameId ? '<a class="meta" target="_blank" rel="noopener" href="https://boardgamegeek.com/boardgame/' + Number(gr.p.gameId) + '" aria-label="' + esc(fill(t.onBgg, { n: nm })) + '">BGG</a>' : '';
     return '<li><span class="pos">' + pos + '</span>' + th + '<div><div class="ln"><strong>' + esc(nm) + '</strong>' + srcTag(gr.p) + '<span class="meta">' + esc(fill(t.stLast, { d: dmy(gr.last) })) + '</span>' + link + '</div>' +
       '<div class="barrow"><span class="bar" style="width:' + Math.max(2, gr.n / maxN * 70) + '%;background:var(' + (gr.guest ? '--guest' : '--club') + ')"></span><span class="cnt">' + esc(gr.n === 1 ? t.stPlays1 : fill(t.stPlaysN, { n: gr.n })) + '</span></div></div></li>';
@@ -1120,7 +1125,7 @@ function dayLabel(iso) {
 function partyCard(x, past) {
   const t = T(), p = x.p, g = partyGame(p), nm = partyName(p), ins = whoIn(p), seats = Math.max(2, Number(p.seats) || 2);
   const taken = ins.length + 1, free = Math.max(0, seats - taken), my = mine()[x.id];
-  const th = g && g.cover ? '<img class="th" src="' + esc(g.cover) + '" alt="" loading="lazy">' : '<span class="th" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</span>';
+  const th = thumbHtml(p, g, nm);
   const dots = Array.from({ length: Math.min(seats, 30) }, (_, i) => '<span class="seat' + (i < taken ? ' on' : '') + '"></span>').join('');
   let actions = '';
   if (!past) {
