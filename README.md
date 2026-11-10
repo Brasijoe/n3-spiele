@@ -47,6 +47,7 @@ Nützliche Parameter für Links und iFrame: `?lang=de` oder `?lang=en`, `#statis
 
 - **Vereinscode ändern:** Verwaltung in der Seite. Der Code wird mit Salz als SHA-256 in der Datenbank gespeichert und nur auf dem Server geprüft.
 - **Partien, Runden, Highlights:** Verwaltung in der Seite. Partien löschen können nur Admins, Runden löschen Admins und der Gastgeber im selben Browser.
+- **Eintragen per QR-Code (ohne Discord):** In der Verwaltung unter „Eintragen per QR-Code“ einen Schlüssel erzeugen und „Aushang drucken“ (A4-Plakat, `qr.html`). Der QR-Code führt auf `/?log=<schlüssel>`, öffnet direkt den Eintragen-Dialog und merkt sich den Schlüssel auf dem Handy. Wer so einträgt, gibt nur seinen Namen an (in der Verwaltung bei der Partie sichtbar, „(QR)“). Grenzen: 40 Partien pro Stunde und IP, 150 pro Tag insgesamt über diesen Weg. Wird der Link weitergegeben, einfach einen neuen Schlüssel erzeugen und neu drucken; alte Aushänge und gemerkte Schlüssel gelten dann sofort nicht mehr. Test: `node test/qr-log.cjs` (nach `test/reset.sh`).
 - **Backup:** `npx wrangler d1 export n3-spiele --remote --output backup.sql`
 - **Tokens tauschen:** `npx wrangler secret put BGG_TOKEN` (oder `ADMIN_TOKEN`), ohne neues Deployment.
 - **Logs bei Fehlern:** `npx wrangler tail`
