@@ -89,12 +89,12 @@ function view(r, env = {}) {
     ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
       { name: '📅 Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ` · ${r.time} Uhr` : ''}` },
-      { name: '🪑 Plätze', value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
+      { name: `🪑 ${taken}/${r.seats} Plätze`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
       { name: '👥 Dabei', value: dabei },
     ];
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
   const embed = {
-    title: `🎲 ${taken}/${r.seats} · ${gameTxt}`,
+    title: '🎲 ' + gameTxt,
     color: logged ? 0x2e7d32 : free ? 0xe8a33d : 0x8a8a8a,
     fields,
   };
