@@ -372,7 +372,6 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     </div>
   </section>
 
-  <div class="src-tabs" role="tablist" id="srcTabs"><button type="button" role="tab" data-src="club" data-t="srcClub"></button><button type="button" role="tab" data-src="mem" data-t="srcMem"></button></div>
   <section class="panel filters" aria-label="Filter">
     <div class="row">
       <label class="field" style="flex: 1 1 280px;"><span data-t="search"></span>
@@ -411,6 +410,8 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 
   <section aria-labelledby="allH" style="display:flex;flex-direction:column;gap:20px">
     <h2 class="sec-h" id="allH" data-t="allGames"></h2>
+    <div class="src-tabs" role="tablist" id="srcTabs"><button type="button" role="tab" data-src="club" data-t="srcClub"></button><button type="button" role="tab" data-src="mem" data-t="srcMem"></button></div>
+    <div class="pt-how" id="memHow" hidden><details><summary data-t="memHowSum"></summary><div class="pt-how-body"><ul><li data-t="memHow1"></li><li data-t="memHow2"></li><li data-t="memHow3"></li><li data-t="memHow4"></li><li data-t="memHow5"></li></ul></div></details></div>
     <div class="guest-cta"><span data-t="guestCta"></span><button type="button" class="btn btn-outline" data-guest-log data-t="logGuest"></button></div>
     <div class="grid" id="grid"></div>
     <div class="more"><button type="button" class="btn btn-dark" id="moreBtn" hidden></button></div>
@@ -733,6 +734,12 @@ const TXT = {
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
     gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit',
     gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen',
+    memHowSum: 'So funktioniert „Mitglieder besitzen“',
+    memHow1: 'Diese Spiele gehören Mitgliedern und stehen nicht im Club. Eintragen und Anfragen geht nur mit der Mitgliederrolle auf unserem Discord.',
+    memHow2: 'Eigene Spiele trägst du unten unter „Mitglieder besitzen“ ein, einzeln oder per Import aus deiner BGG-Sammlung. Dein Discord-Servername wird als Besitzer angezeigt.',
+    memHow3: 'Bei einem Spiel eines anderen Mitglieds tippst du auf „Mitbringen anfragen“ und schlägst bis zu 3 Termine vor. Der Bot fragt den Besitzer im Bot-Kanal.',
+    memHow4: 'Nimmt der Besitzer einen Termin an, entsteht automatisch eine Runde mit euch beiden. Er legt Uhrzeit und Spielerzahl fest, weitere Mitspieler können beitreten.',
+    memHow5: 'Lehnt er ab, bekommst du Bescheid und könnt euch direkt per Discord-Nachricht absprechen.',
     mgTitle: 'Mitglieder besitzen', mgIntro: 'Diese Spiele befinden sich nicht im Club, sondern im Besitz von Mitgliedern. Hast du ein Spiel zuhause, das du gerne spielen würdest? Zeige es hier und andere Mitglieder können eine Partie mit dir anfragen.',
     mgAdd: 'Eigenes Spiel hinzufügen', mgGame: 'Spiel (BGG-Suche)', mgNote: 'Hinweis (optional, z. B. Ausgabe, Sprache, Erweiterungen)', mgSave: 'Hinzufügen', mgYourName: 'dein Discord-Name',
     mgConsent: 'Ich bin einverstanden, dass mein Discord-Name ({n}) auf dieser öffentlichen Seite als Besitzer des Spiels angezeigt wird und andere Mitglieder mich im Bot-Kanal bitten können, es mitzubringen.',
@@ -810,6 +817,12 @@ const TXT = {
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
     gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only',
     gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', memOwners: 'Owners', brAsk: 'Ask to bring it',
+    memHowSum: 'How “Members own” works',
+    memHow1: 'These games belong to members and are not kept at the club. Adding and requesting needs the member role on our Discord.',
+    memHow2: 'Add your own games below under “Members own”, one by one or imported from your BGG collection. Your Discord server name is shown as owner.',
+    memHow3: 'On another member’s game, tap “Ask to bring it” and suggest up to 3 dates. The bot asks the owner in the bot channel.',
+    memHow4: 'If the owner accepts a date, a round with both of you is created automatically. They set the time and player count, and others can join.',
+    memHow5: 'If they decline, you’ll be told and can talk directly via Discord message.',
     mgTitle: 'Members own', mgIntro: 'These games aren’t kept at the club but are owned by members. Do you have a game at home you’d love to play? Show it here and other members can ask you for a game.',
     mgAdd: 'Add your own game', mgGame: 'Game (BGG search)', mgNote: 'Note (optional, e.g. edition, language, expansions)', mgSave: 'Add', mgYourName: 'your Discord name',
     mgConsent: 'I agree that my Discord name ({n}) is shown on this public page as the owner of the game and that other members can ask me in the bot channel to bring it.',
@@ -1262,6 +1275,7 @@ function renderGrid() {
   document.querySelectorAll('#srcTabs [data-src]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.src === S.src)));
   $('allH').textContent = S.src === 'mem' ? t.srcMem : t.allGames;
   const gc = document.querySelector('.guest-cta'); if (gc) gc.hidden = S.src === 'mem';
+  $('memHow').hidden = S.src !== 'mem';
   const card = (g) => {
     if (g.mem) return memCard(g);
     const n = name(g), pc = playCount[g.id] || 0;
