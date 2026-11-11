@@ -2012,7 +2012,7 @@ $('mgQ').addEventListener('keydown', (e) => {
 $('mgRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) mgPick(Number(li.dataset.i)); });
 $('mgChange').onclick = () => { mgGame = null; renderMgPick(); $('mgQ').focus(); };
 function openMgAdd() {
-  mgGame = null; mgResults = []; mgActive = -1; $('mgQ').value = ''; $('mgNote').value = ''; $('mgConsent').checked = false;
+  mgGame = null; mgResults = []; mgActive = -1; $('mgQ').value = ''; $('mgNote').value = ''; $('mgConsent').checked = true;
   $('mgMsg').textContent = ''; $('mgMsg').className = ''; $('mgSave').disabled = false;
   if (me && me.member === false) { $('mgMsg').className = 'err'; $('mgMsg').textContent = T().mgMembersOnly; }
   renderMgPick(); renderAuth(); $('mgDlg').showModal(); $('mgQ').focus();
