@@ -82,20 +82,33 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
     let items;
     try { items = await fetchCollection(env, user); }
     catch (e) { return fail(e.code === 'bgg_no_user' ? 404 : e.code === 'bgg_busy' ? 503 : 502, e.code || 'bgg_error'); }
-    const mine = (await env.DB.prepare('SELECT game_id FROM member_games WHERE discord_id = ?1 AND game_id IS NOT NULL').bind(a.member.discord_id).all()).results.map((r) => r.game_id);
-    return json({ items: items.slice(0, 500), have: mine });
+    const rows = (await env.DB.prepare('SELECT id, game_id, game, year, src FROM member_games WHERE discord_id = ?1 AND game_id IS NOT NULL').bind(a.member.discord_id).all()).results;
+    await env.DB.prepare('UPDATE members SET bgg_user = ?1 WHERE discord_id = ?2').bind(user, a.member.discord_id).run();
+    // Abgleich: eingetragene Spiele, die nicht (mehr) in der BGG-Sammlung sind. Importierte sind vorausgewählt, von Hand eingetragene nicht.
+    const inCol = new Set(items.map((x) => x.id));
+    const gone = rows.filter((r) => !inCol.has(r.game_id)).map((r) => ({ id: r.id, n: r.game, y: r.year, bgg: r.src === 'bgg' }));
+    return json({ items: items.slice(0, 1000), have: rows.map((r) => r.game_id), gone });
   }
   // Ausgewählte Spiele aus der BGG-Sammlung übernehmen (mit Zustimmung wie beim Einzeleintrag).
   if (path === '/member-games/import' && m === 'POST') {
     const a = await needMember(); if (a.res) return a.res;
     if (!(await allow(env, 'mgimp:' + a.member.discord_id, 10, 3600))) return fail(429, 'rate_limited');
     const b = await body(req, 400000);
+    // Abgleich: nicht mehr vorhandene Spiele entfernen (nur eigene).
+    const remove = (Array.isArray(b.remove) ? b.remove : []).map((x) => str(x, 40)).filter(Boolean).slice(0, 1000);
+    let removed = 0;
+    for (let i = 0; i < remove.length; i += 50) {
+      const part = remove.slice(i, i + 50);
+      const r = await env.DB.prepare('DELETE FROM member_games WHERE discord_id = ?1 AND id IN (' + part.map((_, j) => '?' + (j + 2)).join(',') + ')').bind(a.member.discord_id, ...part).run();
+      removed += (r.meta && r.meta.changes) || 0;
+    }
+    if (!(Array.isArray(b.items) && b.items.length)) return json({ added: 0, skipped: 0, removed });
     if (b.consent !== true) return fail(400, 'consent_missing');
     const want = (Array.isArray(b.items) ? b.items : []).map((x) => ({ id: int(x && x.id), n: str(x && x.n, 120), y: int(x && x.y) })).filter((x) => x.id > 0 && x.n);
     const have = new Set((await env.DB.prepare('SELECT game_id FROM member_games WHERE discord_id = ?1').bind(a.member.discord_id).all()).results.map((r) => r.game_id));
     const room = MAX_GAMES - have.size;
     const add = [...new Map(want.filter((x) => !have.has(x.id)).map((x) => [x.id, x])).values()].slice(0, Math.max(0, room));
-    if (!add.length) return json({ added: 0, skipped: want.length });
+    if (!add.length) return json({ added: 0, skipped: want.length, removed });
     // Spieldaten in Blöcken zu 20 holen (höchstens 5 Blöcke, Rest ohne Daten; BGG antwortet manchmal nicht).
     const data = new Map();
     if (env.BGG_TOKEN) for (let i = 0; i < add.length && i < 100; i += 20) {
@@ -105,9 +118,9 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
       } catch { break; }
     }
     const now = new Date().toISOString();
-    await env.DB.batch(add.map((x) => env.DB.prepare('INSERT INTO member_games(id, discord_id, game_id, game, year, note, data, consent_at, created_at) VALUES(?1,?2,?3,?4,?5,\'\',?6,?7,?7)')
+    await env.DB.batch(add.map((x) => env.DB.prepare('INSERT INTO member_games(id, discord_id, game_id, game, year, note, data, consent_at, created_at, src) VALUES(?1,?2,?3,?4,?5,\'\',?6,?7,?7,\'bgg\')')
       .bind(newId(), a.member.discord_id, x.id, x.n, x.y, data.has(x.id) ? JSON.stringify(data.get(x.id)) : null, now)));
-    return json({ added: add.length, skipped: want.length - add.length });
+    return json({ added: add.length, skipped: want.length - add.length, removed });
   }
   if ((g = path.match(/^\/member-games\/([\w-]+)$/)) && m === 'DELETE') {
     const row = await env.DB.prepare('SELECT discord_id FROM member_games WHERE id = ?1').bind(g[1]).first();
