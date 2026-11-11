@@ -1113,7 +1113,7 @@ function renderFilters() {
   $('maxTimeL').textContent = fill(t.maxTime, { v: S.maxTime >= 240 ? t.any : S.maxTime + ' ' + t.min });
 }
 
-// Zweiter Modus der Slideshow: die letzten 10 verschiedenen Spiele, die im Club gespielt wurden (erst ab 10 verschiedenen Spielen).
+// Zweiter Modus der Slideshow: bis zu 10 verschiedene zuletzt im Club gespielte Spiele (Reiter erscheint ab der ersten Partie).
 const RECENT_N = 10;
 let hlMode = 'hl', recentCache = null, recentFor = null;
 function recentSlides() {
@@ -1129,11 +1129,11 @@ function recentSlides() {
     out.push(seen[k]);
   });
   // Spiele, die als Gastspiel und als Sammlungsspiel geloggt wurden, teilen sich die BGG-ID und damit den Schlüssel.
-  recentCache = out.length >= RECENT_N ? out.slice(0, RECENT_N) : [];
+  recentCache = out.slice(0, RECENT_N);
   recentFor = plays;
   return recentCache;
 }
-const recentOk = () => recentSlides().length >= RECENT_N;
+const recentOk = () => recentSlides().length > 0;
 function slideItems() {
   if (hlMode === 'recent' && recentOk()) return recentSlides().map((r) => ({ id: 'r' + r.k, g: r.g, r, cover: r.cover, nm: r.g ? name(r.g) : String(r.p.game || '?') }));
   return highlights.map((g) => ({ id: 'h' + g.id, g, cover: g.cover, nm: name(g) }));
