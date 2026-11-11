@@ -80,8 +80,8 @@ const normEventCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g,
 const EV_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newEventCode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (x) => EV_CHARS[x % EV_CHARS.length]).join('');
 const eventOut = (e) => ({ id: e.id, name: e.name, code: e.code, validUntil: e.valid_until, from: e.date_from, to: e.date_to, createdAt: e.created_at });
-async function checkEvent(req, env, ip) {
-  const code = normEventCode(req.headers.get('x-event-code'));
+async function checkEvent(req, env, ip, raw) {
+  const code = normEventCode(raw != null ? raw : req.headers.get('x-event-code'));
   await ensureCols(env);
   const e = code.length >= 4 ? await env.DB.prepare('SELECT * FROM events WHERE code = ?1').bind(code).first() : null;
   if (!e) return { err: (await allow(env, 'evfail:' + ip, 20, 600)) ? 'bad_event' : 'rate_limited' };
@@ -123,7 +123,7 @@ async function route(req, env, ctx, url) {
   let g;
 
   const ar = await authRoute(req, env, url, path, m, ip, allow); if (ar) return ar;
-  if (path.startsWith('/member-games')) { await ensureCols(env); return memberGamesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin }); }
+  if (path.startsWith('/member-games')) { await ensureCols(env); return memberGamesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin, checkEvent }); }
   if (path === '/my' && m === 'GET') {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
     if (!req.headers.has('x-session')) return json({ plays: [], parties: [] });

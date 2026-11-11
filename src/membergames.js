@@ -42,7 +42,7 @@ async function bggData(env, id) {
 // Routen /member-games…; gibt null zurück, wenn der Pfad nicht passt. h = Hilfsfunktionen aus index.js.
 export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
   if (!path.startsWith('/member-games')) return null;
-  const { json, fail, body, allow, checkMember, isAdmin } = h;
+  const { json, fail, body, allow, checkMember, isAdmin, checkEvent } = h;
   let g;
   const needMember = async () => {
     const u = await checkMember(req, env, ip);
@@ -131,14 +131,22 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
     return json({ ok: true });
   }
   if ((g = path.match(/^\/member-games\/([\w-]+)\/request$/)) && m === 'POST') {
-    const a = await needMember(); if (a.res) return a.res;
+    // Mitglieder fragen jederzeit an; ohne Mitgliederrolle nur mit gültigem Event-Code und nur für die Eventtage.
+    const u = await checkMember(req, env, ip); if (u.err) return fail(u.err === 'rate_limited' ? 429 : 403, u.err);
+    const a = { member: u.member }, b = await body(req), today = berlinToday();
+    let ev = null;
+    if (!isMember(await getBooking(env), u.member.roles)) {
+      if (!b.eventCode) return fail(403, 'members_only');
+      const e = await checkEvent(req, env, ip, String(b.eventCode)); if (e.err) return fail(e.err === 'rate_limited' ? 429 : 403, e.err);
+      ev = e.event;
+    }
     if (!discordOn(env)) return fail(503, 'discord_off');
     const mg = await env.DB.prepare('SELECT g.*, m.name AS owner_name FROM member_games g JOIN members m ON m.discord_id = g.discord_id WHERE g.id = ?1').bind(g[1]).first();
     if (!mg) return fail(404, 'not_found');
     if (mg.discord_id === a.member.discord_id) return fail(400, 'own_game');
-    const b = await body(req), today = berlinToday();
     const dates = [...new Set((Array.isArray(b.dates) ? b.dates : []).map((d) => str(d, 10)))].sort();
     if (!dates.length || dates.length > MAX_DATES || dates.some((d) => !isDate(d) || d < today || d > addDays(today, 365))) return fail(400, 'bad_dates');
+    if (ev && dates.some((d) => d < ev.date_from || d > ev.date_to)) return fail(400, 'event_date');
     const open = await env.DB.prepare("SELECT id FROM bring_requests WHERE mgame_id = ?1 AND req_discord = ?2 AND status = 'open'").bind(mg.id, a.member.discord_id).first();
     if (open) return fail(409, 'already_requested');
     // Spam-Bremse: 5 Anfragen pro Tag und Person, 30 pro Tag insgesamt.
@@ -151,7 +159,7 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
     const d = mg.data ? JSON.parse(mg.data) : null;
     const seats = d && d.p2 ? Math.min(30, Math.max(2, d.p2)) : 4;
     const id = newId();
-    const row = { id, mgame_id: mg.id, owner_discord: mg.discord_id, owner_name: mg.owner_name || '?', req_discord: a.member.discord_id, req_name: a.member.name, game: mg.game, game_id: mg.game_id, year: mg.year, seats, dates: JSON.stringify(dates), note: str(b.note, 300), status: 'open', created_at: new Date().toISOString() };
+    const row = { id, mgame_id: mg.id, owner_discord: mg.discord_id, owner_name: mg.owner_name || '?', req_discord: a.member.discord_id, req_name: a.member.name, game: mg.game, game_id: mg.game_id, year: mg.year, seats, dates: JSON.stringify(dates), note: (ev ? `Event „${ev.name}“` + (str(b.note, 300) ? ' · ' : '') : '') + str(b.note, 300), status: 'open', created_at: new Date().toISOString() };
     await env.DB.prepare('INSERT INTO bring_requests(id, mgame_id, owner_discord, owner_name, req_discord, req_name, game, game_id, year, seats, dates, note, status, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)')
       .bind(row.id, row.mgame_id, row.owner_discord, row.owner_name, row.req_discord, row.req_name, row.game, row.game_id, row.year, row.seats, row.dates, row.note, row.status, row.created_at).run();
     const ch = channelIds(env)[0];

@@ -415,7 +415,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <section aria-label="Spiele" style="display:flex;flex-direction:column;gap:20px">
     <div class="guest-cta"><span data-t="guestCta"></span><button type="button" class="btn btn-outline" data-guest-log data-t="logGuest"></button></div>
     <div class="src-tabs" role="tablist" id="srcTabs"><button type="button" role="tab" data-src="club" data-t="srcClub"></button><button type="button" role="tab" data-src="mem" data-t="srcMem"></button></div>
-    <div class="pt-how" id="memHow" hidden><details><summary data-t="memHowSum"></summary><div class="pt-how-body"><ul><li data-t="memHow1"></li><li data-t="memHow2"></li><li data-t="memHow3"></li><li data-t="memHow4"></li><li data-t="memHow5"></li></ul></div></details></div>
+    <div class="pt-how" id="memHow" hidden><details><summary data-t="memHowSum"></summary><div class="pt-how-body"><ul><li data-t="memHow1"></li><li data-t="memHow2"></li><li data-t="memHow3"></li><li data-t="memHow4"></li><li data-t="memHow5"></li><li data-t="memHow6"></li></ul></div></details></div>
     <div class="grid" id="grid"></div>
     <div class="more"><button type="button" class="btn btn-dark" id="moreBtn" hidden></button></div>
   </section>
@@ -679,6 +679,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <h3 id="brT"></h3>
   <form class="mg" id="brForm">
     <p class="meta" id="brIntro" style="margin:0"></p>
+    <div class="field" id="brEvWrap" hidden><label class="field"><span data-t="evCode"></span><input type="text" id="brEv" maxlength="24" autocomplete="off" spellcheck="false"></label><span class="note" data-t="brEvNote"></span></div>
     <label class="field" id="brOwnerWrap" hidden><span data-t="brOwner"></span><select id="brOwner"></select></label>
     <div class="field"><span data-t="brDates"></span><div class="br-dates"><input type="date" id="brD0" required><input type="date" id="brD1"><input type="date" id="brD2"></div><span class="note" data-t="brDatesNote"></span></div>
     <label class="field"><span data-t="brNote"></span><textarea id="brNote" maxlength="300" rows="2"></textarea></label>
@@ -744,11 +745,13 @@ const TXT = {
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
     gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit',
     gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', allOwners: 'Alle Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen',
+    brEvNote: 'Ohne Mitgliederrolle geht die Anfrage nur mit Event-Code und nur für Termine an den Eventtagen.', brEvNeed: 'Ohne Mitgliederrolle brauchst du einen Event-Code.', brEvDate: 'Mit Event-Code sind nur Termine an den Eventtagen möglich.',
     memHowSum: 'So funktioniert „Mitglieder besitzen“',
-    memHow1: 'Diese Spiele gehören Mitgliedern und stehen nicht im Club. Eintragen und Anfragen geht nur mit der Mitgliederrolle auf unserem Discord.',
+    memHow1: 'Diese Spiele gehören Mitgliedern und stehen nicht im Club. Eintragen geht nur mit der Mitgliederrolle auf unserem Discord, Anfragen auch mit Event-Code (siehe unten).',
     memHow2: 'Eigene Spiele trägst du unten unter „Mitglieder besitzen“ ein, einzeln oder per Import aus deiner BGG-Sammlung. Dein Discord-Servername wird als Besitzer angezeigt.',
     memHow3: 'Bei einem Spiel eines anderen Mitglieds tippst du auf „Mitbringen anfragen“ und schlägst bis zu 3 Termine vor. Der Bot fragt den Besitzer im Bot-Kanal.',
     memHow4: 'Nimmt der Besitzer einen Termin an, entsteht automatisch eine Runde mit euch beiden. Er legt Uhrzeit und Spielerzahl fest, weitere Mitspieler können beitreten.',
+    memHow6: 'Ohne Mitgliederrolle kannst du mit einem Event-Code anfragen, dann aber nur für Termine an den Eventtagen. Dafür musst du mit Discord angemeldet sein, damit dich die Antwort erreicht.',
     memHow5: 'Lehnt er ab, bekommst du Bescheid und könnt euch direkt per Discord-Nachricht absprechen.',
     mgTitle: 'Mitglieder besitzen', mgIntro: 'Diese Spiele befinden sich nicht im Club, sondern im Besitz von Mitgliedern. Hast du ein Spiel zuhause, das du gerne spielen würdest? Zeige es hier und andere Mitglieder können eine Partie mit dir anfragen.',
     mgAdd: 'Eigenes Spiel hinzufügen', mgGame: 'Spiel (BGG-Suche)', mgNote: 'Hinweis (optional, z. B. Ausgabe, Sprache, Erweiterungen)', mgSave: 'Hinzufügen', mgYourName: 'dein Discord-Name',
@@ -830,11 +833,13 @@ const TXT = {
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
     gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only',
     gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', allOwners: 'All owners', memOwners: 'Owners', brAsk: 'Ask to bring it',
+    brEvNote: 'Without the member role you can only ask with an event code, and only for dates on the event days.', brEvNeed: 'Without the member role you need an event code.', brEvDate: 'With an event code only dates on the event days are possible.',
     memHowSum: 'How “Members own” works',
-    memHow1: 'These games belong to members and are not kept at the club. Adding and requesting needs the member role on our Discord.',
+    memHow1: 'These games belong to members and are not kept at the club. Adding needs the member role on our Discord, requesting also works with an event code (see below).',
     memHow2: 'Add your own games below under “Members own”, one by one or imported from your BGG collection. Your Discord server name is shown as owner.',
     memHow3: 'On another member’s game, tap “Ask to bring it” and suggest up to 3 dates. The bot asks the owner in the bot channel.',
     memHow4: 'If the owner accepts a date, a round with both of you is created automatically. They set the time and player count, and others can join.',
+    memHow6: 'Without the member role you can ask with an event code, but only for dates on the event days. You need to be signed in with Discord so the answer reaches you.',
     memHow5: 'If they decline, you’ll be told and can talk directly via Discord message.',
     mgTitle: 'Members own', mgIntro: 'These games aren’t kept at the club but are owned by members. Do you have a game at home you’d love to play? Show it here and other members can ask you for a game.',
     mgAdd: 'Add your own game', mgGame: 'Game (BGG search)', mgNote: 'Note (optional, e.g. edition, language, expansions)', mgSave: 'Add', mgYourName: 'your Discord name',
@@ -2216,21 +2221,22 @@ function openBring(key) {
   const td = todayIso(); ['brD0', 'brD1', 'brD2'].forEach((id) => { $(id).min = td; $(id).value = ''; });
   $('brD0').value = nextEventDay();
   $('brNote').value = ''; $('brMsg').textContent = others.length ? '' : t.brOwn; $('brMsg').className = others.length ? '' : 'err'; $('brSend').disabled = false; brOwnOnly = !others.length;
-  if (me && me.member === false) { $('brMsg').className = 'err'; $('brMsg').textContent = t.mgMembersOnly; }
+  $('brEvWrap').hidden = !(me && me.member === false); $('brEv').value = lsGet('n3-event-code');
   renderAuth(); $('brDlg').showModal();
 }
 $('brCancel').onclick = () => $('brDlg').close();
 $('brForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const t = T(), msg = $('brMsg'); msg.className = 'err';
   if (!me) { msg.textContent = t.errLogin; return; }
-  if (me.member === false) { msg.textContent = t.mgMembersOnly; return; }
+  const evc = me.member === false ? $('brEv').value.trim() : '';
+  if (me.member === false && !evc) { msg.textContent = t.brEvNeed; $('brEv').focus(); return; }
   if (brOwnOnly) { msg.textContent = t.brOwn; return; }
   const id = $('brOwner').value; if (!id) return;
   const td = todayIso(), dates = [...new Set(['brD0', 'brD1', 'brD2'].map((x) => $(x).value).filter(Boolean))].sort();
   if (!dates.length || dates.some((d) => d < td)) { msg.textContent = t.brErrDates; return; }
   $('brSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
-  try { await api('POST', '/member-games/' + encodeURIComponent(id) + '/request', { dates, note: $('brNote').value.trim().slice(0, 300) }); msg.textContent = t.brSent; setTimeout(() => { if ($('brDlg').open) $('brDlg').close(); }, 2500); }
-  catch (x) { msg.className = 'err'; $('brSend').disabled = false; msg.textContent = mgErr(x); if (x && x.code === 'owner_gone') refreshAll(); }
+  try { await api('POST', '/member-games/' + encodeURIComponent(id) + '/request', Object.assign({ dates, note: $('brNote').value.trim().slice(0, 300) }, evc ? { eventCode: evc } : {})); if (evc) lsSet('n3-event-code', evc); msg.textContent = t.brSent; setTimeout(() => { if ($('brDlg').open) $('brDlg').close(); }, 2500); }
+  catch (x) { msg.className = 'err'; $('brSend').disabled = false; const c = x && x.code; msg.textContent = c === 'event_date' ? t.brEvDate : c === 'bad_event' ? t.evBad : c === 'event_expired' ? t.evExpired : mgErr(x); if (c === 'owner_gone') refreshAll(); }
 });
 // BGG-Sammlung importieren: Benutzername eingeben, Liste laden, auswählen, übernehmen.
 var bgItems = [], bgHave = new Set(), bgGone = [];
