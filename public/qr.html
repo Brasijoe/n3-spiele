@@ -6,33 +6,36 @@
 <meta name="robots" content="noindex">
 <title>Partie eintragen – Aushang</title>
 <link rel="stylesheet" href="fonts/fonts.css">
+<style id="page">@page { size: A4 portrait; margin: 12mm; }</style>
 <style>
-@page { size: A4 portrait; margin: 12mm; }
-:root { --accent: #f09b19; --ink: #1b1b1b; --muted: #555; --band: #1b1b1b; }
-* { box-sizing: border-box; }
+:root { --s: 1; --accent: #f09b19; --ink: #1b1b1b; --muted: #555; --band: #1b1b1b; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 html, body { margin: 0; background: #e9e9e9; color: var(--ink); font-family: Karla, system-ui, sans-serif; }
 .bar { display: flex; gap: 10px; justify-content: center; align-items: center; padding: 16px; flex-wrap: wrap; text-align: center; }
 .bar button { font: 700 16px Karla, sans-serif; min-height: 44px; padding: 0 20px; border-radius: 8px; border: 0; background: var(--accent); color: var(--ink); cursor: pointer; }
 .bar span { font-size: 14px; color: var(--muted); }
-.sheet { width: 186mm; height: 271mm; margin: 0 auto 24px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12mm 12mm 10mm; gap: 6mm; box-shadow: 0 4px 18px rgba(0,0,0,.15); overflow: hidden; }
-.band { width: 100%; background: var(--band); color: #fff; border-radius: 6mm; padding: 7mm 6mm 6mm; }
-.band small { display: block; color: var(--accent); font: 700 5mm Rubik, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-h1 { font: 700 13mm/1.05 Rubik, sans-serif; margin: 2mm 0 0; }
-.sub { font-size: 5.6mm; margin: 2.5mm 0 0; color: #e6e6e6; line-height: 1.3; }
-.why { width: 100%; background: #fdecd0; color: #5a3600; border-radius: 4mm; padding: 4mm 6mm; font-size: 4.8mm; line-height: 1.35; }
-.why b { font: 700 5.4mm Rubik, sans-serif; display: block; margin-bottom: 1mm; color: #7a4a00; }
-.qr { width: 90mm; height: 90mm; padding: 4mm; border: 1.2mm solid var(--accent); border-radius: 5mm; flex: none; }
+.fmt { display: inline-flex; border: 1px solid #bbb; border-radius: 8px; overflow: hidden; }
+.bar .fmt button { background: #fff; border-radius: 0; min-width: 56px; padding: 0 14px; }
+.bar .fmt button[aria-pressed=true] { background: var(--ink); color: #fff; }
+.sheet { width: calc(186mm * var(--s)); height: calc(271mm * var(--s)); margin: 0 auto 24px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(12mm * var(--s)) calc(12mm * var(--s)) calc(10mm * var(--s)); gap: calc(6mm * var(--s)); box-shadow: 0 4px 18px rgba(0,0,0,.15); overflow: hidden; }
+.band { width: 100%; background: var(--band); color: #fff; border-radius: calc(6mm * var(--s)); padding: calc(7mm * var(--s)) calc(6mm * var(--s)) calc(6mm * var(--s)); }
+.band small { display: block; color: var(--accent); font: 700 calc(5mm * var(--s)) Rubik, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+h1 { font: 700 calc(13mm * var(--s))/1.05 Rubik, sans-serif; margin: calc(2mm * var(--s)) 0 0; }
+.sub { font-size: calc(5.6mm * var(--s)); margin: calc(2.5mm * var(--s)) 0 0; color: #e6e6e6; line-height: 1.3; }
+.why { width: 100%; background: #fdecd0; color: #5a3600; border-radius: calc(4mm * var(--s)); padding: calc(4mm * var(--s)) calc(6mm * var(--s)); font-size: calc(4.8mm * var(--s)); line-height: 1.35; }
+.why b { font: 700 calc(5.4mm * var(--s)) Rubik, sans-serif; display: block; margin-bottom: calc(1mm * var(--s)); color: #7a4a00; }
+.qr { width: calc(90mm * var(--s)); height: calc(90mm * var(--s)); padding: calc(4mm * var(--s)); border: calc(1.2mm * var(--s)) solid var(--accent); border-radius: calc(5mm * var(--s)); flex: none; }
 .qr svg { width: 100%; height: 100%; display: block; }
-ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; width: 100%; }
-li { background: #f5f5f5; border-radius: 4mm; padding: 3.5mm 3mm; font-size: 4.4mm; line-height: 1.3; }
-li b { display: block; font: 700 8mm Rubik, sans-serif; color: var(--accent); }
-.thanks { font: 700 6mm Rubik, sans-serif; margin: auto 0 0; }
+ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(5mm * var(--s)); width: 100%; }
+li { background: #f5f5f5; border-radius: calc(4mm * var(--s)); padding: calc(3.5mm * var(--s)) calc(3mm * var(--s)); font-size: calc(4.4mm * var(--s)); line-height: 1.3; }
+li b { display: block; font: 700 calc(8mm * var(--s)) Rubik, sans-serif; color: var(--accent); }
+.thanks { font: 700 calc(6mm * var(--s)) Rubik, sans-serif; margin: auto 0 0; }
 .err { max-width: 520px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; font-size: 18px; }
-@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; width: auto; height: 271mm; page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; } }
+@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; width: auto; height: calc(271mm * var(--s)); page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; } }
 </style>
 </head>
 <body>
-<div class="bar"><button type="button" onclick="window.print()">Drucken</button><span>2 Seiten: vorne Deutsch, hinten Englisch – beidseitig drucken.</span></div>
+<div class="bar"><span class="fmt" role="group" aria-label="Format"><button type="button" data-f="A4">A4</button><button type="button" data-f="A5">A5</button><button type="button" data-f="A6">A6</button></span><button type="button" onclick="window.print()">Drucken</button><span id="hint"></span></div>
 <div id="root"></div>
 <script src="vendor/qrcode.js"></script>
 <script>
@@ -60,6 +63,21 @@ li b { display: block; font: 700 8mm Rubik, sans-serif; color: var(--accent); }
       '<p class="thanks">' + t.thanks + '</p></section>';
   }
   root.innerHTML = sheet(T.de) + sheet(T.en);
+
+  // Format: alles ist in mm gesetzt und wird über --s skaliert (A5 = A4 × 0,707, A6 = A4 × 0,5). Gewähltes Format wird gemerkt.
+  var F = { A4: 1, A5: 0.7071, A6: 0.5 };
+  var SZ = { A4: '210mm 297mm', A5: '148mm 210mm', A6: '105mm 148mm' }; // als Maße, weil nicht jeder Browser „A6“ als Namen kennt
+  function setFmt(f) {
+    if (!F[f]) f = 'A4';
+    document.documentElement.style.setProperty('--s', F[f]);
+    document.getElementById('page').textContent = '@page { size: ' + SZ[f] + '; margin: ' + (12 * F[f]).toFixed(1) + 'mm; }';
+    document.querySelectorAll('.fmt button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.f === f ? 'true' : 'false'); });
+    document.getElementById('hint').textContent = '2 Seiten ' + f + ': vorne Deutsch, hinten Englisch – beidseitig drucken. Im Druckdialog Papierformat ' + f + ' und „Tatsächliche Größe“ (100 %) wählen.';
+    try { localStorage.setItem('n3-qr-format', f); } catch (e) {}
+  }
+  document.querySelector('.fmt').addEventListener('click', function (e) { var b = e.target.closest('button[data-f]'); if (b) setFmt(b.dataset.f); });
+  var saved = null; try { saved = localStorage.getItem('n3-qr-format'); } catch (e) {}
+  setFmt(saved);
 })();
 </script>
 </body>
