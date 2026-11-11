@@ -408,11 +408,10 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     </div>
   </section>
 
-  <section aria-labelledby="allH" style="display:flex;flex-direction:column;gap:20px">
-    <h2 class="sec-h" id="allH" data-t="allGames"></h2>
+  <section aria-label="Spiele" style="display:flex;flex-direction:column;gap:20px">
+    <div class="guest-cta"><span data-t="guestCta"></span><button type="button" class="btn btn-outline" data-guest-log data-t="logGuest"></button></div>
     <div class="src-tabs" role="tablist" id="srcTabs"><button type="button" role="tab" data-src="club" data-t="srcClub"></button><button type="button" role="tab" data-src="mem" data-t="srcMem"></button></div>
     <div class="pt-how" id="memHow" hidden><details><summary data-t="memHowSum"></summary><div class="pt-how-body"><ul><li data-t="memHow1"></li><li data-t="memHow2"></li><li data-t="memHow3"></li><li data-t="memHow4"></li><li data-t="memHow5"></li></ul></div></details></div>
-    <div class="guest-cta"><span data-t="guestCta"></span><button type="button" class="btn btn-outline" data-guest-log data-t="logGuest"></button></div>
     <div class="grid" id="grid"></div>
     <div class="more"><button type="button" class="btn btn-dark" id="moreBtn" hidden></button></div>
   </section>
@@ -1273,8 +1272,6 @@ function renderGrid() {
   }
   $('count').textContent = list.length + ' ' + t.of + ' ' + pool.length + ' ' + t.games;
   document.querySelectorAll('#srcTabs [data-src]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.src === S.src)));
-  $('allH').textContent = S.src === 'mem' ? t.srcMem : t.allGames;
-  const gc = document.querySelector('.guest-cta'); if (gc) gc.hidden = S.src === 'mem';
   $('memHow').hidden = S.src !== 'mem';
   const card = (g) => {
     if (g.mem) return memCard(g);
