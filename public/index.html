@@ -203,7 +203,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .bg-list input { width: 18px; height: 18px; accent-color: #7b5cc4; flex: none; }
 .bg-list .meta { margin-left: auto; }
 .mg-list { display: flex; flex-direction: column; gap: 6px; }
-.mg-list .row { align-items: center; gap: 10px; }
+.mg-list .row { align-items: center; gap: 10px; justify-content: space-between; flex-wrap: nowrap; padding: 4px 0; border-bottom: 1px solid var(--line, rgba(127,127,127,.2)); }
 .br-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
 dialog.info.wide { max-width: min(560px, calc(100vw - 32px)); width: 100%; box-sizing: border-box; }
 dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
@@ -382,9 +382,10 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       </label>
       <button type="button" class="btn btn-quiet" id="reset" data-t="reset"></button>
     </div>
-    <div id="quick"></div>
+    <div id="quick" hidden></div>
     <div class="bar">
-      <button type="button" class="btn btn-outline" id="advBtn" aria-expanded="false" aria-controls="adv"></button>
+      <span class="row" style="gap:8px"><button type="button" class="btn btn-outline" id="fltBtn" aria-expanded="false" aria-controls="quick"></button>
+      <button type="button" class="btn btn-outline" id="advBtn" hidden aria-expanded="false" aria-controls="adv"></button></span>
       <span><strong id="count" style="color: var(--fg)"></strong> <span data-t="match"></span></span>
     </div>
     <div class="adv" id="adv" hidden>
@@ -417,9 +418,8 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   </section>
 
   <section class="panel recent" aria-labelledby="mgH">
-    <div class="rec-head"><h2 id="mgH" style="font-size:26px" data-t="mgTitle"></h2><span class="row"><button type="button" class="btn btn-quiet" id="bgOpenBtn" data-t="bgOpen"></button><button type="button" class="btn btn-quiet" id="mgAddBtn" data-t="mgAdd"></button></span></div>
+    <div class="rec-head"><h2 id="mgH" style="font-size:26px" data-t="mgTitle"></h2><span class="row"><button type="button" class="btn btn-quiet" id="mgMineBtn" hidden></button><button type="button" class="btn btn-quiet" id="bgOpenBtn" data-t="bgOpen"></button><button type="button" class="btn btn-quiet" id="mgAddBtn" data-t="mgAdd"></button></span></div>
     <p class="meta" style="margin:0" data-t="mgIntro"></p>
-    <div class="mg-list" id="mgMine"></div>
   </section>
 
   <section class="panel admin" id="admin" hidden aria-labelledby="admH">
@@ -682,6 +682,12 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div class="acts"><button type="button" class="btn btn-quiet" id="brCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="brSend" data-t="brSend"></button></div>
   </form>
 </dialog>
+<dialog class="info wide" id="myDlg" aria-labelledby="myT">
+  <h3 id="myT"></h3>
+  <label class="field"><span data-t="search"></span><input type="search" id="myQ" autocomplete="off"></label>
+  <div class="mg-list" id="mgMine" style="max-height:60vh;overflow:auto"></div>
+  <div class="acts"><button type="button" class="btn btn-quiet" id="myClose" data-t="ciClose"></button></div>
+</dialog>
 <dialog class="info" id="expDlg" aria-labelledby="expT">
   <h3 id="expT"></h3>
   <ul class="exp-list" id="expL"></ul>
@@ -695,7 +701,7 @@ const TXT = {
   de: { title: 'Unsere Spielesammlung', intro: 'Über 180 Brett- und Kartenspiele warten jeden Dienstag ab 18 Uhr auf euch. Stöbert, filtert und sucht euch schon vorab euer nächstes Abenteuer aus.',
     prev: 'Vorheriges Spiel', next: 'Nächstes Spiel', viewBgg: 'Auf BGG ansehen', logPlay: 'Partie eintragen',
     search: 'Spiel suchen', searchPh: 'Name, z. B. Azul', sortBy: 'Sortieren nach', reset: 'Filter zurücksetzen', match: 'passen zu deiner Auswahl',
-    advOpen: 'Erweiterte Filter', advClose: 'Erweiterte Filter schließen', pModeLabel: 'Spielerzahl gilt …',
+    fltOpen: 'Filter anzeigen', fltClose: 'Filter ausblenden', advOpen: 'Erweiterte Filter', advClose: 'Erweiterte Filter schließen', pModeLabel: 'Spielerzahl gilt …',
     recNote: 'Die Prozent-Schwelle wirkt erst mit der BGG-API (vollständige Umfragedaten).', minVotes: 'Mindestanzahl Bewertungen', rank: 'BGG-Rang', any: 'egal',
     age: 'Geeignet ab Alter', yearFrom: 'Erschienen ab', cats: 'Kategorien', mechs: 'Mechaniken', allGames: 'Alle Spiele',
     recent: 'Zuletzt im Club gespielt', recTab: 'Zuletzt gespielt', lastPlayed: 'Zuletzt gespielt am {d}', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
@@ -743,7 +749,7 @@ const TXT = {
     mgAdd: 'Eigenes Spiel hinzufügen', mgGame: 'Spiel (BGG-Suche)', mgNote: 'Hinweis (optional, z. B. Ausgabe, Sprache, Erweiterungen)', mgSave: 'Hinzufügen', mgYourName: 'dein Discord-Name',
     mgConsent: 'Ich bin einverstanden, dass mein Discord-Name ({n}) auf dieser öffentlichen Seite als Besitzer des Spiels angezeigt wird und andere Mitglieder mich im Bot-Kanal bitten können, es mitzubringen.',
     mgConsentErr: 'Bitte bestätige, dass dein Discord-Name angezeigt werden darf.', mgMembersOnly: 'Das geht nur mit der Mitgliederrolle auf unserem Discord.', mgDup: 'Dieses Spiel hast du schon eingetragen.', mgTooMany: 'Du hast schon sehr viele Spiele eingetragen.', mgAdded: 'Hinzugefügt ✓',
-    mgMine: 'Deine Spiele', mgAll: 'Alle Spiele von Mitgliedern (Verwaltung)',
+    mgMine: 'Deine Spiele', mgAll: 'Alle Spiele von Mitgliedern (Verwaltung)', mgAllShort: 'Alle Mitgliederspiele',
     brTitle: 'Mitbringen anfragen: {n}', brIntro: 'Wir schreiben {o} im Bot-Kanal auf Discord an. Nimmt er oder sie einen Termin an, wird automatisch eine Spielrunde angelegt, in der ihr beide schon eingetragen seid.', brOwn: 'Das ist dein eigenes Spiel. Dich selbst kannst du nicht anfragen. Wenn du es spielen möchtest, biete unter „Mitspieler finden“ eine Runde damit an.',
     bgOpen: 'Aus meiner BGG-Sammlung importieren', bgTitle: 'Aus BGG-Sammlung importieren', bgUser: 'Dein Benutzername auf BoardGameGeek', bgLoad: 'Sammlung laden', bgLoading: 'Lade Sammlung von BGG … (kann bei großen Sammlungen etwas dauern)',
     bgNote: 'Gelesen werden nur Spiele, die in deiner BGG-Sammlung als „besitze ich“ markiert sind. Die Sammlung muss öffentlich sein. Du wählst danach aus, was übernommen wird.', bgAll: 'Alle', bgNone: 'Keine', bgHave: 'schon eingetragen',
@@ -778,7 +784,7 @@ const TXT = {
   en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
     prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
     search: 'Search games', searchPh: 'Name, e.g. Azul', sortBy: 'Sort by', reset: 'Reset filters', match: 'match your selection',
-    advOpen: 'Advanced filters', advClose: 'Close advanced filters', pModeLabel: 'Player count based on …',
+    fltOpen: 'Show filters', fltClose: 'Hide filters', advOpen: 'Advanced filters', advClose: 'Close advanced filters', pModeLabel: 'Player count based on …',
     recNote: 'The percentage threshold only works once the BGG API (full poll data) is connected.', minVotes: 'Minimum number of ratings', rank: 'BGG rank', any: 'any',
     age: 'Suitable from age', yearFrom: 'Published from', cats: 'Categories', mechs: 'Mechanics', allGames: 'All games',
     recent: 'Recently played at the club', recTab: 'Recently played', lastPlayed: 'Last played on {d}', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
@@ -826,7 +832,7 @@ const TXT = {
     mgAdd: 'Add your own game', mgGame: 'Game (BGG search)', mgNote: 'Note (optional, e.g. edition, language, expansions)', mgSave: 'Add', mgYourName: 'your Discord name',
     mgConsent: 'I agree that my Discord name ({n}) is shown on this public page as the owner of the game and that other members can ask me in the bot channel to bring it.',
     mgConsentErr: 'Please confirm that your Discord name may be shown.', mgMembersOnly: 'This needs the member role on our Discord.', mgDup: 'You have already added this game.', mgTooMany: 'You have already added a lot of games.', mgAdded: 'Added ✓',
-    mgMine: 'Your games', mgAll: 'All member games (admin)',
+    mgMine: 'Your games', mgAll: 'All member games (admin)', mgAllShort: 'All member games',
     brTitle: 'Ask to bring: {n}', brIntro: 'We’ll ask {o} in the bot channel on Discord. If they accept a date, a game round is created automatically with both of you already signed up.', brOwn: 'This is your own game. You can’t ask yourself to bring it. If you want to play it, offer a game round under “Find players”.',
     bgOpen: 'Import from my BGG collection', bgTitle: 'Import from BGG collection', bgUser: 'Your BoardGameGeek username', bgLoad: 'Load collection', bgLoading: 'Loading collection from BGG … (large collections can take a moment)',
     bgNote: 'Only games marked as “owned” in your BGG collection are read. The collection must be public. You choose afterwards what to import.', bgAll: 'All', bgNone: 'None', bgHave: 'already added',
@@ -1118,7 +1124,11 @@ function renderFilters() {
   $('modes').innerHTML = ['box', 'rec', 'best'].map((v, i) => '<button type="button" class="chip" data-mode="' + v + '" aria-pressed="' + (S.pMode === v) + '">' + esc(t.modes[i]) + '</button>').join('');
   $('cats').innerHTML = chips('cats', topCats.map((c) => [c.idx, (de() ? D.catsDe : D.cats)[c.idx] + ' (' + c.n + ')']));
   $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
-  $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !S.adv;
+  const nAct = ['langs', 'players', 'weight', 'time', 'types', 'feel', 'cats', 'mechs'].reduce((n, k) => n + S[k].length, 0) +
+    [S.pMode !== 'box', S.minRating > 0, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0].filter(Boolean).length;
+  $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt;
+  $('advBtn').hidden = !S.flt;
+  $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !(S.flt && S.adv);
   $('recPctL').textContent = fill(t.recPct, { p: S.recPct });
   $('minRatingL').textContent = fill(t.minRating, { v: S.minRating ? S.minRating.toFixed(1) : t.any });
   $('weightL').textContent = fill(t.weightRange, { a: S.wMin.toFixed(1), b: S.wMax.toFixed(1) });
@@ -1646,6 +1656,7 @@ document.querySelector('.filters').addEventListener('click', (e) => {
   S.limit = PAGE; renderFilters(); renderGrid();
 });
 $('advBtn').onclick = () => { S.adv = !S.adv; renderFilters(); };
+$('fltBtn').onclick = () => { S.flt = !S.flt; renderFilters(); };
 $('q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = PAGE; renderGrid(); });
 $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
@@ -2113,10 +2124,18 @@ var brOwnOnly = false, pendingMgDel = null, mgGame = null, mgResults = [], mgAct
 const isMineMg = (id) => isMine('memberGames', id);
 function renderMg() {
   const t = T(), el = $('mgMine'); if (!el) return;
-  const rows = memRows.filter((r) => canEdit || isMineMg(r.id));
-  el.innerHTML = rows.length ? '<span class="group-label">' + esc(canEdit ? t.mgAll : t.mgMine) + '</span>' + rows.map((r) => '<div class="row"><span>' + esc(r.game) + (r.year ? ' (' + r.year + ')' : '') + (canEdit ? ' · ' + esc(r.owner) : '') +
-    (r.note ? ' <span class="meta">· ' + esc(r.note) + '</span>' : '') + '</span><button type="button" class="btn ' + (pendingMgDel === r.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:36px" data-mgdel="' + esc(r.id) + '">' + esc(pendingMgDel === r.id ? t.delConfirm : t.remove) + '</button></div>').join('') : '';
+  const all = memRows.filter((r) => canEdit || isMineMg(r.id));
+  const btn = $('mgMineBtn'); btn.hidden = !all.length; btn.textContent = (canEdit ? t.mgAllShort : t.mgMine) + ' (' + all.length + ')';
+  $('myT').textContent = canEdit ? t.mgAll : t.mgMine; 
+  if (!all.length && $('myDlg').open) $('myDlg').close();
+  const q = $('myQ').value.trim().toLowerCase();
+  const rows = q ? all.filter((r) => (r.game + ' ' + (r.owner || '')).toLowerCase().includes(q)) : all;
+  el.innerHTML = rows.length ? rows.map((r) => '<div class="row"><span>' + esc(r.game) + (r.year ? ' (' + r.year + ')' : '') + (canEdit ? ' · ' + esc(r.owner) : '') +
+    (r.note ? ' <span class="meta">· ' + esc(r.note) + '</span>' : '') + '</span><button type="button" class="btn ' + (pendingMgDel === r.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:36px" data-mgdel="' + esc(r.id) + '">' + esc(pendingMgDel === r.id ? t.delConfirm : t.remove) + '</button></div>').join('') : '<p class="meta">' + esc(t.gNone) + '</p>';
 }
+$('mgMineBtn').onclick = () => { $('myQ').value = ''; pendingMgDel = null; renderMg(); $('myDlg').showModal(); };
+$('myClose').onclick = () => $('myDlg').close();
+$('myQ').addEventListener('input', () => renderMg());
 $('mgMine').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-mgdel]'); if (!b) return;
   const id = b.dataset.mgdel; if (pendingMgDel !== id) { pendingMgDel = id; renderMg(); return; }
