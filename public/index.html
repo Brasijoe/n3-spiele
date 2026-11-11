@@ -92,8 +92,13 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .cv-info b { font-weight: 700; }
 .card:hover .cv-info, .card:focus-within .cv-info, .cv.show-info .cv-info { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .cv-info { transition: none; } }
-.pill.ln { background: #2b7a40; color: #fff; font-weight: 600; }
-.pill.ln2 { background: transparent; box-shadow: inset 0 0 0 1px #2b7a40; color: var(--fg); font-weight: 500; }
+.cv-tl { position: absolute; left: 10px; top: 10px; max-width: calc(100% - 80px); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; z-index: 2; }
+.cv-tl .type { position: static; max-width: 100%; }
+.ln-ic { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #2b7a40; color: #fff; border: 2px solid #fff; cursor: help; outline-offset: 2px; }
+.ln-ic.ln2 { background: #fff; color: #2b7a40; border-color: #2b7a40; }
+.ln-ic::after { content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 6px); width: max-content; max-width: 190px; padding: 6px 9px; border-radius: 6px; background: rgba(20, 20, 20, .92); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.35; white-space: normal; opacity: 0; pointer-events: none; transition: opacity .12s; }
+.ln-ic:hover::after, .ln-ic:focus::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .ln-ic::after { transition: none; } }
 .grid-h { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .grid-h:first-child { margin-top: 0; }
 .grid-h h3 { font-size: 20px; font-weight: 600; }
@@ -578,7 +583,7 @@ const TXT = {
     langNote: 'Hinweis: Die Sprache unserer Ausgaben wird gerade erst eingetragen. Der Sprachfilter findet deshalb noch nicht alle Spiele.',
     secLang: 'Auf {l}', secNeutral: 'Sprachneutrale Spiele', secNeutralNote: 'Im Spiel ist kein Text nötig. Welche Sprache die Schachtel hat, spielt keine Rolle, nur die Regeln muss jemand erklären (Einschätzung der BGG-Community).',
     secMostly: 'Fast sprachneutrale Spiele', secMostlyNote: 'Nur wenig Text im Spiel: schnell gelernt oder mit einem kleinen Spickzettel gut spielbar (Einschätzung der BGG-Community).', secEmpty: 'Keine passenden Spiele.',
-    tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral',
+    tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admLang: 'Sprache, Besitzer und Aufnahmedatum', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', addedOn: 'Dabei seit', ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'wie BGG: {v}', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
   en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
@@ -635,7 +640,7 @@ const TXT = {
     langNote: 'Note: we are only just recording the language of our copies, so the language filter doesn’t find every game yet.',
     secLang: 'In {l}', secNeutral: 'Language-neutral games', secNeutralNote: 'No text is needed during play. The language of the box doesn’t matter, someone just has to explain the rules (rated by the BGG community).',
     secMostly: 'Mostly language-neutral games', secMostlyNote: 'Only a little text during play: quickly learned or easy to play with a small crib sheet (rated by the BGG community).', secEmpty: 'No matching games.',
-    tagNeutral: 'language-neutral', tagMostly: 'mostly language-neutral',
+    tagNeutral: 'language-neutral', tagMostly: 'mostly language-neutral', tipNeutral: 'Language-neutral: no text needed during play', tipMostly: 'Mostly language-neutral: only a little text during play',
     admLang: 'Language, owner and date added', admLangNote: 'Language of our copy, language dependence, owner and since when the game is in the collection. Every change is saved right away. Without a language a game only shows up in the language filter if it is (mostly) language-neutral. Language dependence comes from BGG and can be overridden here.', admLangQ: 'Search game', admLangOnlyEmpty: 'Only games without a language', admLangErr: 'Saving didn’t work.', admLangOk: 'Saved: {n}',
     owner: 'Owner', addedOn: 'In the collection since', ldLabel: 'Language dependence', ldNames: ['language-neutral (no text)', 'mostly language-neutral (little text)', 'moderate text', 'lots of text', 'unplayable without the language'], ldUnknown: 'unknown', ldBgg: 'as on BGG: {v}', infoMore: 'Details', admExport: 'Export to Excel', admExportNote: 'All games with the columns of the inventory list, plus owner, date, language and BGG data.' },
 };
@@ -777,6 +782,10 @@ const coverOf = (p, g) => (g && g.cover ? g.cover : p && p.guest && Number(p.gam
 const thumbHtml = (p, g, nm) => { const c = coverOf(p, g), l = '<span class="th" aria-hidden="true">' + esc(String(nm).charAt(0).toUpperCase()) + '</span>';
   return c ? '<img class="th" src="' + esc(c) + '" alt="" loading="lazy" data-l="' + esc(String(nm).charAt(0).toUpperCase()) + '">' : l; };
 document.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.classList.contains('th') && im.dataset.l != null) { const s = document.createElement('span'); s.className = 'th'; s.setAttribute('aria-hidden', 'true'); s.textContent = im.dataset.l; im.replaceWith(s); } }, true);
+// Kleines Symbol für (fast) sprachneutrale Spiele oben links im Cover; Text erscheint beim Überfahren, Antippen oder per Tastatur-Fokus.
+const LN_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>';
+const lnIcon = (g) => { if (g.ld !== 0 && g.ld !== 1) return ''; const tip = g.ld === 0 ? T().tipNeutral : T().tipMostly;
+  return '<span class="ln-ic' + (g.ld === 1 ? ' ln2' : '') + '" tabindex="0" role="img" aria-label="' + esc(tip) + '" data-tip="' + esc(tip) + '">' + LN_SVG + '</span>'; };
 const catNames = (g) => g.cats.map((c) => (de() ? D.catsDe : D.cats)[c]);
 
 function match(g) {
@@ -927,11 +936,11 @@ function renderGrid() {
     // Besitzer und Aufnahmedatum erscheinen erst beim Überfahren (oder Antippen) des Covers.
     const info = '<div class="cv-info"><span><b>' + esc(t.owner) + ':</b> ' + esc(g.owner) + '</span>' + (g.added ? '<span><b>' + esc(t.addedOn) + ':</b> ' + esc(g.added.split('-').reverse().join('.')) + '</span>' : '') + '</div>';
     return '<article class="card" tabindex="-1"><div class="cv" data-cvinfo>' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + badge(g, 44) +
-      (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + info + '</div><div class="body">' +
+      '<div class="cv-tl">' + (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + lnIcon(g) + '</div>' + info + '</div><div class="body">' +
       '<h3>' + esc(n) + '</h3><span class="meta">' + g.y + ' · ' + esc(catNames(g).slice(0, 2).join(', ')) + '</span>' +
       '<div class="pills"><span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span><span class="pill">' + esc(tTxt(g)) + '</span><span class="pill">' + esc(t.weights[g.wl]) + '</span>' +
       g.langs.map((l) => '<span class="pill lg" title="' + esc(t.langNames[l]) + '">' + l.toUpperCase() + '</span>').join('') +
-      (g.ld === 0 ? '<span class="pill ln">' + esc(t.tagNeutral) + '</span>' : g.ld === 1 ? '<span class="pill ln ln2">' + esc(t.tagMostly) + '</span>' : '') + '</div>' +
+'</div>' +
       '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' +
       expHtml(g, 'played') + (pc ? '<span class="meta">' + esc(fill(t.playedN, { n: pc })) + '</span>' : '') +
       '<div class="actions"><button type="button" class="btn btn-primary" data-log="' + esc(g.key) + '">' + esc(t.logPlay) + '</button><a class="bgg" target="_blank" rel="noopener" href="' + g.link + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a></div></div></article>';
@@ -1241,7 +1250,7 @@ $('reset').onclick = () => {
   renderAll();
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
-$('grid').addEventListener('click', (e) => { const cv = e.target.closest('[data-cvinfo]'); if (cv) { cv.classList.toggle('show-info'); return; } });
+$('grid').addEventListener('click', (e) => { const cv = !e.target.closest('.ln-ic') && e.target.closest('[data-cvinfo]'); if (cv) { cv.classList.toggle('show-info'); return; } });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-log]'); if (!b) return; const g = all.find((x) => x.key === b.dataset.log); if (g) openLog(g); });
 
 /* ---------- Gastspiele: BGG-Suche ---------- */
