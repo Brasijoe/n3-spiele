@@ -243,7 +243,7 @@ async function route(req, env, ctx, url) {
       return json({ ok: true });
     }
   }
-  // Angaben je Spiel aus der Verwaltung: Sprache der Ausgabe, Sprachabhängigkeit (überschreibt BGG), Besitzer, Datum der Aufnahme.
+  // Angaben je Spiel aus der Verwaltung: Sprache der Ausgabe, Sprachabhängigkeit (überschreibt BGG), Besitzer, Datum der Aufnahme, Inventarnummer, Zustand (1–6 wie in der Inventurliste).
   // Schlüssel wie in der Seite: BGG-ID, ggf. mit Zusatz wie „ (englisch, KS)“. Lesen öffentlich, Ändern nur Admin.
   if (path === '/config/gamemeta') {
     const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'gamemeta'").first();
@@ -259,6 +259,8 @@ async function route(req, env, ctx, url) {
       if (ld !== null && ld >= -1 && ld <= 4) e.ld = ld;
       const owner = str(b.owner, 60); if (owner) e.o = owner;
       const added = str(b.added, 10); if (added && !isDate(added)) return fail(400, 'invalid'); if (added) e.d = added;
+      const inv = str(b.inv, 20); if (inv) e.inv = inv;
+      const z = int(b.z); if (z !== null && z >= 1 && z <= 6) e.z = z;
       map[key] = e;
       await env.DB.prepare("INSERT INTO config(key, value) VALUES('gamemeta', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(map)).run();
       return json({ ok: true, key, meta: e });
