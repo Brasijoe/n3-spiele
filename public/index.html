@@ -267,6 +267,14 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .qr-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 260px; }
 .qr-url { word-break: break-all; font-weight: 600; }
 .foot-admin .btn { min-height: 36px; font-size: 13px; }
+.auth-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 14px; color: var(--fg); }
+.auth-box .btn-discord { background: #5865f2; color: #fff; border: 0; min-height: 40px; text-transform: none; letter-spacing: 0; }
+.auth-box .or { flex: 1 1 100%; font-size: 13px; color: var(--text); }
+.auth-box .linkbtn, .linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--club); text-decoration: underline; cursor: pointer; }
+.play .own { display: flex; gap: 6px; }
+.play .own .btn { min-height: 32px; font-size: 13px; }
+dialog.info form.pe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+dialog.info form.pe .wide { grid-column: 1 / -1; }
 .gl-list { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 720px) { .st-panel, .st-filters { padding-inline: 18px; } .months { gap: 3px; } .mlabels { gap: 3px; font-size: 10px; } }
 </style>
@@ -482,7 +490,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 <footer class="wrap">
   <a class="bgglogo" target="_blank" rel="noopener" href="https://boardgamegeek.com"><img src="covers/logo.png" alt="Powered by BoardGameGeek"></a>
   <span data-t="footer"></span>
-  <span class="foot-admin"><button type="button" class="btn btn-quiet" id="admLink"></button></span>
+  <span class="foot-admin"><button type="button" class="btn btn-quiet" id="meLink" hidden></button> <button type="button" class="btn btn-quiet" id="admLink"></button></span>
   <form id="admForm" class="row" hidden style="width:100%">
     <label class="field"><span data-t="admPw"></span><input type="password" id="admPw" autocomplete="current-password"></label>
     <button type="submit" class="btn btn-primary" data-t="admIn"></button><span id="admMsg" class="err" role="alert"></span>
@@ -508,6 +516,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <label class="field"><span data-t="winner"></span><input type="text" id="fWinner" maxlength="80"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="fNote" maxlength="200"></label>
     <label class="field" id="fByWrap" hidden><span data-t="byName"></span><input type="text" id="fBy" maxlength="40" autocomplete="nickname"><span class="note" data-t="byHint"></span></label>
+    <div class="auth-box" id="fAuth" data-authbox></div>
     <label class="field code" id="fCodeWrap"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="fMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
@@ -530,6 +539,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
     <label class="field" id="pHostWrap" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="pNote" maxlength="200"></label>
+    <div class="auth-box" id="pAuth" data-authbox></div>
     <label class="field code" id="pCodeWrap"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <label class="field code" id="pEvWrap" hidden><span data-t="evCode"></span><input type="text" id="pEvCode" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" id="pEvInfo"></span></label>
     <button type="button" class="btn btn-quiet linkish" id="pEvToggle"></button>
@@ -541,6 +551,19 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
   </form>
 </div>
 
+<dialog class="info" id="peDlg" aria-labelledby="peT">
+  <h3 id="peT"></h3>
+  <form class="pe" id="peForm">
+    <label class="field"><span data-t="date"></span><input type="date" id="peDate" required></label>
+    <label class="field"><span data-t="nPlayers"></span><input type="number" id="pePlayers" min="1" max="99" required></label>
+    <label class="field"><span data-t="dur"></span><input type="number" id="peDur" min="1" max="1440"></label>
+    <label class="field"><span data-t="winner"></span><input type="text" id="peWinner" maxlength="80"></label>
+    <label class="field wide"><span data-t="note"></span><input type="text" id="peNote" maxlength="200"></label>
+    <label class="wide" style="display:flex;align-items:center;gap:10px;min-height:40px;font-weight:600;color:var(--fg)"><input type="checkbox" id="peFirst" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="first"></span></label>
+    <span id="peMsg" class="err wide" role="alert"></span>
+    <div class="acts wide"><button type="button" class="btn btn-quiet" id="peDel"></button><button type="button" class="btn btn-quiet" id="peCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" data-t="save"></button></div>
+  </form>
+</dialog>
 <dialog class="info" id="codeInfo" aria-labelledby="ciT">
   <h3 id="ciT" data-t="ciTitle"></h3>
   <p data-t="ciP1"></p><p data-t="ciP2"></p><p data-t="ciP3"></p>
@@ -565,8 +588,11 @@ const TXT = {
     recent: 'Zuletzt im Club gespielt', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
-    ciTitle: 'Dein persönlicher Code', ciP1: 'Damit wir wissen, wer eine Spielrunde anlegt oder eine Partie einträgt, hat jedes Mitglied einen eigenen Code. Er ist mit deinem Discord-Konto verknüpft.', ciP2: 'So bekommst du ihn: Tritt dem N3-Discord-Server bei, akzeptiere die Brettspiel-Rolle und tippe dann im Bot-Kanal /code. Der Bot schickt dir den Code als Nachricht, die nur du sehen kannst. Gib ihn hier ein; dein Browser merkt ihn sich.', ciP3: 'Gib den Code nicht weiter. Ein neues /code macht den alten ungültig, und wer den Server verlässt, verliert den Code.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
-    code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Auf dem N3-Discord-Server mit /code abholen.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
+    loginDiscord: 'Mit Discord anmelden', loginOr: 'oder einmalig mit deinem Code von /code:', loggedAs: 'Angemeldet als {n}', logout: 'Abmelden', logoutN: 'Abmelden ({n})', loginWait: 'Bitte im Discord-Fenster bestätigen …', loginPopup: 'Das Anmeldefenster wurde blockiert. Bitte Popups für diese Seite erlauben.',
+    errLogin: 'Bitte zuerst anmelden (Discord oder Code).', errSession: 'Deine Anmeldung ist abgelaufen. Bitte neu anmelden.', errNotMember: 'Du bist nicht (mehr) auf dem N3-Discord-Server.', errNoRole: 'Dir fehlt auf dem Discord-Server die Brettspiel-Rolle.', errNoChannel: 'Du kannst den Brettspiel-Kanal auf dem Discord-Server nicht sehen.',
+    edit: 'Bearbeiten', peTitle: 'Partie bearbeiten: {n}', ptEditTitle: 'Runde bearbeiten', ptSaveEdit: 'Speichern', ptSeatsTaken: 'Es sind schon mehr Leute dabei, als Plätze angegeben.', ptLoggedAlready: 'Die Runde ist schon als gespielt registriert.',
+    ciTitle: 'Anmelden', ciP1: 'Zum Anlegen von Spielrunden und Eintragen von Partien meldest du dich einmal an, am einfachsten mit „Mit Discord anmelden“. Dein Browser bleibt angemeldet; deine eigenen Partien und Runden kannst du danach bearbeiten und löschen.', ciP2: 'Voraussetzung: Du bist auf dem N3-Discord-Server und kannst dort den Brettspiel-Kanal sehen (Brettspiel-Rolle). Wer den Server verlässt, wird abgemeldet.', ciP3: 'Ohne Discord-Anmeldung im Browser geht es auch mit einem Code: Tippe im Bot-Kanal /code, der Bot schickt ihn dir (nur für dich sichtbar). Gib ihn hier einmal ein. Partien ohne Discord kannst du über den QR-Code im Club eintragen.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
+    code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Im Bot-Kanal auf dem N3-Discord mit /code abholen. Nur einmal nötig.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
     admQr: 'Eintragen per QR-Code', admQrNote: 'Wer den QR-Code im Club scannt, kann Partien ohne Discord eintragen (mit Namen). Ein neuer Schlüssel macht alte Ausdrucke sofort ungültig.', admQrPrint: 'Aushang drucken', admQrCopy: 'Link kopieren', admQrCopied: 'Link kopiert.', admQrMake: 'Schlüssel erzeugen', admQrRenew: 'Neuen Schlüssel erzeugen', admQrRenewSure: 'Alte Ausdrucke werden ungültig – wirklich?', admQrNone: 'Noch kein Schlüssel. Erst erzeugen, dann drucken.', admQrRenewed: 'Neuer Schlüssel aktiv. Bitte den neuen Aushang drucken.', admQrErr: 'Das hat nicht geklappt.', byTag: 'von {n}',
     admEv: 'Event-Codes', admEvNote: 'Mit einem Event-Code kann jede Person ohne Discord eine Runde anbieten (mit Namen), bis einschließlich „Code gültig bis“ und nur an den Eventtagen. In Discord steht dann der Eventname dabei. Code leer lassen = er wird automatisch erzeugt.', admEvName: 'Eventname', admEvCode: 'Code (optional, mind. 6 Zeichen)', admEvCodePh: 'leer = automatisch', admEvFrom: 'Event von', admEvTo: 'Event bis', admEvUntil: 'Code gültig bis', admEvAdd: 'Event-Code anlegen', admEvNone: 'Noch keine Event-Codes.', admEvValid: 'gültig bis {d}', admEvExpired: 'abgelaufen ({d})', admEvCopy: 'Link kopieren', admEvCopied: 'Link kopiert.', admEvDel: 'Löschen', admEvTaken: 'Diesen Code gibt es schon.', admEvShort: 'Der Code braucht mindestens 6 Buchstaben oder Ziffern.', admEvBad: 'Bitte Name und alle drei Daten ausfüllen („bis“ nicht vor „von“).', admEvMade: 'Event-Code {c} ist aktiv.',
     evUseEvent: 'Ich habe einen Event-Code', evUsePersonal: 'Doch mit persönlichem Code', evCode: 'Event-Code', evHint: 'Den Code bekommst du vom Orga-Team des Events.', evInfo: 'Event „{n}“ · {d}', evBad: 'Diesen Event-Code gibt es nicht.', evExpired: 'Dieser Event-Code ist abgelaufen.', evDateErr: 'Bitte einen Tag des Events wählen ({d}).', evOver: 'Die Eventtage sind schon vorbei.',
@@ -592,7 +618,7 @@ const TXT = {
     admGl: 'GeekList-Abgleich', admGlNote: 'Vergleicht die BGG-GeekList mit den Spielen dieser Seite. Die Liste wird nachts automatisch geladen.', admGlRefresh: 'Jetzt von BGG laden',
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
     gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
-    ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an, andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen.',
+    ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Geplante Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
     ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
     ptLog: 'Als gespielt registrieren', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
@@ -622,8 +648,11 @@ const TXT = {
     recent: 'Recently played at the club', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
-    ciTitle: 'Your personal code', ciP1: 'So we know who creates a game round or logs a play, every member has their own code. It is linked to your Discord account.', ciP2: 'How to get it: join the N3 Discord server, accept the board game role, then type /code in the bot channel. The bot sends you the code in a message only you can see. Enter it here; your browser remembers it.', ciP3: 'Don’t share it. A new /code invalidates the old one, and anyone who leaves the server loses their code.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
-    code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it on the N3 Discord server with /code.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
+    loginDiscord: 'Sign in with Discord', loginOr: 'or once with your code from /code:', loggedAs: 'Signed in as {n}', logout: 'Sign out', logoutN: 'Sign out ({n})', loginWait: 'Please confirm in the Discord window …', loginPopup: 'The sign-in window was blocked. Please allow pop-ups for this site.',
+    errLogin: 'Please sign in first (Discord or code).', errSession: 'Your sign-in has expired. Please sign in again.', errNotMember: 'You are not (or no longer) on the N3 Discord server.', errNoRole: 'You are missing the board game role on the Discord server.', errNoChannel: 'You cannot see the board game channel on the Discord server.',
+    edit: 'Edit', peTitle: 'Edit play: {n}', ptEditTitle: 'Edit game', ptSaveEdit: 'Save', ptSeatsTaken: 'More people have already joined than that.', ptLoggedAlready: 'This game is already logged as played.',
+    ciTitle: 'Sign in', ciP1: 'To create game rounds and log plays, sign in once, easiest with “Sign in with Discord”. Your browser stays signed in; afterwards you can edit and delete your own plays and rounds.', ciP2: 'Requirement: you are on the N3 Discord server and can see the board game channel there (board game role). Leaving the server signs you out.', ciP3: 'If Discord sign-in doesn’t work in your browser, use a code: type /code in the bot channel, the bot sends it to you (only visible to you). Enter it here once. Without Discord you can log plays via the QR code at the club.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
+    code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it with /code in the bot channel on the N3 Discord. Only needed once.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
     admQr: 'Logging via QR code', admQrNote: 'Anyone who scans the QR code at the club can log plays without Discord (with their name). A new key instantly invalidates old printouts.', admQrPrint: 'Print poster', admQrCopy: 'Copy link', admQrCopied: 'Link copied.', admQrMake: 'Create key', admQrRenew: 'Create new key', admQrRenewSure: 'Old printouts stop working – sure?', admQrNone: 'No key yet. Create one, then print.', admQrRenewed: 'New key active. Please print the new poster.', admQrErr: 'That didn’t work.', byTag: 'by {n}',
     admEv: 'Event codes', admEvNote: 'With an event code anyone can offer a game without Discord (with their name), up to and including “Code valid until”, and only on the event days. Discord then shows the event name. Leave the code empty to generate one.', admEvName: 'Event name', admEvCode: 'Code (optional, min. 6 characters)', admEvCodePh: 'empty = automatic', admEvFrom: 'Event from', admEvTo: 'Event to', admEvUntil: 'Code valid until', admEvAdd: 'Create event code', admEvNone: 'No event codes yet.', admEvValid: 'valid until {d}', admEvExpired: 'expired ({d})', admEvCopy: 'Copy link', admEvCopied: 'Link copied.', admEvDel: 'Delete', admEvTaken: 'This code already exists.', admEvShort: 'The code needs at least 6 letters or digits.', admEvBad: 'Please fill in the name and all three dates (“to” not before “from”).', admEvMade: 'Event code {c} is active.',
     evUseEvent: 'I have an event code', evUsePersonal: 'Use my personal code instead', evCode: 'Event code', evHint: 'You get the code from the event’s organisers.', evInfo: 'Event “{n}” · {d}', evBad: 'This event code doesn’t exist.', evExpired: 'This event code has expired.', evDateErr: 'Please pick a day of the event ({d}).', evOver: 'The event days are already over.',
@@ -649,7 +678,7 @@ const TXT = {
     admGl: 'GeekList check', admGlNote: 'Compares the BGG GeekList with the games on this page. The list is fetched automatically every night.', admGlRefresh: 'Fetch from BGG now',
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
     gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
-    ptIntro: 'Want to play something specific on a game night? Offer a game and others sign up. Afterwards you can log the play in one click.',
+    ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Planned games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
     ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
     ptLog: 'Register as played', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
@@ -1007,10 +1036,12 @@ function renderPlays() {
       // Feste Spalten: Dauer bleibt als leere Zelle stehen, Erstpartie/Sieg/Notiz teilen sich die letzte Spalte.
       '<span>' + (Number(p.duration) > 0 ? esc(p.duration + ' ' + t.min) : '') + '</span>' +
       '<span class="extra">' + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') + (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') + '</span>' +
-      (canEdit && p.id ? '<button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button>' : '<span></span>') + '</div>';
+      (canEdit && p.id ? '<button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button>'
+        : isMine('plays', p.id) ? '<span class="own"><button type="button" class="btn btn-quiet" data-pe="' + esc(p.id) + '">' + esc(t.edit) + '</button></span>' : '<span></span>') + '</div>';
   }).join('');
 }
 $('plays').addEventListener('click', async (e) => {
+  const pe = e.target.closest('button[data-pe]'); if (pe) { openPlayEdit(pe.dataset.pe); return; }
   const b = e.target.closest('button[data-hdel]'); if (!b) return;
   const id = b.dataset.hdel;
   if (pendingDel !== id) { pendingDel = id; renderPlays(); return; }
@@ -1256,30 +1287,36 @@ function openLog(g) {
   const d = new Date(); $('fDate').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   $('fPlayers').value = Math.min(Math.max(4, g.p1), Math.min(g.p2, 30)); $('fWinner').value = ''; $('fNote').value = ''; $('fCode').value = showCode(savedCode()); $('fDur').value = ''; $('fFirst').checked = false;
   $('fMsg').textContent = ''; $('fMsg').className = ''; $('save').disabled = false;
-  $('fByWrap').hidden = !logKey; $('fCodeWrap').hidden = !!logKey; $('fBy').value = lsGet('n3-log-name');
+  $('fBy').value = lsGet('n3-log-name'); renderAuth();
   $('modal').hidden = false; (guest ? $('gQ') : $('fDate')).focus();
 }
 function closeLog() { $('modal').hidden = true; logGame = null; logParty = null; }
-const codeErr = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set' || e.code === 'blocked') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave + ' (' + ((e && (e.code || e.message)) || '?') + ')');
+const codeErr = (e) => { const t = T(), c = e && e.code;
+  if (c === 'bad_session') { setSession(''); renderAuth(); return t.errSession; }
+  if (c === 'login_required') return t.errLogin;
+  if (c === 'not_member') return t.errNotMember; if (c === 'no_role') return t.errNoRole; if (c === 'no_channel') return t.errNoChannel;
+  return codeErr0(e); };
+const codeErr0 = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set' || e.code === 'blocked') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave + ' (' + ((e && (e.code || e.message)) || '?') + ')');
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join(''); }
 
 $('logForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const t = T(), msg = $('fMsg'), code = normCode($('fCode').value), by = $('fBy').value.trim().slice(0, 40), useKey = !!logKey;
+  const t = T(), msg = $('fMsg'), code = normCode($('fCode').value), by = $('fBy').value.trim().slice(0, 40), useKey = !!logKey && !me;
   msg.className = 'err';
   if (useKey && !by) { msg.textContent = t.errBy; $('fBy').focus(); return; }
-  if (!useKey && code.length !== 8) { msg.textContent = t.errLen; return; }
+  if (!useKey && !me && code.length !== 8) { msg.textContent = t.errLogin; return; }
   const durRaw = $('fDur').value.trim(); const dur = durRaw ? Math.round(Number(durRaw)) : null;
   if (durRaw && !(dur >= 1 && dur <= 1440)) { msg.textContent = t.errDur; return; }
   if (!logGame || logGame === GUEST_PENDING) { msg.textContent = t.errPick; $('gQ').focus(); return; }
   $('save').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   try {
+    if (!useKey) await ensureLogin(code);
     await api('POST', '/plays', { guest: !!logGame.guest, year: logGame.guest ? (logGame.y || null) : null, gameId: logGame.id, game: logGame.nDe, date: $('fDate').value, players: Number($('fPlayers').value) || 0,
-      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined, by: useKey ? by : undefined }, useKey ? { 'X-Log-Key': logKey } : { 'X-Member-Code': code });
-    if (useKey) lsSet('n3-log-name', by); else saveCode(code); refreshAll();
+      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined, by: useKey ? by : undefined }, useKey ? { 'X-Log-Key': logKey } : {});
+    if (useKey) lsSet('n3-log-name', by); refreshAll();
     msg.textContent = t.saved; setTimeout(() => { closeLog(); if (useKey) $('recH').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 600);
   } catch (err) {
-    if (err && err.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); $('fByWrap').hidden = true; $('fCodeWrap').hidden = false; msg.className = 'err'; msg.textContent = t.errKey; $('save').disabled = false; return; }
+    if (err && err.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); renderAuth(); msg.className = 'err'; msg.textContent = t.errKey; $('save').disabled = false; return; }
     if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
 });
 $('cancel').onclick = closeLog;
@@ -1287,7 +1324,7 @@ $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) close
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeLog(); if (e.key === 'Escape' && !$('pModal').hidden) closeParty(); });
 $('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
 
-$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); if (canEdit) { renderQr(); renderEvents(); } });
+$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); renderAuth(); if (canEdit) { renderQr(); renderEvents(); } });
 const AUTO_MS = 5000;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let autoOn = !reduceMotion, hoverPause = false, autoTimer = null;
@@ -1517,7 +1554,9 @@ function partyCard(x, past) {
     else if (free > 0 && joinOpen !== x.id && !(my && my.host)) actions += '<button type="button" class="btn btn-primary" data-pjoin="' + esc(x.id) + '">' + esc(t.ptJoin) + '</button>';
   }
   if (String(p.date) <= todayIso()) actions += p.playId ? '<span class="done">' + esc(t.ptLogged) + '</span>' : '<button type="button" class="btn ' + (past ? 'btn-primary' : 'btn-outline') + '" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
-  if (canEdit || (my && my.host)) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
+  const own = isMine('parties', x.id);
+  if (own && !past && !p.playId) actions += '<button type="button" class="btn btn-quiet" data-pedit="' + esc(x.id) + '">' + esc(t.edit) + '</button>';
+  if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   const join = joinOpen === x.id ? '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
   return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + '</div></div>' +
     '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
@@ -1551,6 +1590,7 @@ $('viewParties').addEventListener('click', async (e) => {
     $('fDate').value = p.date; $('fPlayers').value = names.length || 1; $('fNote').value = fill(t.ptNoteAuto, { n: names.join(', ') }).slice(0, 200);
     return;
   }
+  if ((b = e.target.closest('[data-pedit]'))) { const x = parties.find((y) => y.id === b.dataset.pedit); if (x) openPartyEdit(x); return; }
   if ((b = e.target.closest('[data-pdel]'))) {
     const id = b.dataset.pdel; if (pendingPDel !== id) { pendingPDel = id; renderParties(); return; }
     pendingPDel = null; try { const my = mine()[id]; await api('DELETE', '/parties/' + id, undefined, my && my.hostKey ? { 'X-Host-Key': my.hostKey } : {}); refreshAll(); } catch (x) {} renderParties(); return;
@@ -1622,7 +1662,7 @@ function applyEvDates() {
   }
 }
 function setEvMode(on) {
-  const t = T(); evMode = on; $('pEvWrap').hidden = !on; $('pCodeWrap').hidden = on; $('pHostWrap').hidden = !on;
+  const t = T(); evMode = on; $('pEvWrap').hidden = !on; $('pHostWrap').hidden = !on; renderAuth();
   $('pEvToggle').textContent = on ? t.evUsePersonal : t.evUseEvent;
   if (on && !evInfo) { $('pEvInfo').className = 'note'; $('pEvInfo').textContent = t.evHint; }
   if (!on) $('pDate').value = nextEventDay();
@@ -1641,14 +1681,25 @@ async function checkEv(auto) {
 }
 $('pEvToggle').onclick = () => { setEvMode(!evMode); if (evMode) $('pEvCode').focus(); };
 $('pEvCode').addEventListener('input', () => { clearTimeout(evTimer); evTimer = setTimeout(() => checkEv(false), 600); });
+var pEditId = null;
 function openParty() {
+  pEditId = null; $('pH').textContent = T().ptNew; $('pSave').textContent = T().ptCreate; $('pEvToggle').hidden = false;
   pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextEventDay(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
   $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
   try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
   const ev = lsGet('n3-event-code'); evInfo = null; $('pEvCode').value = ev; setEvMode(!!ev); if (ev) checkEv(true);
   renderPPick(); $('pModal').hidden = false; $('pQ').focus();
 }
-function closeParty() { $('pModal').hidden = true; }
+// Eigene Runde bearbeiten: derselbe Dialog, vorausgefüllt; gespeichert wird per PUT.
+function openPartyEdit(x) {
+  const t = T(), p = x.p;
+  openParty(); setEvMode(false);
+  pEditId = x.id; $('pH').textContent = t.ptEditTitle; $('pSave').textContent = t.ptSaveEdit; $('pEvToggle').hidden = true; $('pEvWrap').hidden = true; $('pHostWrap').hidden = true;
+  pGame = { n: p.game, gameId: p.gameId || null, guest: !!p.guest, y: p.year || null };
+  $('pDate').value = p.date; $('pTime').value = p.time || ''; $('pSeats').value = p.seats; $('pNote').value = p.note || '';
+  renderPPick(); renderAuth(); $('pDate').focus();
+}
+function closeParty() { $('pModal').hidden = true; pEditId = null; }
 $('ptNew').onclick = openParty; $('pCancel').onclick = closeParty;
 $('pModal').addEventListener('click', (e) => { if (e.target === $('pModal')) closeParty(); });
 $('pCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
@@ -1663,13 +1714,21 @@ $('pForm').addEventListener('submit', async (e) => {
     if (!evInfo) { msg.textContent = t.evBad; $('pEvCode').focus(); return; }
     if (!host) { msg.textContent = t.ptErrName; $('pHost').focus(); return; }
     if (!date || date < evInfo.from || date > evInfo.to || date < todayIso()) { msg.textContent = fill(t.evDateErr, { d: evRange(evInfo) }); return; }
-  } else if (code.length !== 8) { msg.textContent = t.errLen; return; }
+  } else if (!pEditId && !me && code.length !== 8) { msg.textContent = t.errLogin; return; }
   $('pSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  if (pEditId) {
+    try {
+      await api('PUT', '/parties/' + encodeURIComponent(pEditId), { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) });
+      refreshAll(); msg.textContent = t.saved; setTimeout(closeParty, 500);
+    } catch (err) { msg.className = 'err'; $('pSave').disabled = false; msg.textContent = err && err.code === 'seats_taken' ? t.ptSeatsTaken : err && err.code === 'already_logged' ? t.ptLoggedAlready : codeErr(err); }
+    return;
+  }
   try {
+    if (!evMode) await ensureLogin(code);
     const body = { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) };
     if (evMode) body.host = host;
-    const r = await api('POST', '/parties', body, evMode ? { 'X-Event-Code': normEv($('pEvCode').value) } : { 'X-Member-Code': code });
-    if (evMode) lsSet('n3-name', host); else saveCode(code);
+    const r = await api('POST', '/parties', body, evMode ? { 'X-Event-Code': normEv($('pEvCode').value) } : {});
+    if (evMode) lsSet('n3-name', host);
     const m = mine(); m[r.id] = { host: true, hostKey: r.hostKey }; setMine(m);
     refreshAll(); msg.textContent = t.ptCreated; setTimeout(closeParty, 500);
   } catch (err) {
@@ -1705,6 +1764,7 @@ async function api(method, path, body, extra) {
   const hd = Object.assign({ Accept: 'application/json' }, extra || {});
   if (body !== undefined) hd['Content-Type'] = 'application/json';
   const at = adminTok(); if (at) hd['X-Admin-Token'] = at;
+  if (typeof sess !== 'undefined' && sess && !hd['X-Member-Code'] && !hd['X-Event-Code'] && !hd['X-Log-Key']) hd['X-Session'] = sess;
   const res = await fetch('/api' + path, { method, headers: hd, body: body === undefined ? undefined : JSON.stringify(body) });
   let data = null; try { data = await res.json(); } catch (e) {}
   if (!res.ok) throw Object.assign(new Error((data && data.error) || 'http_' + res.status), { status: res.status, code: data && data.error });
@@ -1716,7 +1776,95 @@ function watch(path, onData, onErr, ms) {
   w.run = async () => { if (w.busy) return; w.busy = true; try { onData(await api('GET', path)); } catch (e) { onErr(e); } finally { w.busy = false; } };
   watchers.push(w); w.run(); setInterval(() => { if (!document.hidden) w.run(); }, ms);
 }
-const refreshAll = () => watchers.forEach((w) => w.run());
+const refreshAll = () => { watchers.forEach((w) => w.run()); if (sess) loadMy(); };
+
+/* ---------- Anmeldung: „Mit Discord anmelden“ (Popup, klappt auch im iFrame) oder einmal mit dem /code-Code ---------- */
+var sess = lsGet('n3-session'), me = null, myIds = null, loginTimer = null, authMsg = '';
+function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id)); }
+function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
+async function loadMy() {
+  if (!sess) { renderAuth(); return; }
+  try { const r = await api('GET', '/my'); me = { name: r.name }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties) }; }
+  catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); authMsg = loginErr(e.code); } }
+  renderAuth(); renderPlays(); renderParties();
+}
+function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
+function authHtml() {
+  const t = T();
+  if (me) return '<span>' + esc(fill(t.loggedAs, { n: me.name })) + '</span><button type="button" class="linkbtn" data-logout>' + esc(t.logout) + '</button>';
+  return '<button type="button" class="btn btn-discord" data-login>' + esc(t.loginDiscord) + '</button>' +
+    '<button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button>' +
+    (loginTimer ? '<span class="note">' + esc(t.loginWait) + '</span>' : '') + (authMsg ? '<span class="err">' + esc(authMsg) + '</span>' : '') +
+    '<span class="or">' + esc(t.loginOr) + '</span>';
+}
+function renderAuth() {
+  const html = authHtml();
+  document.querySelectorAll('[data-authbox]').forEach((el) => { el.innerHTML = html; });
+  const useKey = !!logKey && !me;
+  $('fAuth').hidden = useKey; $('fByWrap').hidden = !useKey; $('fCodeWrap').hidden = useKey || !!me;
+  const edit = typeof pEditId !== 'undefined' && !!pEditId, ev = typeof evMode !== 'undefined' && evMode;
+  $('pAuth').hidden = edit || ev; $('pCodeWrap').hidden = edit || ev || !!me;
+  $('meLink').hidden = !me; if (me) $('meLink').textContent = fill(T().logoutN, { n: me.name });
+}
+function startLogin() {
+  const n = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, '0')).join('');
+  lsSet('n3-login-nonce', n); authMsg = '';
+  const u = '/api/auth/discord?n=' + n;
+  const w = window.open(u, 'n3login', 'width=520,height=760');
+  if (!w) { location.href = u; return; } // Popup blockiert: ganze Seite leiten, nach der Rückkehr holt pollLogin die Anmeldung ab
+  pollLogin(n);
+}
+function pollLogin(n) {
+  clearInterval(loginTimer); let tries = 0;
+  const stop = () => { clearInterval(loginTimer); loginTimer = null; lsSet('n3-login-nonce', ''); renderAuth(); };
+  loginTimer = setInterval(async () => {
+    if (++tries > 200) { stop(); return; }
+    try { const r = await api('GET', '/auth/poll?n=' + n); if (r && r.token) { stop(); setSession(r.token); loadMy(); } }
+    catch (e) { if (e && e.status !== 429) { authMsg = loginErr(e.code); stop(); } }
+  }, 1500);
+  renderAuth();
+}
+async function logout() { try { await api('POST', '/auth/logout'); } catch (e) {} setSession(''); authMsg = ''; renderAuth(); renderPlays(); renderParties(); }
+// Vor dem Speichern: angemeldet? Sonst den eingegebenen /code-Code einmal gegen eine Anmeldung tauschen.
+async function ensureLogin(code) {
+  if (sess && me) return;
+  if (code && code.length === 8) {
+    const r = await api('POST', '/auth/code', undefined, { 'X-Member-Code': code });
+    setSession(r.token); me = { name: r.name }; forgetCode(); loadMy(); return;
+  }
+  if (sess) { await loadMy(); if (me) return; }
+  throw Object.assign(new Error('login_required'), { code: 'login_required' });
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-login]')) { e.preventDefault(); startLogin(); }
+  if (e.target.closest('[data-logout]')) { e.preventDefault(); logout(); }
+});
+$('meLink').onclick = logout;
+
+/* Eigene Partie bearbeiten oder löschen */
+let peId = null, peSure = false;
+function openPlayEdit(id) {
+  const p = plays.find((x) => x.id === id); if (!p) return;
+  const t = T(); peId = id; peSure = false;
+  $('peT').textContent = fill(t.peTitle, { n: playName(p) });
+  $('peDate').value = p.date || ''; $('pePlayers').value = p.players || ''; $('peDur').value = Number(p.duration) > 0 ? p.duration : '';
+  $('peWinner').value = p.winner || ''; $('peNote').value = p.note || ''; $('peFirst').checked = !!p.firstPlay; $('peMsg').textContent = '';
+  $('peDel').textContent = t.del; $('peDel').className = 'btn btn-quiet';
+  $('peDlg').showModal();
+}
+$('peCancel').onclick = () => $('peDlg').close();
+$('peDel').onclick = async () => {
+  const t = T();
+  if (!peSure) { peSure = true; $('peDel').textContent = t.delConfirm; $('peDel').className = 'btn btn-primary'; return; }
+  try { await api('DELETE', '/plays/' + encodeURIComponent(peId)); $('peDlg').close(); refreshAll(); } catch (e) { $('peMsg').textContent = codeErr(e); }
+};
+$('peForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const t = T(), dur = $('peDur').value.trim();
+  const b = { date: $('peDate').value, players: Math.round(Number($('pePlayers').value)), duration: dur ? Math.round(Number(dur)) : null, winner: $('peWinner').value.trim(), note: $('peNote').value.trim(), firstPlay: $('peFirst').checked };
+  try { await api('PUT', '/plays/' + encodeURIComponent(peId), b, canEdit ? {} : {}); $('peDlg').close(); refreshAll(); }
+  catch (x) { $('peMsg').textContent = x && x.code === 'invalid' ? t.admEditErr : codeErr(x); }
+});
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
 
 /* Einbettung: Höhe an die umgebende Seite melden, sichtbaren Ausschnitt von dort empfangen */
@@ -1842,7 +1990,7 @@ if (qrParam && logKey) {
   // Direkt nach dem Scannen: Dialog öffnen. Ist der Schlüssel veraltet, gleich Bescheid geben.
   if (currentView() !== 'collection') location.hash = '';
   openLog(GUEST_PENDING);
-  api('GET', '/logkey/check', undefined, { 'X-Log-Key': logKey }).catch((e) => { if (e && e.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); $('fByWrap').hidden = true; $('fCodeWrap').hidden = false; $('fMsg').className = 'err'; $('fMsg').textContent = T().errKey; } });
+  api('GET', '/logkey/check', undefined, { 'X-Log-Key': logKey }).catch((e) => { if (e && e.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); renderAuth(); $('fMsg').className = 'err'; $('fMsg').textContent = T().errKey; } });
 }
 
 const evParam = new URLSearchParams(location.search).get('event');
@@ -1854,6 +2002,13 @@ if (evParam && normEv(evParam).length >= 4) {
   renderView(); renderParties(); openParty();
 }
 
+// Start: gespeicherte Anmeldung laden, einen alten gemerkten /code-Code einmalig in eine Anmeldung tauschen, offene Discord-Anmeldung abholen.
+(async () => {
+  const old = savedCode();
+  if (!sess && old.length === 8) { try { const r = await api('POST', '/auth/code', undefined, { 'X-Member-Code': old }); setSession(r.token); forgetCode(); } catch (e) { if (e && e.code === 'bad_code') forgetCode(); } }
+  const n = lsGet('n3-login-nonce'); if (!sess && /^[0-9a-f]{32}$/.test(n)) pollLogin(n);
+  loadMy();
+})();
 watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); partyState = 'ready'; renderParties(); }, () => { partyState = 'off'; renderParties(); }, 15000);
 watch('/plays', (rows) => {
   playDocs = rows.map((p) => ({ id: p.id, p })); plays = rows; playCount = {};

@@ -111,6 +111,21 @@ Der Bot läuft im selben Worker (kein extra Server). Endpoint: `https://<worker>
 - Befehle registrieren (nach jeder Änderung an `COMMANDS`): `POST /api/admin/discord/register` mit Header `X-Admin-Token`.
 - Im Developer Portal unter *General Information* als **Interactions Endpoint URL** die URL oben eintragen.
 
+## Anmeldung auf der Webseite („Mit Discord anmelden“)
+
+Partien eintragen und Runden anbieten geht nach einer Anmeldung: **„Mit Discord anmelden“** (Popup, Discord-Scope nur `identify`) oder einmalig mit dem persönlichen Code aus `/code`. Beides ergibt eine Sitzung, die sich der Browser 180 Tage merkt (in der Datenbank nur als Hash, Tabelle `sessions`). Ein früher gemerkter Code wird beim nächsten Besuch automatisch in eine Anmeldung getauscht.
+
+Zugang hat nur, wer auf dem Discord-Server (`DISCORD_GUILD_ID`) ist und den ersten Bot-Kanal (`DISCORD_CHANNEL_ID`) sehen kann. Ist `DISCORD_ROLE_ID` gesetzt, braucht man zusätzlich diese Rolle (für den N3-Server: Brettspiel-Rolle; auf dem Testserver leer). Geprüft wird über den Bot, höchstens alle 10 Minuten neu; wer den Server verlässt, wird abgemeldet.
+
+Angemeldete sehen bei ihren eigenen Partien und Runden „Bearbeiten“ (Partie: Datum, Spieler, Dauer, Gewinner, Notiz, Löschen; Runde: Spiel, Datum, Uhrzeit, Plätze, Notiz, Löschen). Bei fremden Einträgen erscheinen die Knöpfe nicht, und der Server lehnt es ab.
+
+Einrichtung (einmalig):
+1. Discord Developer Portal → die App → **OAuth2** → **Redirects**: `https://n3-spiele.nerdnexus.workers.dev/api/auth/callback` hinzufügen.
+2. Dort das **Client Secret** kopieren und in Cloudflare als Secret `DISCORD_CLIENT_SECRET` speichern.
+3. Später auf dem N3-Server: `DISCORD_ROLE_ID` in `wrangler.toml` auf die ID der Brettspiel-Rolle setzen.
+
+Test: `node test/web-login.mjs` gegen `test/reset.sh` mit einem Mock-Discord (siehe Kopf der Datei).
+
 ## Persönliche Codes (statt Vereinscode)
 
 Mitglieder holen sich auf dem Discord-Server mit `/code` einen persönlichen 8-stelligen Code (nur für sie sichtbar). Damit legen sie auf der Webseite Runden an oder tragen Partien ein; der Browser merkt sich den Code. Die Runde trägt den Discord-Namen und gehört dem Discord-Konto, der Ersteller kann sie also auch in Discord über „Verwalten“ ändern. Ein neues `/code` macht den alten ungültig. Wer den Server verlässt, verliert den Code (Prüfung höchstens alle 10 Minuten, braucht `DISCORD_GUILD_ID` und den Bot-Token). Der Code wird nur als Hash gespeichert (Tabelle `members`).

@@ -24,6 +24,8 @@ DISCORD_PUBLIC_KEY = "406f0af0c45c85e1130fb884e163c343f2200d83ed217248701170934d
 DISCORD_GUILD_ID = "1569484372112052305"
 # Optional: Kanal-ID(s), mehrere durch Komma getrennt. Gesetzt = Bot reagiert nur dort (der erste Kanal ist das Ziel für Runden von der Webseite); leer = überall auf dem Server.
 DISCORD_CHANNEL_ID = "1569484372757848238"
+# Optional: Rollen-ID (z. B. „Brettspiel“). Gesetzt = Anmeldung auf der Webseite nur mit dieser Rolle; leer = keine Rollenprüfung (Testserver hat keine Rollen).
+DISCORD_ROLE_ID = ""
 # Link, der im Info-Fenster beim persönlichen Code erscheint (Einladungs- oder Kanallink; leer = kein Button).
 DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 # --- VORGEMERKT für den Umzug auf den echten N3-Server (noch NICHT aktiv, Test läuft auf dem Testserver) ---
@@ -43,4 +45,5 @@ crons = ["17 3 * * *"]
 # Secrets (nicht hier eintragen, sondern mit `wrangler secret put ...` oder im Cloudflare-Dashboard):
 #   BGG_TOKEN    Token der BGG-XML-API
 #   DISCORD_BOT_TOKEN  Bot-Token aus dem Discord Developer Portal
+#   DISCORD_CLIENT_SECRET  OAuth2-Client-Secret der Discord-App (für „Mit Discord anmelden“)
 #   ADMIN_TOKEN  Passwort für die Verwaltungsansicht der Seite
