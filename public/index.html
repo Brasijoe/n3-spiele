@@ -940,7 +940,9 @@ function renderGrid() {
   const card = (g) => {
     const n = name(g), pc = playCount[g.id] || 0;
     // Besitzer und Aufnahmedatum erscheinen erst beim Überfahren (oder Antippen) des Covers.
-    const info = '<div class="cv-info"><span><b>' + esc(t.owner) + ':</b> ' + esc(g.owner === '?' ? t.ownerUnknown : g.owner) + '</span>' + (g.added ? '<span><b>' + esc(t.addedOn) + ':</b> ' + esc(g.added.split('-').reverse().join('.')) + '</span>' : '') + '</div>';
+    // Besitzer vorerst nur für Admins sichtbar.
+    const infoParts = (canEdit ? '<span><b>' + esc(t.owner) + ':</b> ' + esc(g.owner === '?' ? t.ownerUnknown : g.owner) + '</span>' : '') + (g.added ? '<span><b>' + esc(t.addedOn) + ':</b> ' + esc(g.added.split('-').reverse().join('.')) + '</span>' : '');
+    const info = infoParts ? '<div class="cv-info">' + infoParts + '</div>' : '';
     return '<article class="card" tabindex="-1"><div class="cv" data-cvinfo>' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + badge(g, 44) +
       '<div class="cv-tl">' + (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + lnIcon(g) + '</div>' + info + '</div><div class="body">' +
       '<h3>' + esc(n) + '</h3><span class="meta">' + g.y + ' · ' + esc(catNames(g).slice(0, 2).join(', ')) + '</span>' +
@@ -1663,13 +1665,13 @@ window.addEventListener('message', (e) => {
 /* Verwaltung: Anmeldung mit Admin-Passwort (liegt als Secret im Worker) */
 function renderAdminLink() { renderPlays(); $('admLink').textContent = canEdit ? T().admOut : T().admLink; }
 $('admLink').onclick = () => {
-  if (canEdit) { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} canEdit = false; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); return; }
+  if (canEdit) { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} canEdit = false; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); return; }
   $('admForm').hidden = !$('admForm').hidden; if (!$('admForm').hidden) $('admPw').focus();
 };
 $('admForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
   try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
-  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }
   catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
 });
 /* ---------- QR-Code zum Eintragen (Verwaltung) ---------- */
@@ -1792,7 +1794,7 @@ watch('/config/highlights', (cfg) => {
   hlCfg = cfg; applyHl(); renderSlider();
   if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
 }, () => {}, 60000);
-if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
 })();
 </script>
 
