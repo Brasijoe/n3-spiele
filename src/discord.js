@@ -2,6 +2,7 @@
 // Befehle: /party (Spielrunde anlegen), /log (Partie eintragen). Buttons: Dabei / Absagen / Partie eintragen.
 import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
+import { bringButton, bringSubmit } from './membergames.js';
 import { getBooking, isMember, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
 
 const enc = new TextEncoder();
@@ -22,8 +23,8 @@ function newMemberCode() {
 }
 const showCode = (c) => c.slice(0, 4) + '-' + c.slice(4);
 const ownsRound = async (row, uid) => (row.host_discord && row.host_discord === uid) || (await sha256('discord:' + uid)) === row.host_key_hash;
-const reply = (data) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
-const say = (content) => reply({ type: 4, data: { content, flags: 64 } }); // nur für die Person sichtbar
+export const reply = (data) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
+export const say = (content) => reply({ type: 4, data: { content, flags: 64 } }); // nur für die Person sichtbar
 
 export async function verifySignature(pubKeyHex, sigHex, timestamp, bodyText) {
   if (!pubKeyHex || !sigHex || !timestamp) return false;
@@ -84,11 +85,11 @@ const fmtDay = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
 const stammtischOnly = (rule) => `Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anbieten (${ruleText(rule)}). Nächste Termine: ${nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ')}\nFür andere Tage brauchst du einen Event-Code oder fragst ein Mitglied.`;
 // Erste Zeile der Discord-Nachricht; bei Runden mit Event-Code steht der Eventname dabei.
 export const headline = (r) => `**${r.host}** sucht Mitspielende${r.event_name ? ` am Event „${r.event_name}“` : ''}!`;
-const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
-const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
+export const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
+export const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
 
 // ---- Nachricht ----
-function view(r, env = {}) {
+export function view(r, env = {}) {
   const att = JSON.parse(r.attendees || '{}');
   const people = Object.entries(att).filter(([, a]) => !a.out).map(([k, a]) => (/^d\d{5,}$/.test(k) ? `<@${k.slice(1)}>` : a.name));
   const taken = people.length + 1, free = Math.max(0, r.seats - taken);
@@ -141,7 +142,7 @@ function editModal(r) {
 }
 
 const modOf = (i) => { const p = BigInt((i.member && i.member.permissions) || '0'); return (p & 0x20n) !== 0n || (p & 0x8n) !== 0n; };
-const who = (i) => {
+export const who = (i) => {
   const u = (i.member && i.member.user) || i.user || {};
   return { id: u.id, name: str((i.member && i.member.nick) || u.global_name || u.username || 'Spieler', 40) };
 };
@@ -312,8 +313,9 @@ export async function handleInteraction(req, env, ctx) {
     await ensureCols(env);
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
-    if (i.type === 3) return await button(i, env);
-    if (i.type === 5) return await editSubmit(i, env);
+    const cid = String((i.data && i.data.custom_id) || '');
+    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : await button(i, env);
+    if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
   return say('Nicht unterstützt.');
 }
@@ -349,7 +351,7 @@ export async function registerCommands(env) {
 
 // ---- Nachrichten über die REST-API (Webseite -> Kanal, Aktualisierungen) ----
 const api = (env) => env.DISCORD_API_BASE || 'https://discord.com/api/v10';
-async function discord(env, method, path, body) {
+export async function discord(env, method, path, body) {
   const res = await fetch(api(env) + path, { method, headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) throw new Error('discord ' + res.status + ' ' + (await res.text()).slice(0, 160));
   return res.json();
@@ -369,6 +371,11 @@ export async function ensureCols(env) {
   if (!have.has('host_discord')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN host_discord TEXT').run();
   if (!have.has('event_id')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_id TEXT').run();
   if (!have.has('event_name')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_name TEXT').run();
+  if (!have.has('bring_id')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN bring_id TEXT').run();
+  // Spiele, die Mitglieder selbst besitzen (Besitzer = Discord-Name, mit Zustimmung), und Anfragen „Bitte mitbringen“.
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS member_games (id TEXT PRIMARY KEY, discord_id TEXT NOT NULL, game_id INTEGER, game TEXT NOT NULL, year INTEGER, note TEXT NOT NULL DEFAULT \'\', data TEXT, consent_at TEXT NOT NULL, created_at TEXT NOT NULL)').run();
+  await env.DB.prepare('CREATE INDEX IF NOT EXISTS member_games_owner ON member_games(discord_id)').run();
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS bring_requests (id TEXT PRIMARY KEY, mgame_id TEXT NOT NULL, owner_discord TEXT NOT NULL, owner_name TEXT NOT NULL, req_discord TEXT NOT NULL, req_name TEXT NOT NULL, game TEXT NOT NULL, game_id INTEGER, year INTEGER, seats INTEGER, dates TEXT NOT NULL, note TEXT NOT NULL DEFAULT \'\', status TEXT NOT NULL DEFAULT \'open\', chosen_date TEXT, party_id TEXT, answer TEXT, discord_channel TEXT, discord_msg TEXT, created_at TEXT NOT NULL)').run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, valid_until TEXT NOT NULL, date_from TEXT NOT NULL, date_to TEXT NOT NULL, created_at TEXT NOT NULL)').run();
   const pc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('plays')").all()).results.map((r) => r.name));
   for (const c of ['logged_by', 'via', 'by_discord']) if (!pc.has(c)) await env.DB.prepare(`ALTER TABLE plays ADD COLUMN ${c} TEXT`).run();

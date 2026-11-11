@@ -72,7 +72,7 @@ export function parseThings(xml) {
 
 const headers = (env) => ({ Authorization: 'Bearer ' + env.BGG_TOKEN, 'User-Agent': 'n3-spiele/1.0 (Nerd Nexus Nuernberg, non-commercial)', Accept: 'application/xml' });
 
-async function fetchThings(env, ids, tries = 4) {
+export async function fetchThings(env, ids, tries = 4) {
   let res;
   for (let i = 0; i < tries; i++) {
     res = await fetch('https://boardgamegeek.com/xmlapi2/thing?stats=1&id=' + ids.join(','), { headers: headers(env) });
