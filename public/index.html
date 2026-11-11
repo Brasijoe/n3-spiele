@@ -195,6 +195,9 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .src-tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
 .src-tabs button[data-src="mem"][aria-selected="true"] { background: var(--mem); color: #fff; }
 .mem-own { font-size: 14px; color: var(--fg); }
+.card.mem.dup .cv, .card.mem.dup h3, .card.mem.dup .meta, .card.mem.dup .pills, .card.mem.dup .mem-own { opacity: .5; filter: grayscale(1); }
+.card.mem.dup::after { border-color: var(--line); }
+.mem-dup { font-size: 13px; font-weight: 600; color: var(--fg); background: var(--surface-2); border-radius: 6px; padding: 4px 8px; align-self: flex-start; }
 #mgAuth .or, #brAuth .or, #bgAuth .or { display: none; }
 .bg-list { max-height: 45vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; }
 .bg-list label { display: flex; gap: 10px; align-items: center; min-height: 34px; font-size: 14px; color: var(--fg); }
@@ -413,7 +416,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <section aria-label="Spiele" style="display:flex;flex-direction:column;gap:20px">
     <div class="guest-cta"><span data-t="guestCta"></span><button type="button" class="btn btn-outline" data-guest-log data-t="logGuest"></button></div>
     <div class="src-tabs" role="tablist" id="srcTabs"><button type="button" role="tab" data-src="club" data-t="srcClub"></button><button type="button" role="tab" data-src="mem" data-t="srcMem"></button></div>
-    <div class="pt-how" id="memHow" hidden><details><summary data-t="memHowSum"></summary><div class="pt-how-body"><ul><li data-t="memHow1"></li><li data-t="memHow2"></li><li data-t="memHow3"></li><li data-t="memHow4"></li><li data-t="memHow5"></li><li data-t="memHow6"></li></ul></div></details></div>
+    <div class="pt-how" id="memHow" hidden><details><summary data-t="memHowSum"></summary><div class="pt-how-body"><ul><li data-t="memHow1"></li><li data-t="memHow2"></li><li data-t="memHow3"></li><li data-t="memHow4"></li><li data-t="memHow5"></li><li data-t="memHow6"></li><li data-t="memHow7"></li></ul></div></details></div>
     <div class="grid" id="grid"></div>
     <div class="more"><button type="button" class="btn btn-dark" id="moreBtn" hidden></button></div>
   </section>
@@ -678,7 +681,6 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <form class="mg" id="brForm">
     <p class="meta" id="brIntro" style="margin:0"></p>
     <div class="field" id="brEvWrap" hidden><label class="field"><span data-t="evCode"></span><input type="text" id="brEv" maxlength="24" autocomplete="off" spellcheck="false"></label><span class="note" data-t="brEvNote"></span></div>
-    <label class="field" id="brOwnerWrap" hidden><span data-t="brOwner"></span><select id="brOwner"></select></label>
     <div class="field"><span data-t="brDates"></span><div class="br-dates"><input type="date" id="brD0" required><input type="date" id="brD1"><input type="date" id="brD2"></div><span class="note" data-t="brDatesNote"></span></div>
     <label class="field"><span data-t="brNote"></span><textarea id="brNote" maxlength="300" rows="2"></textarea></label>
     <div class="auth-box" id="brAuth" data-authbox></div>
@@ -742,12 +744,13 @@ const TXT = {
     admGl: 'GeekList-Abgleich', admGlNote: 'Vergleicht die BGG-GeekList mit den Spielen dieser Seite. Die Liste wird nachts automatisch geladen.', admGlRefresh: 'Jetzt von BGG laden',
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
     gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit',
-    gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', allOwners: 'Alle Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen',
+    gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', allOwners: 'Alle Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen', memDup: 'Auch in der Clubsammlung',
     brEvNote: 'Ohne Mitgliederrolle geht die Anfrage nur mit Event-Code und nur für Termine an den Eventtagen.', brEvNeed: 'Ohne Mitgliederrolle brauchst du einen Event-Code.', brEvDate: 'Mit Event-Code sind nur Termine an den Eventtagen möglich.',
     memHowSum: 'So funktioniert „Mitglieder besitzen“',
+    memHow7: 'Spiele, die es auch in der Clubsammlung gibt, sind ausgegraut und stehen am Ende der Liste.',
     memHow1: 'Diese Spiele gehören Mitgliedern und stehen nicht im Club. Eintragen geht nur mit der Mitgliederrolle auf unserem Discord, Anfragen auch mit Event-Code (siehe unten).',
     memHow2: 'Eigene Spiele trägst du unten unter „Mitglieder besitzen“ ein, einzeln oder per Import aus deiner BGG-Sammlung. Dein Discord-Servername wird als Besitzer angezeigt.',
-    memHow3: 'Bei einem Spiel eines anderen Mitglieds tippst du auf „Mitbringen anfragen“ und schlägst bis zu 3 Termine vor. Der Bot fragt den Besitzer im Bot-Kanal.',
+    memHow3: 'Bei einem Spiel eines anderen Mitglieds tippst du auf „Mitbringen anfragen“ und schlägst bis zu 3 Termine vor. Der Bot fragt den Besitzer im Bot-Kanal. Haben mehrere Mitglieder das Spiel, steht es nur einmal da und die Anfrage geht an alle; wer zuerst annimmt, bringt es mit.',
     memHow4: 'Nimmt der Besitzer einen Termin an, entsteht automatisch eine Runde mit euch beiden. Er legt Uhrzeit und Spielerzahl fest, weitere Mitspieler können beitreten.',
     memHow6: 'Ohne Mitgliederrolle kannst du mit einem Event-Code anfragen, dann aber nur für Termine an den Eventtagen. Dafür musst du mit Discord angemeldet sein, damit dich die Antwort erreicht.',
     memHow5: 'Lehnt er ab, bekommst du Bescheid und könnt euch direkt per Discord-Nachricht absprechen.',
@@ -763,7 +766,7 @@ const TXT = {
     bgGoneH: 'Nicht mehr in deiner BGG-Sammlung', bgGoneNote: 'Diese Spiele werden entfernt. Von Hand eingetragene Spiele sind nicht vorausgewählt.', bgManual: 'von Hand eingetragen',
     bgSync: 'Abgleichen: {n} neu, {r} entfernen', bgSyncDone: '{n} Spiele übernommen, {r} entfernt ✓',
     bgImport: '{n} Spiele übernehmen', bgDone: '{n} Spiele übernommen ✓', bgEmpty: 'In dieser Sammlung ist kein Spiel als „besitze ich“ markiert.', bgNoUser: 'Diesen BGG-Benutzernamen gibt es nicht.', bgBusy: 'BGG bereitet die Sammlung gerade vor. Bitte in einer Minute noch einmal laden.', bgErr: 'BGG ist gerade nicht erreichbar.',
-    brOwner: 'Wen fragen?', brDates: 'Terminvorschläge (bis zu 3)', brDatesNote: 'Der erste Termin ist Pflicht, die anderen sind optional.', brNote: 'Nachricht (optional)', brSend: 'Anfrage senden',
+    brIntroMulti: 'Das Spiel haben mehrere Mitglieder: {o}. Wir fragen alle gleichzeitig im Bot-Kanal auf Discord. Wer zuerst einen Termin annimmt, bringt es mit, danach ist die Anfrage geschlossen. Es wird automatisch eine Spielrunde angelegt, in der ihr beide schon eingetragen seid.', brDates: 'Terminvorschläge (bis zu 3)', brDatesNote: 'Der erste Termin ist Pflicht, die anderen sind optional.', brNote: 'Nachricht (optional)', brSend: 'Anfrage senden',
     brSent: 'Anfrage gesendet ✓ Die Antwort kommt im Bot-Kanal auf Discord.', brErrDates: 'Bitte mindestens einen Termin ab heute wählen.', brErrDup: 'Du hast dieses Spiel schon angefragt. Warte bitte auf die Antwort in Discord.', brErrOff: 'Der Discord-Bot ist gerade nicht erreichbar.', brErrGone: 'Dieses Mitglied ist nicht mehr auf dem Server, das Spiel wurde entfernt.', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
     ptHowSum: 'Wer darf wann eine Runde anbieten? So richtest du Discord ein', ptHowT: 'Wer kann wann eine Runde anbieten?', ptHowMember: 'Mitglieder (mit der Mitgliederrolle auf unserem Discord) an jedem Tag.', ptHowAll: 'Alle anderen an unseren Stammtisch-Tagen: {r} (nächste Termine: {n}). Dabei stellst du dich im Hinweis kurz vor, damit die anderen wissen, mit wem sie spielen.', ptHowEv: 'Mit einem Event-Code vom Orga-Team an den Eventtagen, auch ohne Discord.', ptHowDcT: 'So richtest du Discord ein', ptHowDc1: 'Tritt unserem Discord-Server bei (Button unten) und lies die Regeln.', ptHowDc2: 'Hol dir dort die Brettspiel-Rolle, damit du den Brettspiel-Kanal siehst. Ohne diese Rolle klappt die Anmeldung hier nicht.', ptHowDc3: 'Klicke hier auf „Runde anbieten“ und dann auf „Mit Discord anmelden“. Geht das in deinem Browser nicht, tippe im Brettspiel-Kanal /code und gib den Code hier einmal ein.', ptHowDc4: 'Du kannst Runden auch direkt in Discord mit /party anbieten. Mitspielende tragen sich dort per Klick ein.', ptHowJoin: 'Zum N3-Discord', ptHowNoMember: 'Ohne Mitgliederrolle sind auf dieser Seite nur Stammtisch-Tage wählbar.',
     wdLong: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], wdMin: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], nthTxt: { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' }, ruleEvery: 'jeden {d}', ruleNth: 'am {n} {d} im Monat', ruleNone: 'nach Ankündigung',
@@ -830,12 +833,13 @@ const TXT = {
     admGl: 'GeekList check', admGlNote: 'Compares the BGG GeekList with the games on this page. The list is fetched automatically every night.', admGlRefresh: 'Fetch from BGG now',
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
     gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only',
-    gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', allOwners: 'All owners', memOwners: 'Owners', brAsk: 'Ask to bring it',
+    gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', allOwners: 'All owners', memOwners: 'Owners', brAsk: 'Ask to bring it', memDup: 'Also in the club collection',
     brEvNote: 'Without the member role you can only ask with an event code, and only for dates on the event days.', brEvNeed: 'Without the member role you need an event code.', brEvDate: 'With an event code only dates on the event days are possible.',
     memHowSum: 'How “Members own” works',
+    memHow7: 'Games that are also in the club collection are greyed out and listed at the end.',
     memHow1: 'These games belong to members and are not kept at the club. Adding needs the member role on our Discord, requesting also works with an event code (see below).',
     memHow2: 'Add your own games below under “Members own”, one by one or imported from your BGG collection. Your Discord server name is shown as owner.',
-    memHow3: 'On another member’s game, tap “Ask to bring it” and suggest up to 3 dates. The bot asks the owner in the bot channel.',
+    memHow3: 'On another member’s game, tap “Ask to bring it” and suggest up to 3 dates. The bot asks the owner in the bot channel. If several members own the game, it is listed once and the request goes to all of them; whoever accepts first brings it.',
     memHow4: 'If the owner accepts a date, a round with both of you is created automatically. They set the time and player count, and others can join.',
     memHow6: 'Without the member role you can ask with an event code, but only for dates on the event days. You need to be signed in with Discord so the answer reaches you.',
     memHow5: 'If they decline, you’ll be told and can talk directly via Discord message.',
@@ -851,7 +855,7 @@ const TXT = {
     bgGoneH: 'No longer in your BGG collection', bgGoneNote: 'These games will be removed. Manually added games are not preselected.', bgManual: 'added manually',
     bgSync: 'Sync: {n} new, {r} to remove', bgSyncDone: '{n} games imported, {r} removed ✓',
     bgImport: 'Import {n} games', bgDone: '{n} games imported ✓', bgEmpty: 'No game in this collection is marked as owned.', bgNoUser: 'This BGG username doesn’t exist.', bgBusy: 'BGG is preparing the collection. Please load again in a minute.', bgErr: 'BGG is not reachable right now.',
-    brOwner: 'Whom to ask?', brDates: 'Suggested dates (up to 3)', brDatesNote: 'The first date is required, the others are optional.', brNote: 'Message (optional)', brSend: 'Send request',
+    brIntroMulti: 'Several members own this game: {o}. We ask all of them at once in the bot channel on Discord. Whoever accepts a date first brings it, then the request is closed. A game round is created automatically with both of you already signed up.', brDates: 'Suggested dates (up to 3)', brDatesNote: 'The first date is required, the others are optional.', brNote: 'Message (optional)', brSend: 'Send request',
     brSent: 'Request sent ✓ The answer will come in the bot channel on Discord.', brErrDates: 'Please pick at least one date from today on.', brErrDup: 'You have already asked for this game. Please wait for the answer on Discord.', brErrOff: 'The Discord bot is not reachable right now.', brErrGone: 'This member is no longer on the server, the game has been removed.', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
     ptHowSum: 'Who can offer a game, and when? Setting up Discord', ptHowT: 'Who can offer a game, and when?', ptHowMember: 'Members (with the member role on our Discord) on any day.', ptHowAll: 'Everyone else on our regular game nights: {r} (next dates: {n}). Please introduce yourself briefly in the note so the others know who they’ll be playing with.', ptHowEv: 'With an event code from the organisers on the event days, even without Discord.', ptHowDcT: 'How to set up Discord', ptHowDc1: 'Join our Discord server (button below) and read the rules.', ptHowDc2: 'Pick up the board game role there so you can see the board game channel. Without it, signing in here won’t work.', ptHowDc3: 'Click “Offer a game” here and then “Sign in with Discord”. If that doesn’t work in your browser, type /code in the board game channel and enter the code here once.', ptHowDc4: 'You can also offer games directly in Discord with /party. Players join there with one click.', ptHowJoin: 'Go to the N3 Discord', ptHowNoMember: 'Without the member role only regular game nights can be picked on this page.',
     wdLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], wdMin: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], nthTxt: { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' }, ruleEvery: 'every {d}', ruleNth: 'the {n} {d} of the month', ruleNone: 'as announced',
@@ -967,6 +971,7 @@ all.forEach((g) => { const b = byId[EXPB[g.id]]; if (b) b.expList.push(g); });
 const games = all.filter((g) => !EXPB[g.id]);
 // „Mitglieder besitzen“: Spiele, die Mitglieder selbst haben (nicht Teil der Sammlung). Eine Karte je Spiel, ggf. mit mehreren Besitzern.
 let memRows = [], memGames = [];
+const clubNames = new Set([].concat(...all.map((g) => [g.nDe, g.nEn])).filter(Boolean).map((x) => String(x).trim().toLowerCase()));
 function buildMemGames() {
   const groups = new Map();
   memRows.forEach((r) => { const k = r.gameId ? 'm' + r.gameId : 'm:' + String(r.game).toLowerCase(); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
@@ -979,6 +984,8 @@ function buildMemGames() {
       cover: id ? '/api/cover/' + id : '', link: id ? 'https://boardgamegeek.com/boardgame/' + id : '' };
     if (!(id && byId[id]) && r0.game) { g.nDe = r0.game; g.nEn = r0.game; }
     g.key = k; g.mem = true; g.owners = rs.map((r) => ({ id: r.id, name: r.owner, note: r.note || '' }));
+    // Steht das Spiel auch in der Clubsammlung? Dann ausgegraut und ans Ende der Liste.
+    g.inClub = id ? !!byId[id] : clubNames.has(String(r0.game).trim().toLowerCase());
     if (!g.y && r0.year) g.y = r0.year;
     g.baseId = (r0.data && r0.data.base) || EXPB[id] || 0;
     return g;
@@ -1262,11 +1269,11 @@ function memCard(g) {
   const t = T(), n = name(g), own = g.owners.map((o) => o.name).join(', ');
   const notes = g.owners.filter((o) => o.note).map((o) => (g.owners.length > 1 ? o.name + ': ' : '') + o.note).join(' · ');
   const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '');
-  return '<article class="card mem" tabindex="-1"><div class="cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 44) : '') +
+  return '<article class="card mem' + (g.inClub ? ' dup' : '') + '" tabindex="-1"><div class="cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 44) : '') +
     '<div class="cv-tl"><span class="src mem">' + esc(t.memTag) + '</span>' + lnIcon(g) + '</div></div><div class="body">' +
     '<h3>' + esc(n) + '</h3><span class="meta">' + esc([g.y || '', catNames(g).slice(0, 2).join(', ')].filter(Boolean).join(' · ')) + '</span>' +
     (pills ? '<div class="pills">' + pills + '</div>' : '') + (g.bestR.length ? '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' : '') +
-    expHtml(g, 'played') + '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(own) + '</span>' + (notes ? '<span class="meta">' + esc(notes) + '</span>' : '') +
+    (g.inClub ? '<span class="mem-dup">' + esc(t.memDup) + '</span>' : '') + expHtml(g, 'played') + '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(own) + '</span>' + (notes ? '<span class="meta">' + esc(notes) + '</span>' : '') +
     '<div class="actions">' + (g.owners.every((o) => isMine('memberGames', o.id)) ? '<button type="button" class="btn btn-primary" data-offer="' + esc(g.key) + '">' + esc(t.ptNew) + '</button>'
       : '<button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>') + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
 }
@@ -1279,6 +1286,8 @@ function renderGrid() {
   const sorters = { bestFor: (a, b) => (sn == null ? 0 : fitTier(a, sn) - fitTier(b, sn)) || b.r - a.r, rating: (a, b) => b.r - a.r, rank: (a, b) => (a.rank || 1e9) - (b.rank || 1e9), name: (a, b) => name(a).localeCompare(name(b), S.lang),
     weightAsc: (a, b) => (a.w || 9) - (b.w || 9), timeAsc: (a, b) => a.t - b.t, year: (a, b) => b.y - a.y, played: (a, b) => (playCount[b.id] || 0) - (playCount[a.id] || 0) || b.r - a.r };
   list.sort(sorters[S.sort] || sorters.rating);
+  // Mitgliederspiele, die es auch in der Sammlung gibt, kommen ans Ende.
+  if (S.src === 'mem') list = list.filter((g) => !g.inClub).concat(list.filter((g) => g.inClub));
   // Sprachfilter: erst die Spiele in der gewählten Sprache, dann eigene Abschnitte für sprachneutrale und fast sprachneutrale Spiele.
   let secs = null;
   if (S.langs.length) {
@@ -2132,7 +2141,7 @@ $('pForm').addEventListener('submit', async (e) => {
 
 
 /* ---------- Mitglieder besitzen: eigene Spiele eintragen, Mitbringen anfragen ---------- */
-var brOwnOnly = false, pendingMgDel = null, mgGame = null, mgResults = [], mgActive = -1, brKey = null;
+var brTarget = '', brOwnOnly = false, pendingMgDel = null, mgGame = null, mgResults = [], mgActive = -1, brKey = null;
 const isMineMg = (id) => isMine('memberGames', id);
 function renderMg() {
   const t = T(), el = $('mgMine'); if (!el) return;
@@ -2205,9 +2214,8 @@ function openBring(key) {
   const g = memById(key); if (!g) return; const t = T(); brKey = key;
   const others = g.owners.filter((o) => !isMineMg(o.id));
   $('brT').textContent = fill(t.brTitle, { n: name(g) });
-  $('brOwner').innerHTML = others.map((o) => '<option value="' + esc(o.id) + '">' + esc(o.name) + '</option>').join('');
-  $('brOwnerWrap').hidden = others.length < 2;
-  $('brIntro').textContent = others.length ? fill(t.brIntro, { o: others.map((o) => o.name).join(' / ') }) : '';
+  brTarget = others.length ? others[0].id : '';
+  $('brIntro').textContent = !others.length ? '' : others.length > 1 ? fill(t.brIntroMulti, { o: others.map((o) => o.name).join(', ') }) : fill(t.brIntro, { o: others[0].name });
   $('brIntro').hidden = !others.length;
   const td = todayIso(); ['brD0', 'brD1', 'brD2'].forEach((id) => { $(id).min = td; $(id).value = ''; });
   $('brD0').value = nextEventDay();
@@ -2222,7 +2230,7 @@ $('brForm').addEventListener('submit', async (e) => {
   const evc = me.member === false ? $('brEv').value.trim() : '';
   if (me.member === false && !evc) { msg.textContent = t.brEvNeed; $('brEv').focus(); return; }
   if (brOwnOnly) { msg.textContent = t.brOwn; return; }
-  const id = $('brOwner').value; if (!id) return;
+  const id = brTarget; if (!id) return;
   const td = todayIso(), dates = [...new Set(['brD0', 'brD1', 'brD2'].map((x) => $(x).value).filter(Boolean))].sort();
   if (!dates.length || dates.some((d) => d < td)) { msg.textContent = t.brErrDates; return; }
   $('brSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;

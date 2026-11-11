@@ -19,6 +19,7 @@ const dayTxt = (iso) => `${wdName(iso)}, ${fmtDate(iso)}`;
 const shortDay = (iso) => `${wdName(iso)} ${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
 const MAX_GAMES = 1000;
 const MAX_DATES = 3;
+const MAX_OWNERS = 10;
 
 export const memberGameOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, year: r.year, note: r.note, owner: r.owner_name || '?', data: r.data ? JSON.parse(r.data) : null, createdAt: r.created_at });
 
@@ -143,25 +144,37 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
     if (!discordOn(env)) return fail(503, 'discord_off');
     const mg = await env.DB.prepare('SELECT g.*, m.name AS owner_name FROM member_games g JOIN members m ON m.discord_id = g.discord_id WHERE g.id = ?1').bind(g[1]).first();
     if (!mg) return fail(404, 'not_found');
-    if (mg.discord_id === a.member.discord_id) return fail(400, 'own_game');
+    // Dasselbe Spiel bei mehreren Mitgliedern: alle Besitzer (außer der anfragenden Person) bekommen die Anfrage.
+    const rule = await getBooking(env);
+    const sib = (mg.game_id
+      ? await env.DB.prepare('SELECT g.id, g.discord_id, m.name, m.roles FROM member_games g JOIN members m ON m.discord_id = g.discord_id WHERE m.blocked = 0 AND g.game_id = ?1 ORDER BY g.created_at').bind(mg.game_id).all()
+      : await env.DB.prepare('SELECT g.id, g.discord_id, m.name, m.roles FROM member_games g JOIN members m ON m.discord_id = g.discord_id WHERE m.blocked = 0 AND g.game_id IS NULL AND lower(g.game) = lower(?1) ORDER BY g.created_at').bind(mg.game).all()).results;
+    let owners = [...new Map(sib.filter((o) => o.discord_id !== a.member.discord_id && (o.id === mg.id || isMember(rule, o.roles))).map((o) => [o.discord_id, { id: o.discord_id, name: o.name || '?', mg: o.id }])).values()].slice(0, MAX_OWNERS);
+    if (!owners.length) return fail(400, mg.discord_id === a.member.discord_id ? 'own_game' : 'not_found');
     const dates = [...new Set((Array.isArray(b.dates) ? b.dates : []).map((d) => str(d, 10)))].sort();
     if (!dates.length || dates.length > MAX_DATES || dates.some((d) => !isDate(d) || d < today || d > addDays(today, 365))) return fail(400, 'bad_dates');
     if (ev && dates.some((d) => d < ev.date_from || d > ev.date_to)) return fail(400, 'event_date');
-    const open = await env.DB.prepare("SELECT id FROM bring_requests WHERE mgame_id = ?1 AND req_discord = ?2 AND status = 'open'").bind(mg.id, a.member.discord_id).first();
+    const sibIds = sib.map((o) => o.id).slice(0, 90);
+    const open = await env.DB.prepare("SELECT id FROM bring_requests WHERE req_discord = ?1 AND status = 'open' AND mgame_id IN (" + sibIds.map((_, j) => '?' + (j + 2)).join(',') + ')').bind(a.member.discord_id, ...sibIds).first();
     if (open) return fail(409, 'already_requested');
     // Spam-Bremse: 5 Anfragen pro Tag und Person, 30 pro Tag insgesamt.
     if (!(await allow(env, 'breq:' + a.member.discord_id, 5, 86400)) || !(await allow(env, 'breq-all', 30, 86400))) return fail(429, 'rate_limited');
     // Ist der Besitzer noch auf dem Server? Sonst verschwinden seine Spiele.
-    try {
-      const acc = await checkAccess(env, mg.discord_id);
-      if (!acc.ok && acc.err === 'not_member') { await dropOwner(env, mg.discord_id); return fail(410, 'owner_gone'); }
-    } catch { /* Discord gerade nicht erreichbar: trotzdem versuchen */ }
+    const gone = [];
+    for (const o of owners) {
+      try {
+        const acc = await checkAccess(env, o.id);
+        if (!acc.ok && acc.err === 'not_member') { await dropOwner(env, o.id); gone.push(o.id); }
+      } catch { break; /* Discord gerade nicht erreichbar: trotzdem versuchen */ }
+    }
+    owners = owners.filter((o) => !gone.includes(o.id));
+    if (!owners.length) return fail(410, 'owner_gone');
     const d = mg.data ? JSON.parse(mg.data) : null;
     const seats = d && d.p2 ? Math.min(30, Math.max(2, d.p2)) : 4;
     const id = newId();
-    const row = { id, mgame_id: mg.id, owner_discord: mg.discord_id, owner_name: mg.owner_name || '?', req_discord: a.member.discord_id, req_name: a.member.name, game: mg.game, game_id: mg.game_id, year: mg.year, seats, dates: JSON.stringify(dates), note: (ev ? `Event „${ev.name}“` + (str(b.note, 300) ? ' · ' : '') : '') + str(b.note, 300), status: 'open', created_at: new Date().toISOString() };
-    await env.DB.prepare('INSERT INTO bring_requests(id, mgame_id, owner_discord, owner_name, req_discord, req_name, game, game_id, year, seats, dates, note, status, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)')
-      .bind(row.id, row.mgame_id, row.owner_discord, row.owner_name, row.req_discord, row.req_name, row.game, row.game_id, row.year, row.seats, row.dates, row.note, row.status, row.created_at).run();
+    const row = { id, mgame_id: owners[0].mg, owner_discord: owners[0].id, owner_name: owners.map((o) => o.name).join(', ').slice(0, 200), owners: JSON.stringify(owners), req_discord: a.member.discord_id, req_name: a.member.name, game: mg.game, game_id: mg.game_id, year: mg.year, seats, dates: JSON.stringify(dates), note: (ev ? `Event „${ev.name}“` + (str(b.note, 300) ? ' · ' : '') : '') + str(b.note, 300), status: 'open', created_at: new Date().toISOString() };
+    await env.DB.prepare('INSERT INTO bring_requests(id, mgame_id, owner_discord, owner_name, owners, req_discord, req_name, game, game_id, year, seats, dates, note, status, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15)')
+      .bind(row.id, row.mgame_id, row.owner_discord, row.owner_name, row.owners, row.req_discord, row.req_name, row.game, row.game_id, row.year, row.seats, row.dates, row.note, row.status, row.created_at).run();
     const ch = channelIds(env)[0];
     try {
       const msg = await discord(env, 'POST', `/channels/${ch}/messages`, requestMessage(row, env));
@@ -171,7 +184,7 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
       await env.DB.prepare('DELETE FROM bring_requests WHERE id = ?1').bind(id).run();
       return fail(502, 'discord_error');
     }
-    return json({ id });
+    return json({ id, owners: owners.length });
   }
   return fail(404, 'not_found');
 }
@@ -185,28 +198,38 @@ function gameEmbed(r, env, extra = {}) {
   }
   return e;
 }
+// Besitzer einer Anfrage (ältere Anfragen haben nur einen) und wer davon schon abgelehnt hat.
+export const ownersOf = (r) => { try { const o = JSON.parse(r.owners || 'null'); if (Array.isArray(o) && o.length) return o; } catch {} return [{ id: r.owner_discord, name: r.owner_name, mg: r.mgame_id }]; };
+const declinedOf = (r) => { try { return JSON.parse(r.declined || '[]'); } catch { return []; } };
+const stillAsked = (r) => { const no = declinedOf(r); return ownersOf(r).filter((o) => !no.includes(o.id)); };
 export function requestMessage(r, env) {
-  const dates = JSON.parse(r.dates);
+  const dates = JSON.parse(r.dates), all = ownersOf(r), asked = stillAsked(r), no = all.filter((o) => !asked.includes(o));
   const fields = [{ name: '📅 Vorgeschlagene Termine', value: dates.map(dayTxt).join('\n') }];
   if (r.note) fields.push({ name: '💬 Nachricht', value: r.note.slice(0, 300) });
+  if (no.length) fields.push({ name: '🚫 Kann nicht', value: no.map((o) => o.name).join(', ').slice(0, 300) });
+  const multi = all.length > 1;
+  const content = multi
+    ? `${asked.map((o) => `<@${o.id}>`).join(' ')} **${r.req_name}** (<@${r.req_discord}>) fragt, ob jemand von euch **${r.game}** mitbringen kann. Das Spiel haben mehrere Mitglieder (${all.map((o) => o.name).join(', ')}), deshalb geht die Anfrage an alle. Wer zuerst einen Termin annimmt, bringt es mit, danach ist die Anfrage für die anderen geschlossen. Uhrzeit und Plätze legst du nach dem Annehmen fest.`
+    : `<@${r.owner_discord}> **${r.req_name}** (<@${r.req_discord}>) fragt, ob du **${r.game}** mitbringen kannst. Magst du einen der Termine annehmen? Uhrzeit und Plätze legst du danach fest.`;
   return {
-    content: `<@${r.owner_discord}> **${r.req_name}** (<@${r.req_discord}>) fragt, ob du **${r.game}** mitbringen kannst. Magst du einen der Termine annehmen? Uhrzeit und Plätze legst du danach fest.`,
-    embeds: [gameEmbed(r, env, { fields, footer: { text: 'Nur der Besitzer kann annehmen oder ablehnen.' } })],
+    content: content.slice(0, 1900),
+    embeds: [gameEmbed(r, env, { fields, footer: { text: multi ? 'Nur die Besitzer können annehmen oder ablehnen. Nur eine Person kann annehmen.' : 'Nur der Besitzer kann annehmen oder ablehnen.' } })],
     components: [{ type: 1, components: [
       ...dates.map((d, i) => ({ type: 2, style: 3, label: 'Annehmen: ' + shortDay(d), custom_id: `bringa:${r.id}:${i}` })),
       { type: 2, style: 4, label: 'Ablehnen', custom_id: 'bringd:' + r.id },
       { type: 2, style: 2, label: 'Zurückziehen', custom_id: 'bringx:' + r.id },
     ] }],
-    allowed_mentions: { users: [r.owner_discord] },
+    allowed_mentions: { users: asked.map((o) => o.id).slice(0, 100) },
   };
 }
 const dmLinks = (r) => [{ type: 1, components: [
-  { type: 2, style: 5, label: 'Nachricht an ' + r.owner_name.slice(0, 60), url: 'https://discord.com/users/' + r.owner_discord },
+  ...ownersOf(r).slice(0, 4).map((o) => ({ type: 2, style: 5, label: 'Nachricht an ' + o.name.slice(0, 60), url: 'https://discord.com/users/' + o.id })),
   { type: 2, style: 5, label: 'Nachricht an ' + r.req_name.slice(0, 60), url: 'https://discord.com/users/' + r.req_discord },
 ] }];
+const mentionAll = (r) => ownersOf(r).map((o) => `<@${o.id}>`).join(' ');
 
 const getReq = (env, id) => env.DB.prepare('SELECT * FROM bring_requests WHERE id = ?1').bind(id).first();
-const closed = (r) => (r.status === 'accepted' ? 'Diese Anfrage wurde schon angenommen.' : r.status === 'declined' ? 'Diese Anfrage wurde schon abgelehnt.' : r.status === 'cancelled' ? 'Diese Anfrage gilt nicht mehr (Mitglied nicht mehr auf dem Server oder ohne Mitgliederrolle).' : 'Diese Anfrage wurde zurückgezogen.');
+const closed = (r) => (r.status === 'accepted' ? `Diese Anfrage wurde schon angenommen (${r.owner_name} bringt das Spiel mit).` : r.status === 'declined' ? 'Diese Anfrage wurde schon abgelehnt.' : r.status === 'cancelled' ? 'Diese Anfrage gilt nicht mehr (Mitglied nicht mehr auf dem Server oder ohne Mitgliederrolle).' : 'Diese Anfrage wurde zurückgezogen.');
 
 export async function bringButton(i, env, ctx) {
   const [act, id, idx] = String(i.data.custom_id).split(':');
@@ -219,7 +242,8 @@ export async function bringButton(i, env, ctx) {
     if (!u.meta.changes) return say('Die Anfrage ist schon erledigt.');
     return reply({ type: 7, data: { content: `~~${r.req_name} hat gefragt, ob ${r.owner_name} **${r.game}** mitbringt.~~ Zurückgezogen.`, embeds: [], components: [], allowed_mentions: { parse: [] } } });
   }
-  if (w.id !== r.owner_discord) return say(`Nur <@${r.owner_discord}> kann diese Anfrage annehmen oder ablehnen.`);
+  if (!ownersOf(r).some((o) => o.id === w.id)) return say(`Nur ${mentionAll(r)} ${ownersOf(r).length > 1 ? 'können' : 'kann'} diese Anfrage annehmen oder ablehnen.`);
+  if (declinedOf(r).includes(w.id)) return say('Du hast diese Anfrage schon abgelehnt.');
   if (act === 'bringa') {
     const date = JSON.parse(r.dates)[Number(idx)];
     if (!date) return say('Diesen Termin gibt es nicht.');
@@ -242,19 +266,36 @@ export async function bringSubmit(i, env, ctx) {
   const [act, id, idx] = String(i.data.custom_id).split(':');
   const w = who(i), r = await getReq(env, id);
   if (!r) return say('Diese Anfrage gibt es nicht mehr.');
-  if (w.id !== r.owner_discord) return say(`Nur <@${r.owner_discord}> kann diese Anfrage beantworten.`);
+  if (!ownersOf(r).some((o) => o.id === w.id)) return say(`Nur ${mentionAll(r)} ${ownersOf(r).length > 1 ? 'können' : 'kann'} diese Anfrage beantworten.`);
   if (r.status !== 'open') return say(closed(r));
+  if (declinedOf(r).includes(w.id)) return say('Du hast diese Anfrage schon abgelehnt.');
+  const multi = ownersOf(r).length > 1, me = ownersOf(r).find((o) => o.id === w.id);
   const f = {};
   for (const row of i.data.components || []) for (const c of row.components || []) f[c.custom_id] = c.value;
 
   if (act === 'bringd') {
     const why = str(f.grund, 300);
-    const u = await env.DB.prepare("UPDATE bring_requests SET status = 'declined', answer = ?1 WHERE id = ?2 AND status = 'open'").bind(why, id).run();
+    const declined = [...declinedOf(r), w.id];
+    const left = ownersOf(r).filter((o) => !declined.includes(o.id));
+    if (left.length) {
+      // Mehrere Besitzer: nur diese Person fällt weg, die anderen können weiter annehmen.
+      const u = await env.DB.prepare("UPDATE bring_requests SET declined = ?1 WHERE id = ?2 AND status = 'open' AND coalesce(declined, '') = ?3").bind(JSON.stringify(declined), id, r.declined || '').run();
+      if (!u.meta.changes) return say('Die Anfrage hat sich gerade geändert. Bitte noch einmal versuchen.');
+      const nr = { ...r, declined: JSON.stringify(declined) };
+      if (r.discord_channel && r.discord_msg) ctx.waitUntil(discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
+        content: `<@${r.req_discord}> ${me.name} kann **${r.game}** nicht mitbringen` + (why ? `: „${why}“` : '.') + ` ${left.map((o) => o.name).join(', ')} ${left.length > 1 ? 'können' : 'kann'} die Anfrage noch annehmen.`,
+        message_reference: { message_id: r.discord_msg, fail_if_not_exists: false }, allowed_mentions: { users: [r.req_discord] },
+      }).catch((e) => console.log('bring decline reply failed', e && e.message)));
+      const v = requestMessage(nr, env);
+      return reply({ type: 7, data: { ...v, allowed_mentions: { parse: [] } } });
+    }
+    const u = await env.DB.prepare("UPDATE bring_requests SET status = 'declined', answer = ?1, declined = ?2 WHERE id = ?3 AND status = 'open'").bind(why, JSON.stringify(declined), id).run();
     if (!u.meta.changes) return say('Die Anfrage ist schon erledigt.');
-    const text = `❌ **${r.owner_name}** kann **${r.game}** an den vorgeschlagenen Terminen leider nicht mitbringen.` + (why ? `\n💬 „${why}“` : '') + '\nSchreibt euch am besten direkt, um etwas anderes auszumachen.';
+    const text = (multi ? `❌ Keiner der Besitzer (${ownersOf(r).map((o) => o.name).join(', ')}) kann **${r.game}** an den vorgeschlagenen Terminen mitbringen.` : `❌ **${r.owner_name}** kann **${r.game}** an den vorgeschlagenen Terminen leider nicht mitbringen.`) + (why ? `\n💬 „${why}“` : '') + '\nSchreibt euch am besten direkt, um etwas anderes auszumachen.';
     // Bearbeitete Nachrichten benachrichtigen niemanden: deshalb eine kurze Antwort mit Erwähnung der anfragenden Person.
     if (r.discord_channel && r.discord_msg) ctx.waitUntil(discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
-      content: `<@${r.req_discord}> ${r.owner_name} hat deine Anfrage zu **${r.game}** abgelehnt` + (why ? `: „${why}“` : '.') + ` Schreib <@${r.owner_discord}> gern direkt an.`,
+      content: multi ? `<@${r.req_discord}> Leider kann keiner der Besitzer **${r.game}** an deinen Terminen mitbringen` + (why ? ` (${me.name}: „${why}“)` : '.') + ` Schreib ${mentionAll(r)} gern direkt an.`
+        : `<@${r.req_discord}> ${r.owner_name} hat deine Anfrage zu **${r.game}** abgelehnt` + (why ? `: „${why}“` : '.') + ` Schreib <@${r.owner_discord}> gern direkt an.`,
       message_reference: { message_id: r.discord_msg, fail_if_not_exists: false }, allowed_mentions: { users: [r.req_discord] },
     }).catch((e) => console.log('bring decline reply failed', e && e.message)));
     return reply({ type: 7, data: { content: text, embeds: [gameEmbed(r, env)], components: dmLinks(r), allowed_mentions: { parse: [] } } });
@@ -267,8 +308,9 @@ export async function bringSubmit(i, env, ctx) {
     const time = str(f.uhrzeit, 5); if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00. Klick noch einmal auf „Annehmen“.');
     const seats = Number(f.plaetze); if (!(seats >= 2 && seats <= 30)) return say('Plätze: 2 bis 30 (inkl. dir). Klick noch einmal auf „Annehmen“.');
     const pid = newId();
-    const u = await env.DB.prepare("UPDATE bring_requests SET status = 'accepted', chosen_date = ?1, party_id = ?2 WHERE id = ?3 AND status = 'open'").bind(date, pid, id).run();
-    if (!u.meta.changes) return say('Die Anfrage ist schon erledigt.');
+    // Nur eine Person kann annehmen: die erste gewinnt, alle anderen sehen danach „schon angenommen“.
+    const u = await env.DB.prepare("UPDATE bring_requests SET status = 'accepted', chosen_date = ?1, party_id = ?2, owner_discord = ?3, owner_name = ?4, mgame_id = ?5 WHERE id = ?6 AND status = 'open'").bind(date, pid, w.id, me.name, me.mg || r.mgame_id, id).run();
+    if (!u.meta.changes) return say((await getReq(env, id)).status === 'accepted' ? 'Zu spät: jemand anderes hat diese Anfrage schon angenommen.' : 'Die Anfrage ist schon erledigt.');
     const att = { ['d' + r.req_discord]: { name: r.req_name, at: new Date().toISOString() } };
     const note = `${w.name} bringt das Spiel mit (auf Wunsch von ${r.req_name}).`;
     await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord, bring_id) VALUES(?1,?2,?3,1,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)')
@@ -282,7 +324,7 @@ export async function bringSubmit(i, env, ctx) {
       await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(ch, msg.id, pid).run();
     })().catch((e) => console.log('bring party announce failed', e && e.message)));
     return reply({ type: 7, data: {
-      content: `✅ **${w.name}** bringt **${r.game}** am ${dayTxt(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${r.req_name} ist schon dabei. Uhrzeit und Plätze kannst du später über „Verwalten“ an der Runde ändern.`,
+      content: `✅ **${w.name}** bringt **${r.game}** am ${dayTxt(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${r.req_name} ist schon dabei. Uhrzeit und Plätze kannst du später über „Verwalten“ an der Runde ändern.` + (multi ? ' Die Anfrage ist damit für die anderen Besitzer geschlossen.' : ''),
       embeds: [gameEmbed(r, env)], components: [], allowed_mentions: { parse: [] },
     } });
   }
@@ -293,7 +335,14 @@ export async function bringSubmit(i, env, ctx) {
 // Spiele (und offene Anfragen) eines Mitglieds entfernen, das den Server verlassen oder die Mitgliederrolle verloren hat.
 export async function dropOwner(env, discordId) {
   const r = await env.DB.prepare('DELETE FROM member_games WHERE discord_id = ?1').bind(discordId).run();
-  await env.DB.prepare("UPDATE bring_requests SET status = 'cancelled' WHERE status = 'open' AND (owner_discord = ?1 OR req_discord = ?1)").bind(discordId).run();
+  await env.DB.prepare("UPDATE bring_requests SET status = 'cancelled' WHERE status = 'open' AND req_discord = ?1").bind(discordId).run();
+  // Offene Anfragen an diese Person: bei mehreren Besitzern nur sie herausnehmen, sonst gilt die Anfrage nicht mehr.
+  const { results } = await env.DB.prepare("SELECT * FROM bring_requests WHERE status = 'open' AND (owner_discord = ?1 OR instr(coalesce(owners, ''), ?2) > 0)").bind(discordId, '"' + discordId + '"').all();
+  for (const q of results) {
+    const rest = ownersOf(q).filter((o) => o.id !== discordId);
+    if (!rest.length || !stillAsked({ ...q, owners: JSON.stringify(rest) }).length) await env.DB.prepare("UPDATE bring_requests SET status = 'cancelled' WHERE id = ?1").bind(q.id).run();
+    else await env.DB.prepare('UPDATE bring_requests SET owners = ?1, owner_discord = ?2, owner_name = ?3, mgame_id = ?4 WHERE id = ?5').bind(JSON.stringify(rest), rest[0].id, rest.map((o) => o.name).join(', ').slice(0, 200), rest[0].mg || q.mgame_id, q.id).run();
+  }
   return (r.meta && r.meta.changes) || 0;
 }
 

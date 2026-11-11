@@ -2,12 +2,12 @@
 // Worker per test/reset.sh mit .dev.vars: ADMIN_TOKEN=test-admin-pw, DISCORD_API_BASE=http://localhost:8801, DISCORD_OAUTH_URL=http://localhost:8801/authorize,
 // DISCORD_CLIENT_SECRET=x, DISCORD_BOT_TOKEN=TESTTOKEN, PUBLIC_URL=http://localhost:8799, DISCORD_GUILD_ID=g1, DISCORD_CHANNEL_ID=CH1,
 // DISCORD_MEMBER_ROLE_ID=777, DISCORD_PUBLIC_KEY=<pub aus DK_FILE>. DK_FILE = JSON {pub, priv} (Ed25519, priv als PKCS8 base64).
-// Mock-Nutzer: 555 Eva (Mitglied, Server-Name „Eva vom Server“), 556 Fritz (Mitglied), 557 Gast (keine Mitgliederrolle).
+// Mock-Nutzer: 555 Eva (Mitglied, Server-Name „Eva vom Server“), 556 Fritz (Mitglied), 557 Gast (keine Mitgliederrolle), 558 Hans, 559 Ida (Mitglieder).
 import http from 'node:http';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const W = 'http://localhost:8799/api';
-const USERS = { 555: { username: 'eva_x', global_name: 'Eva', nick: 'Eva vom Server', roles: ['777'] }, 556: { username: 'fritz', global_name: 'Fritz', nick: null, roles: ['777'] }, 557: { username: 'gast', global_name: 'Gast', nick: null, roles: [] } };
+const USERS = { 555: { username: 'eva_x', global_name: 'Eva', nick: 'Eva vom Server', roles: ['777'] }, 556: { username: 'fritz', global_name: 'Fritz', nick: null, roles: ['777'] }, 557: { username: 'gast', global_name: 'Gast', nick: null, roles: [] }, 558: { username: 'hans', global_name: 'Hans', nick: null, roles: ['777'] }, 559: { username: 'ida', global_name: 'Ida', nick: null, roles: ['777'] } };
 const msgs = []; let cur = '555', n = 0;
 http.createServer((req, res) => {
   let b = ''; req.on('data', (c) => (b += c)); req.on('end', () => {
@@ -135,6 +135,47 @@ x = await interact({ type: 3, ...as('555'), data: { custom_id: 'bringx:' + rq3 }
 x = await interact({ type: 3, ...as('556'), data: { custom_id: 'bringx:' + rq3 } }); assert.equal(x.type, 7); assert.match(x.data.content, /Zurückgezogen/);
 console.log('withdraw ok');
 
+// Mehrere Besitzer: Anfrage geht an alle, wer zuerst annimmt, bringt es mit; Ablehnen nimmt nur die eine Person heraus
+const hans = await login('558');
+r = await call('POST', '/member-games', hans, { gameId: 13, game: 'CATAN', consent: true }); assert.equal(r.status, 200); const mgH = (await r.json()).id;
+r = await call('POST', `/member-games/${mgH}/request`, fritz, { dates: [d2, plus(35)] }); assert.equal(r.status, 200); let j = await r.json(); const rq5 = j.id; assert.equal(j.owners, 2);
+r = await call('POST', `/member-games/${mg}/request`, fritz, { dates: [d2] }); assert.equal((await r.json()).error, 'already_requested');
+m = msgs.at(-1);
+assert.match(m.content, /^<@555> <@558> \*\*Fritz\*\* \(<@556>\) fragt, ob jemand von euch \*\*CATAN\*\* mitbringen kann/); assert.match(m.content, /Wer zuerst einen Termin annimmt/);
+assert.deepEqual(m.allowed_mentions, { users: ['555', '558'] });
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `bringa:${rq5}:0` } }); assert.match(x.data.content, /Nur <@555> <@558> können/);
+// Hans lehnt ab: Anfrage bleibt für Eva offen
+x = await interact({ type: 5, ...as('558'), data: { custom_id: 'bringd:' + rq5, components: [{ type: 1, components: [{ type: 4, custom_id: 'grund', value: 'Bin verreist' }] }] } });
+assert.equal(x.type, 7); assert.equal(x.data.components[0].components.length, 4); assert.doesNotMatch(x.data.content, /<@558>/); assert.match(JSON.stringify(x.data.embeds), /Kann nicht.*Hans/);
+await wait(); m = msgs.at(-1); assert.match(m.content, /^<@556> Hans kann .*verreist.*Eva vom Server kann die Anfrage noch annehmen/);
+x = await interact({ type: 3, ...as('558'), data: { custom_id: `bringa:${rq5}:0` } }); assert.match(x.data.content, /schon abgelehnt/);
+// Eva nimmt an; danach ist die Anfrage geschlossen
+const sub5 = (u) => interact({ type: 5, ...as(u), data: { custom_id: `bringa:${rq5}:1`, components: [{ type: 1, components: [{ type: 4, custom_id: 'uhrzeit', value: '18:00' }] }, { type: 1, components: [{ type: 4, custom_id: 'plaetze', value: '4' }] }] } });
+x = await sub5('555'); assert.equal(x.type, 7); assert.deepEqual(x.data.components, []); assert.match(x.data.content, /für die anderen Besitzer geschlossen/);
+await wait(); assert.ok((await (await fetch(W + '/parties')).json()).some((p) => p.date === plus(35) && p.host === 'Eva vom Server'));
+console.log('multi owner: request to all, decline one, accept closes ok');
+// Wettlauf: beide öffnen das Annehmen-Fenster, nur die erste Person gewinnt
+r = await call('POST', `/member-games/${mg}/request`, fritz, { dates: [plus(36)] }); const rq6 = (await r.json()).id;
+const sub6 = (u) => interact({ type: 5, ...as(u), data: { custom_id: `bringa:${rq6}:0`, components: [{ type: 1, components: [{ type: 4, custom_id: 'uhrzeit', value: '18:00' }] }, { type: 1, components: [{ type: 4, custom_id: 'plaetze', value: '4' }] }] } });
+assert.equal((await interact({ type: 3, ...as('555'), data: { custom_id: `bringa:${rq6}:0` } })).type, 9);
+assert.equal((await interact({ type: 3, ...as('558'), data: { custom_id: `bringa:${rq6}:0` } })).type, 9);
+x = await sub6('558'); assert.equal(x.type, 7); assert.match(x.data.content, /Hans/);
+x = await sub6('555'); assert.match(x.data.content, /Hans bringt das Spiel mit/);
+await wait(); assert.equal((await (await fetch(W + '/parties')).json()).filter((p) => p.date === plus(36)).length, 1);
+// Alle lehnen ab -> Anfrage abgelehnt (Ida fragt, Fritz hat sein Tageslimit von 5 Anfragen erreicht)
+const ida = await login('559');
+r = await call('POST', `/member-games/${mg}/request`, ida, { dates: [plus(37)] }); const rq7 = (await r.json()).id;
+const dec = (u) => interact({ type: 5, ...as(u), data: { custom_id: 'bringd:' + rq7, components: [{ type: 1, components: [{ type: 4, custom_id: 'grund', value: '' }] }] } });
+x = await dec('555'); assert.equal(x.data.components[0].components.length, 3);
+x = await dec('558'); assert.match(x.data.content, /Keiner der Besitzer/); assert.equal(x.data.components[0].components.length, 3);
+await wait(); assert.match(msgs.at(-1).content, /^<@559> Leider kann keiner/);
+// Hans entfernt sein Exemplar: Doppel-Anfragen werden weiter erkannt, Zurückziehen geht
+r = await call('POST', `/member-games/${mg}/request`, ida, { dates: [plus(38)] }); const rq8 = (await r.json()).id;
+assert.equal((await call('DELETE', '/member-games/' + mgH, hans)).status, 200);
+r = await call('POST', `/member-games/${mg}/request`, ida, { dates: [plus(38)] }); assert.equal((await r.json()).error, 'already_requested');
+x = await interact({ type: 3, ...as('559'), data: { custom_id: 'bringx:' + rq8 } }); assert.equal(x.type, 7);
+console.log('multi owner race + all decline ok');
+
 // Wer die Mitgliederrolle verliert, verschwindet aus der Liste; Admin kann löschen
 USERS[555].roles = []; await call('PUT', '/admin/booking', null, { memberRole: '778', weekdays: [2] }, { 'x-admin-token': 'test-admin-pw' });
 assert.equal((await (await fetch(W + '/member-games')).json()).length, 0);
@@ -147,10 +188,10 @@ console.log('membership filter + admin delete ok');
 // Nächtliche Prüfung: Rolle verloren oder Server verlassen -> Spiele weg, offene Anfragen ungültig
 await call('PUT', '/admin/booking', null, { memberRole: '777', weekdays: [2] }, { 'x-admin-token': 'test-admin-pw' }); USERS[555].roles = ['777'];
 r = await call('POST', '/member-games', eva, { gameId: 30549, game: 'Pandemic', consent: true }); const mgE = (await r.json()).id;
-r = await call('POST', '/member-games', fritz, { gameId: 822, game: 'Carcassonne', consent: true }); assert.equal(r.status, 200);
-r = await call('POST', `/member-games/${mgE}/request`, fritz, { dates: [d2] }); const rq4 = (await r.json()).id; assert.ok(rq4);
+r = await call('POST', '/member-games', ida, { gameId: 822, game: 'Carcassonne', consent: true }); assert.equal(r.status, 200);
+r = await call('POST', `/member-games/${mgE}/request`, ida, { dates: [d2] }); const rq4 = (await r.json()).id; assert.ok(rq4);
 const cron = () => fetch(W.replace(/\/api$/, '') + '/__scheduled?cron=17+3+*+*+*').then((x) => x.text()).then(() => new Promise((res) => setTimeout(res, 1500)));
-USERS[556].roles = []; await cron();
+USERS[559].roles = []; await cron();
 list = await (await fetch(W + '/member-games')).json(); assert.deepEqual(list.map((x) => x.game), ['Pandemic']);
 x = await interact({ type: 3, ...as('555'), data: { custom_id: 'bringa:' + rq4 + ':0' } }); assert.match(x.data.content, /gilt nicht mehr/);
 delete USERS[555]; await cron();
