@@ -32,9 +32,15 @@ CREATE TABLE IF NOT EXISTS parties (
   play_id TEXT,
   created_at TEXT NOT NULL,
   discord_channel TEXT,
-  discord_msg TEXT
+  discord_msg TEXT,
+  host_discord TEXT,
+  event_id TEXT,
+  event_name TEXT
 );
 CREATE INDEX IF NOT EXISTS parties_date ON parties(date);
 
 CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS rate (k TEXT PRIMARY KEY, n INTEGER NOT NULL, ts INTEGER NOT NULL);
+
+-- Event-Codes: erlauben Runden ohne persönlichen Code, nur bis valid_until und nur an Eventtagen (date_from bis date_to).
+CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, valid_until TEXT NOT NULL, date_from TEXT NOT NULL, date_to TEXT NOT NULL, created_at TEXT NOT NULL);

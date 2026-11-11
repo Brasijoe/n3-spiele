@@ -1,6 +1,6 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
-import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
 
 const SALT = 'n3-club:';
 const enc = new TextEncoder();
@@ -30,8 +30,13 @@ async function allow(env, key, max, windowSec) {
 async function isAdmin(req, env, ip) {
   const t = req.headers.get('x-admin-token') || '';
   if (!t || !env.ADMIN_TOKEN) return false;
-  if (!(await allow(env, 'adm:' + ip, 20, 600))) return false;
-  return safeEq(await sha256(t), await sha256(env.ADMIN_TOKEN));
+  // Nur Fehlversuche zählen (20 pro 10 Minuten und IP); sonst bremst schon normales Arbeiten in der Verwaltung.
+  const k = 'admfail:' + ip + ':' + Math.floor(Date.now() / 1000 / 600);
+  const seen = await env.DB.prepare('SELECT n FROM rate WHERE k = ?1').bind(k).first();
+  if (seen && seen.n >= 20) return false;
+  if (safeEq(await sha256(t), await sha256(env.ADMIN_TOKEN))) return true;
+  await allow(env, 'admfail:' + ip, 20, 600);
+  return false;
 }
 
 // Gibt null zurück, wenn der Vereinscode stimmt, sonst einen Fehlercode.
@@ -70,6 +75,19 @@ function newLogKey() {
   const r = crypto.getRandomValues(new Uint8Array(12));
   return Array.from(r, (x) => KEY_CHARS[x % KEY_CHARS.length]).join('');
 }
+// Event-Code: erlaubt Runden ohne persönlichen Code (mit Namen), solange der Code gültig ist, und nur an den Eventtagen.
+const normEventCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
+const EV_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const newEventCode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (x) => EV_CHARS[x % EV_CHARS.length]).join('');
+const eventOut = (e) => ({ id: e.id, name: e.name, code: e.code, validUntil: e.valid_until, from: e.date_from, to: e.date_to, createdAt: e.created_at });
+async function checkEvent(req, env, ip) {
+  const code = normEventCode(req.headers.get('x-event-code'));
+  await ensureCols(env);
+  const e = code.length >= 4 ? await env.DB.prepare('SELECT * FROM events WHERE code = ?1').bind(code).first() : null;
+  if (!e) return { err: (await allow(env, 'evfail:' + ip, 20, 600)) ? 'bad_event' : 'rate_limited' };
+  if (e.valid_until < berlinToday()) return { err: 'event_expired' };
+  return { event: e };
+}
 let playColsOk = false;
 async function ensurePlayCols(env) {
   if (playColsOk) return;
@@ -91,7 +109,7 @@ const int = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 
 const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', createdAt: r.created_at });
-const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), playId: r.play_id, createdAt: r.created_at });
+const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), playId: r.play_id, event: r.event_name || '', createdAt: r.created_at });
 
 // Discord-Aktualisierungen laufen im Hintergrund; Fehler dürfen die Webseite nie stören.
 const bg = (ctx, p) => ctx.waitUntil(p.catch((e) => console.log('discord sync failed', e && e.message)));
@@ -145,14 +163,22 @@ async function route(req, env, ctx, url) {
     return json(results.map(partyOut));
   }
   if (path === '/parties' && m === 'POST') {
-    const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
+    // Zwei Wege: persönlicher Code (Discord) oder Event-Code (dann ist ein Name Pflicht und nur Eventtage sind erlaubt).
+    const viaEvent = req.headers.has('x-event-code');
+    const auth = viaEvent ? await checkEvent(req, env, ip) : await checkMember(req, env, ip);
+    if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
-    const b = await body(req);
-    const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = auth.member.name;
+    const b = await body(req), ev = auth.event;
+    const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = ev ? str(b.host, 40) : auth.member.name;
+    if (ev && !host) return fail(400, 'name_missing');
     if (!game || !host || !isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
+    if (ev && (date < ev.date_from || date > ev.date_to || date < berlinToday())) return fail(400, 'event_date');
+    // Spam-Bremse für Event-Codes (der Code wird weitergegeben): höchstens 60 Runden pro Tag und Event.
+    if (ev && !(await allow(env, 'ev:' + ev.id, 60, 86400))) return fail(429, 'rate_limited');
+    await ensureCols(env);
     const id = newId(), hostKey = newId() + newId();
-    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12,?13)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString(), auth.member.discord_id).run();
+    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord, event_id, event_name) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12,?13,?14,?15)')
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString(), ev ? null : auth.member.discord_id, ev ? ev.id : null, ev ? ev.name : null).run();
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id, null, true)));
     return json({ id, hostKey });
   }
@@ -227,6 +253,38 @@ async function route(req, env, ctx, url) {
     }
     const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'log_key'").first();
     return json({ key: row ? row.value : null });
+  }
+  if (path === '/admin/events' && m === 'GET') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    await ensureCols(env);
+    const { results } = await env.DB.prepare('SELECT * FROM events ORDER BY date_from DESC, created_at DESC').all();
+    return json(results.map(eventOut));
+  }
+  if (path === '/admin/events' && m === 'POST') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    const b = await body(req);
+    const name = str(b.name, 60), from = str(b.from, 10), to = str(b.to, 10), until = str(b.validUntil, 10);
+    let code = normEventCode(b.code);
+    if (!name || !isDate(from) || !isDate(to) || !isDate(until) || to < from) return fail(400, 'invalid');
+    if (b.code && code.length < 6) return fail(400, 'code_short');
+    await ensureCols(env);
+    if (!code) code = newEventCode();
+    const id = newId();
+    try {
+      await env.DB.prepare('INSERT INTO events(id, name, code, valid_until, date_from, date_to, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7)').bind(id, name, code, until, from, to, new Date().toISOString()).run();
+    } catch (e) { if (/UNIQUE/i.test(String(e && e.message))) return fail(409, 'code_taken'); throw e; }
+    return json(eventOut(await env.DB.prepare('SELECT * FROM events WHERE id = ?1').bind(id).first()));
+  }
+  if ((g = path.match(/^\/admin\/events\/([\w-]+)$/)) && m === 'DELETE') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    await ensureCols(env);
+    await env.DB.prepare('DELETE FROM events WHERE id = ?1').bind(g[1]).run();
+    return json({ ok: true });
+  }
+  if (path === '/events/check' && m === 'GET') {
+    const r = await checkEvent(req, env, ip);
+    if (r.err) return fail(r.err === 'rate_limited' ? 429 : 403, r.err);
+    const e = r.event; return json({ name: e.name, from: e.date_from, to: e.date_to, validUntil: e.valid_until, today: berlinToday() });
   }
   if (path === '/logkey/check' && m === 'GET') {
     const err = await checkLogKey(req, env, ip);
