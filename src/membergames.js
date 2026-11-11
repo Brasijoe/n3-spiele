@@ -17,7 +17,7 @@ const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dayTxt = (iso) => `${wdName(iso)}, ${fmtDate(iso)}`;
 const shortDay = (iso) => `${wdName(iso)} ${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
-const MAX_GAMES = 100;
+const MAX_GAMES = 1000;
 const MAX_DATES = 3;
 
 export const memberGameOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, year: r.year, note: r.note, owner: r.owner_name || '?', data: r.data ? JSON.parse(r.data) : null, createdAt: r.created_at });
@@ -89,7 +89,7 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
   if (path === '/member-games/import' && m === 'POST') {
     const a = await needMember(); if (a.res) return a.res;
     if (!(await allow(env, 'mgimp:' + a.member.discord_id, 10, 3600))) return fail(429, 'rate_limited');
-    const b = await body(req);
+    const b = await body(req, 400000);
     if (b.consent !== true) return fail(400, 'consent_missing');
     const want = (Array.isArray(b.items) ? b.items : []).map((x) => ({ id: int(x && x.id), n: str(x && x.n, 120), y: int(x && x.y) })).filter((x) => x.id > 0 && x.n);
     const have = new Set((await env.DB.prepare('SELECT game_id FROM member_games WHERE discord_id = ?1').bind(a.member.discord_id).all()).results.map((r) => r.game_id));
@@ -271,9 +271,15 @@ export async function bringSubmit(i, env, ctx) {
 // Nachts: Spieldaten für bis zu 20 Mitgliederspiele ohne Daten nachladen (z. B. nach einem großen BGG-Import).
 export async function backfillMemberGames(env) {
   if (!env.BGG_TOKEN) return 0;
-  const { results } = await env.DB.prepare('SELECT DISTINCT game_id FROM member_games WHERE data IS NULL AND game_id IS NOT NULL LIMIT 20').all();
-  if (!results.length) return 0;
-  const got = await fetchThings(env, results.map((r) => r.game_id), 3);
-  for (const t of got) { const { thumb, img, ...d } = t; await env.DB.prepare('UPDATE member_games SET data = ?1 WHERE game_id = ?2 AND data IS NULL').bind(JSON.stringify(d), t.id).run(); }
-  return got.length;
+  // Bis zu 5 Blöcke à 20 pro Lauf (große BGG-Importe sind so nach wenigen Nächten vollständig).
+  let n = 0;
+  for (let round = 0; round < 5; round++) {
+    const { results } = await env.DB.prepare('SELECT DISTINCT game_id FROM member_games WHERE data IS NULL AND game_id IS NOT NULL LIMIT 20').all();
+    if (!results.length) break;
+    const got = await fetchThings(env, results.map((r) => r.game_id), 3);
+    if (!got.length) break;
+    await env.DB.batch(got.map((t) => { const { thumb, img, ...d } = t; return env.DB.prepare('UPDATE member_games SET data = ?1 WHERE game_id = ?2 AND data IS NULL').bind(JSON.stringify(d), t.id); }));
+    n += got.length;
+  }
+  return n;
 }

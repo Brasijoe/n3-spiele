@@ -99,9 +99,9 @@ async function ensurePlayCols(env) {
   playColsOk = true;
 }
 
-async function body(req) {
+async function body(req, max = 16000) {
   const text = await req.text();
-  if (text.length > 16000) throw Object.assign(new Error('too_large'), { status: 413 });
+  if (text.length > max) throw Object.assign(new Error('too_large'), { status: 413 });
   try { return JSON.parse(text || '{}'); } catch { throw Object.assign(new Error('bad_json'), { status: 400 }); }
 }
 
