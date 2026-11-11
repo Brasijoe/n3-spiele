@@ -93,8 +93,11 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .bgg { min-width: 44px; min-height: 44px; border-radius: 8px; border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; text-decoration: none; color: var(--fg); }
 .more { display: flex; justify-content: center; }
 .recent { padding: 26px 28px; display: flex; flex-direction: column; gap: 12px; }
-.play { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 12px 0; border-top: 1px solid var(--line); }
-.play strong { color: var(--fg); min-width: 220px; }
+.play { display: grid; grid-template-columns: minmax(180px, 2.4fr) 112px 96px 88px 76px minmax(0, 2fr) auto; gap: 6px 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.play strong { color: var(--fg); }
+.play > .src { justify-self: start; }
+.play .extra { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+@media (max-width: 760px) { .play { display: flex; flex-wrap: wrap; gap: 6px 14px; } .play strong { flex: 1 0 100%; } .play > span:empty { display: none; } }
 footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .bgglogo { display: inline-flex; background: #fff; border-radius: 8px; padding: 10px 16px; }
 .bgglogo img { height: 48px; width: auto; display: block; }
@@ -844,9 +847,10 @@ function renderPlays() {
   $('recentState').hidden = !$('recentState').textContent;
   $('plays').innerHTML = plays.slice(0, 20).map((p) => {
     return '<div class="play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<span>' + esc(String(p.date || '').split('-').reverse().join('.')) + '</span><span>' + esc(p.players + ' ' + t.players) + '</span>' +
-      (Number(p.duration) > 0 ? '<span>' + esc(p.duration + ' ' + t.min) + '</span>' : '') + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') +
-      (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') +
-      (canEdit && p.id ? '<button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px;margin-left:auto" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button>' : '') + '</div>';
+      // Feste Spalten: Dauer bleibt als leere Zelle stehen, Erstpartie/Sieg/Notiz teilen sich die letzte Spalte.
+      '<span>' + (Number(p.duration) > 0 ? esc(p.duration + ' ' + t.min) : '') + '</span>' +
+      '<span class="extra">' + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') + (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') + '</span>' +
+      (canEdit && p.id ? '<button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button>' : '<span></span>') + '</div>';
   }).join('');
 }
 $('plays').addEventListener('click', async (e) => {
