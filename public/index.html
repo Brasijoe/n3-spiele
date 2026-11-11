@@ -380,6 +380,9 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <label class="field" style="flex: 0 1 240px;"><span data-t="sortBy"></span>
         <select id="sort"></select>
       </label>
+      <label class="field" style="flex: 0 1 220px;" id="ownerF" hidden><span data-t="memOwner"></span>
+        <select id="ownerSel"></select>
+      </label>
       <button type="button" class="btn btn-quiet" id="reset" data-t="reset"></button>
     </div>
     <div id="quick" hidden></div>
@@ -740,7 +743,7 @@ const TXT = {
     admGl: 'GeekList-Abgleich', admGlNote: 'Vergleicht die BGG-GeekList mit den Spielen dieser Seite. Die Liste wird nachts automatisch geladen.', admGlRefresh: 'Jetzt von BGG laden',
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
     gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit',
-    gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen',
+    gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', allOwners: 'Alle Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen',
     memHowSum: 'So funktioniert „Mitglieder besitzen“',
     memHow1: 'Diese Spiele gehören Mitgliedern und stehen nicht im Club. Eintragen und Anfragen geht nur mit der Mitgliederrolle auf unserem Discord.',
     memHow2: 'Eigene Spiele trägst du unten unter „Mitglieder besitzen“ ein, einzeln oder per Import aus deiner BGG-Sammlung. Dein Discord-Servername wird als Besitzer angezeigt.',
@@ -785,7 +788,7 @@ const TXT = {
     secMostly: 'Fast sprachneutrale Spiele', secMostlyNote: 'Nur wenig Text im Spiel: schnell gelernt oder mit einem kleinen Spickzettel gut spielbar (Einschätzung der BGG-Community).', secEmpty: 'Keine passenden Spiele.',
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
-    owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', sortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
+    owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
   en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
     prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
     search: 'Search games', searchPh: 'Name, e.g. Azul', sortBy: 'Sort by', reset: 'Reset filters', match: 'match your selection',
@@ -826,7 +829,7 @@ const TXT = {
     admGl: 'GeekList check', admGlNote: 'Compares the BGG GeekList with the games on this page. The list is fetched automatically every night.', admGlRefresh: 'Fetch from BGG now',
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
     gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only',
-    gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', memOwners: 'Owners', brAsk: 'Ask to bring it',
+    gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', allOwners: 'All owners', memOwners: 'Owners', brAsk: 'Ask to bring it',
     memHowSum: 'How “Members own” works',
     memHow1: 'These games belong to members and are not kept at the club. Adding and requesting needs the member role on our Discord.',
     memHow2: 'Add your own games below under “Members own”, one by one or imported from your BGG collection. Your Discord server name is shown as owner.',
@@ -871,7 +874,7 @@ const TXT = {
     secMostly: 'Mostly language-neutral games', secMostlyNote: 'Only a little text during play: quickly learned or easy to play with a small crib sheet (rated by the BGG community).', secEmpty: 'No matching games.',
     tagNeutral: 'language-neutral', tagMostly: 'mostly language-neutral', tipNeutral: 'Language-neutral: no text needed during play', tipMostly: 'Mostly language-neutral: only a little text during play',
     admOwnDir: 'Owner directory (full names)', admOwnDirNote: 'One line per person: short name = full name. Visible to admins only; the full name shows as a suggestion, on hover and in the Excel export (Leihgeber/Spender).', admOwnDirSave: 'Save directory', admOwnDirOk: 'Saved ({n} names).', admLang: 'Language, owner and inventory data', admLangNote: 'Language of our copy, language dependence, owner and since when the game is in the collection. Every change is saved right away. Without a language a game only shows up in the language filter if it is (mostly) language-neutral. Language dependence comes from BGG and can be overridden here.', admLangQ: 'Search game', admLangOnlyEmpty: 'Only games without a language', admLangErr: 'Saving didn’t work.', admLangOk: 'Saved: {n}',
-    owner: 'Owner', ownerUnknown: '?', addedOn: 'In the collection since', inv: 'Inventory number', zLabel: 'Condition', zNames: ['New', 'Very good', 'Good', 'Damaged', 'Needs repair', 'Unusable'], ldLabel: 'Language dependence', ldNames: ['language-neutral (no text)', 'mostly language-neutral (little text)', 'moderate text', 'lots of text', 'unplayable without the language'], ldUnknown: 'unknown', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'mostly neutral', 'moderate', 'lots of text', 'unplayable'], colGame: 'Game', sortBy: 'Sort by {c}', colLd: 'Lang. dep.', colInv: 'Inv. no.', infoMore: 'Details', admExport: 'Export to Excel', admExportNote: 'All games with the columns of the inventory list, plus owner, date, language and BGG data.' },
+    owner: 'Owner', ownerUnknown: '?', addedOn: 'In the collection since', inv: 'Inventory number', zLabel: 'Condition', zNames: ['New', 'Very good', 'Good', 'Damaged', 'Needs repair', 'Unusable'], ldLabel: 'Language dependence', ldNames: ['language-neutral (no text)', 'mostly language-neutral (little text)', 'moderate text', 'lots of text', 'unplayable without the language'], ldUnknown: 'unknown', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'mostly neutral', 'moderate', 'lots of text', 'unplayable'], colGame: 'Game', lgSortBy: 'Sort by {c}', colLd: 'Lang. dep.', colInv: 'Inv. no.', infoMore: 'Details', admExport: 'Export to Excel', admExportNote: 'All games with the columns of the inventory list, plus owner, date, language and BGG data.' },
 };
 const EXPB = { 412735: 342444, 324767: 322656, 324766: 322656, 276044: 260934, 275923: 260934, 242993: 186751, 349606: 319910, 226162: 184287, 325: 13, 926: 13, 181336: 143884, 342274: 160477, 219326: 160477 };
 const normCode = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
@@ -1273,6 +1276,7 @@ function renderGrid() {
   const t = T();
   const pool = S.src === 'mem' ? memGames : games;
   let list = pool.filter(match);
+  if (S.src === 'mem' && S.owner) list = list.filter((g) => g.owners.some((o) => o.name === S.owner));
   const sn = sortN();
   const sorters = { bestFor: (a, b) => (sn == null ? 0 : fitTier(a, sn) - fitTier(b, sn)) || b.r - a.r, rating: (a, b) => b.r - a.r, rank: (a, b) => (a.rank || 1e9) - (b.rank || 1e9), name: (a, b) => name(a).localeCompare(name(b), S.lang),
     weightAsc: (a, b) => (a.w || 9) - (b.w || 9), timeAsc: (a, b) => a.t - b.t, year: (a, b) => b.y - a.y, played: (a, b) => (playCount[b.id] || 0) - (playCount[a.id] || 0) || b.r - a.r };
@@ -1290,7 +1294,10 @@ function renderGrid() {
   }
   $('count').textContent = list.length + ' ' + t.of + ' ' + pool.length + ' ' + t.games;
   document.querySelectorAll('#srcTabs [data-src]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.src === S.src)));
-  $('memHow').hidden = S.src !== 'mem';
+  $('memHow').hidden = S.src !== 'mem'; $('ownerF').hidden = S.src !== 'mem';
+  const owners = [...new Set(memRows.map((r) => r.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+  if (S.owner && !owners.includes(S.owner)) S.owner = '';
+  $('ownerSel').innerHTML = '<option value="">' + esc(t.allOwners) + '</option>' + owners.map((o) => '<option' + (o === S.owner ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
   const card = (g) => {
     if (g.mem) return memCard(g);
     const n = name(g), pc = playCount[g.id] || 0;
@@ -1373,7 +1380,7 @@ function renderLangAdmin() {
   if (sv) list.sort((a, b) => { const x = sv(a), y = sv(b); if (x === y) return 0; if (x === null) return 1; if (y === null) return -1;
     return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), S.lang, { numeric: true })) * lgSort.dir; });
   else if (lgSort.dir < 0) list.reverse();
-  const hc = (col, label, c) => '<button type="button" class="lg-sort' + (c ? ' c' : '') + (lgSort.col === col ? ' on' : '') + '" data-lgsort="' + col + '" aria-label="' + esc(fill(t.sortBy, { c: label })) + '">' +
+  const hc = (col, label, c) => '<button type="button" class="lg-sort' + (c ? ' c' : '') + (lgSort.col === col ? ' on' : '') + '" data-lgsort="' + col + '" aria-label="' + esc(fill(t.lgSortBy, { c: label })) + '">' +
     esc(label) + '<span aria-hidden="true">' + (lgSort.col === col ? (lgSort.dir > 0 ? ' ▲' : ' ▼') : '') + '</span></button>';
   const head = '<div class="lang-row lang-head">' + hc('name', t.colGame) + LANGS.map((l) => hc(l, l.toUpperCase(), true)).join('') +
     hc('ld', t.colLd) + hc('owner', t.owner) + hc('added', t.addedOn) + hc('inv', t.colInv) + hc('z', t.zLabel) + '</div>';
@@ -1670,11 +1677,12 @@ $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
 [['recPct', 'recPct'], ['minRating', 'minRating'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
 $('reset').onclick = () => {
-  Object.assign(S, { langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
   $('q').value = ''; ['recPct', 'minRating', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
   renderAll();
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
+$('ownerSel').addEventListener('change', (e) => { S.owner = e.target.value; S.limit = PAGE; renderGrid(); });
 $('srcTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (!b || S.src === b.dataset.src) return; S.src = b.dataset.src; S.limit = PAGE; renderGrid(); });
 $('grid').addEventListener('click', (e) => { const cv = !e.target.closest('.ln-ic') && e.target.closest('[data-cvinfo]'); if (cv) { cv.classList.toggle('show-info'); return; } });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-bring]'); if (b) openBring(b.dataset.bring); });
