@@ -11,6 +11,7 @@ const xml = `<?xml version="1.0" encoding="utf-8"?><items termsofuse="x">
 <results numplayers="5"><result value="Best" numvotes="9" /><result value="Recommended" numvotes="30" /><result value="Not Recommended" numvotes="1" /></results>
 <results numplayers="6"><result value="Best" numvotes="1" /><result value="Recommended" numvotes="3" /><result value="Not Recommended" numvotes="10" /></results>
 <results numplayers="6+"><result value="Best" numvotes="0" /><result value="Recommended" numvotes="1" /><result value="Not Recommended" numvotes="20" /></results></poll>
+<poll name="language_dependence" title="Language Dependence" totalvotes="20"><results><result level="1" value="No necessary in-game text" numvotes="3" /><result level="2" value="Some necessary text - easily memorized or small crib sheet" numvotes="12" /><result level="3" value="Moderate in-game text - needs crib sheet or paste ups" numvotes="5" /><result level="4" value="Extensive use of text - massive conversion needed to be playable" numvotes="0" /><result level="5" value="Unplayable in another language" numvotes="0" /></results></poll>
 <link type="boardgamecategory" id="1022" value="Adventure" /><link type="boardgamemechanic" id="2" value="Team-Based Game" /><link type="boardgamedesigner" id="9" value="Mateusz Kopacz" />
 <statistics page="1"><ratings><usersrated value="3721" /><average value="8.1234" /><bayesaverage value="7.4" /><ranks><rank type="subtype" id="1" name="boardgame" friendlyname="Board Game Rank" value="214" bayesaverage="7.4" /><rank type="family" id="5497" name="strategygames" friendlyname="Strategy Game Rank" value="120" bayesaverage="7.3" /><rank type="family" id="5498" name="thematic" friendlyname="Thematic Rank" value="Not Ranked" bayesaverage="Not Ranked" /></ranks><averageweight value="2.6" /></ratings></statistics></item>
 <item type="boardgameexpansion" id="379999"><name type="primary" sortindex="1" value="Guards of Atlantis II: Tabletop MOBA &amp; Arcane Hero Pack" /><yearpublished value="2021" /><minplayers value="2" /><maxplayers value="10" /><playingtime value="45" />
@@ -23,5 +24,6 @@ assert.equal(a.t1, 30); assert.equal(a.t2, 45); assert.equal(a.a, 14); assert.eq
 assert.equal(a.rank, 214); assert.equal(a.types, 'S'); assert.equal(a.best, '4'); assert.equal(a.rec, '3-5');
 assert.deepEqual(a.cats, ['Adventure']); assert.deepEqual(a.mechs, ['Team-Based Game']); assert.equal(a.des, 'Mateusz Kopacz'); assert.equal(a.exp, 0);
 assert.match(a.thumb, /geekdo-images/);
-const e = g[1]; assert.equal(e.exp, 1); assert.equal(e.base, 324856); assert.equal(e.n, 'Guards of Atlantis II: Tabletop MOBA & Arcane Hero Pack'); assert.equal(e.rank, 0);
+assert.equal(a.ld, 1);
+const e = g[1]; assert.equal(e.ld, -1); assert.equal(e.exp, 1); assert.equal(e.base, 324856); assert.equal(e.n, 'Guards of Atlantis II: Tabletop MOBA & Arcane Hero Pack'); assert.equal(e.rank, 0);
 console.log('games parser ok');

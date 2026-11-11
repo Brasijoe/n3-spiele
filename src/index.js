@@ -243,6 +243,27 @@ async function route(req, env, ctx, url) {
       return json({ ok: true });
     }
   }
+  // Angaben je Spiel aus der Verwaltung: Sprache der Ausgabe, Sprachabhängigkeit (überschreibt BGG), Besitzer, Datum der Aufnahme.
+  // Schlüssel wie in der Seite: BGG-ID, ggf. mit Zusatz wie „ (englisch, KS)“. Lesen öffentlich, Ändern nur Admin.
+  if (path === '/config/gamemeta') {
+    const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'gamemeta'").first();
+    const map = row ? JSON.parse(row.value) : {};
+    if (m === 'GET') return json(map);
+    if (m === 'PUT') {
+      if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+      const b = await body(req);
+      const key = str(b.key, 60);
+      if (!/^\d{1,9}( \([^()]{1,30}\))?$/.test(key)) return fail(400, 'invalid');
+      const e = { l: ['de', 'en', 'fr'].filter((l) => Array.isArray(b.langs) && b.langs.includes(l)) };
+      const ld = b.ld === null || b.ld === undefined || b.ld === '' ? null : int(b.ld);
+      if (ld !== null && ld >= -1 && ld <= 4) e.ld = ld;
+      const owner = str(b.owner, 60); if (owner) e.o = owner;
+      const added = str(b.added, 10); if (added && !isDate(added)) return fail(400, 'invalid'); if (added) e.d = added;
+      map[key] = e;
+      await env.DB.prepare("INSERT INTO config(key, value) VALUES('gamemeta', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(map)).run();
+      return json({ ok: true, key, meta: e });
+    }
+  }
   if (path === '/config/club' && m === 'PUT') {
     if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
     const code = String((await body(req)).code || '').replace(/\D/g, '');
