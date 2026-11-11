@@ -152,6 +152,19 @@ async function route(req, env, ctx, url) {
     if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
     return json({ id });
   }
+  if ((g = path.match(/^\/plays\/([\w-]+)$/)) && m === 'PUT') {
+    // Verwaltung: eingetragene Partie korrigieren (Spiel bleibt, sonst stimmen Cover und Statistik-Zuordnung nicht mehr).
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    const b = await body(req);
+    await ensurePlayCols(env);
+    const date = str(b.date, 10), players = int(b.players), duration = b.duration == null || b.duration === '' ? null : int(b.duration);
+    if (!isDate(date) || !(players >= 1 && players <= 99)) return fail(400, 'invalid');
+    if (duration != null && !(duration >= 1 && duration <= 1440)) return fail(400, 'invalid');
+    const r = await env.DB.prepare('UPDATE plays SET date = ?1, players = ?2, winner = ?3, note = ?4, duration = ?5, first_play = ?6, logged_by = ?7 WHERE id = ?8')
+      .bind(date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, str(b.loggedBy, 40) || null, g[1]).run();
+    if (!r.meta.changes) return fail(404, 'not_found');
+    return json({ ok: true });
+  }
   if ((g = path.match(/^\/plays\/([\w-]+)$/)) && m === 'DELETE') {
     if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
     await env.DB.prepare('DELETE FROM plays WHERE id = ?1').bind(g[1]).run();

@@ -140,6 +140,9 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .src.event::before { background: var(--accent); border-radius: 50%; }
 .adm-play .acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .adm-play .acts .btn { margin-left: 0; }
+.adm-edit { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 12px; width: 100%; align-items: end; padding: 4px 0 6px; }
+.adm-edit .acts, .adm-edit [data-pmsg] { grid-column: 1 / -1; justify-content: flex-end; }
+.adm-edit .chk { flex-direction: row; align-items: center; gap: 8px; min-height: 44px; }
 .ev-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; letter-spacing: .08em; }
 #pEvCode { width: 100%; max-width: 280px; letter-spacing: .12em; }
 .linkish { align-self: flex-start; min-height: 36px; font-size: 13px; }
@@ -511,7 +514,7 @@ const TXT = {
     admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.', admCode: 'Vereinscode ändern', admNewCode: 'Neuer 4-stelliger Code', admSaveCode: 'Code speichern',
     codeSaved: 'Neuer Code ist aktiv.', codeErr: 'Speichern hat nicht geklappt.', admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
     admAdd: 'Spiel hinzufügen', admAddBtn: 'Hinzufügen', admSaveHl: 'Highlights speichern', admResetHl: 'Auf Top 15 zurücksetzen', hlSaved: 'Highlights gespeichert.', hlReset: 'Zurückgesetzt auf Top 15.', hlErr: 'Speichern hat nicht geklappt.',
-    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admNoPlays: 'Noch keine Partien eingetragen.',
+    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admEdit: 'Bearbeiten', admSave: 'Speichern', admBy: 'Eingetragen von', admEditErr: 'Bitte gültiges Datum und 1–99 Spieler angeben.', admNoPlays: 'Noch keine Partien eingetragen.',
     del: 'Löschen', delConfirm: 'Wirklich löschen?', unsaved: 'Ungespeicherte Änderungen',
     autoPause: 'Automatisches Weiterblättern anhalten', autoPlay: 'Automatisches Weiterblättern starten',
     dur: 'Dauer in Minuten (optional)', first: 'Erstpartie (mit Regelerklärung)', clubTime: 'Bei uns: ~{m} Min ({p} Sp.)', firstTag: 'Erstpartie', errDur: 'Bitte eine Dauer zwischen 1 und 1440 Minuten eingeben oder das Feld leer lassen.',
@@ -561,7 +564,7 @@ const TXT = {
     admin: 'Administration', adminNote: 'Only visible to people with edit access.', admCode: 'Change club code', admNewCode: 'New 4-digit code', admSaveCode: 'Save code',
     codeSaved: 'The new code is active.', codeErr: 'Saving didn’t work.', admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
     admAdd: 'Add a game', admAddBtn: 'Add', admSaveHl: 'Save highlights', admResetHl: 'Reset to top 15', hlSaved: 'Highlights saved.', hlReset: 'Reset to top 15.', hlErr: 'Saving didn’t work.',
-    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admNoPlays: 'No plays logged yet.',
+    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admEdit: 'Edit', admSave: 'Save', admBy: 'Logged by', admEditErr: 'Please enter a valid date and 1–99 players.', admNoPlays: 'No plays logged yet.',
     del: 'Delete', delConfirm: 'Really delete?', unsaved: 'Unsaved changes',
     autoPause: 'Pause automatic slideshow', autoPlay: 'Start automatic slideshow',
     dur: 'Duration in minutes (optional)', first: 'First play (incl. rules explanation)', clubTime: 'At our club: ~{m} min ({p} pl.)', firstTag: 'First play', errDur: 'Please enter a duration between 1 and 1440 minutes, or leave the field empty.',
@@ -871,12 +874,27 @@ function renderAdmin() {
   const avail = games.filter((g) => !hlDraft.ids.includes(g.id)).sort((a, b) => name(a).localeCompare(name(b), S.lang));
   $('hlAdd').innerHTML = avail.map((g) => '<option value="' + g.id + '">' + esc(name(g)) + '</option>').join('');
   if (hlDirty && !$('hlMsg').textContent) { $('hlMsg').className = 'note'; $('hlMsg').textContent = t.unsaved; }
+  if (playEdit && $('admPlays').querySelector('form[data-pedit]')) return; // offenes Bearbeiten nicht beim Auffrischen überschreiben
   $('admPlays').innerHTML = playDocs.length ? playDocs.slice(0, 100).map(({ id, p }) => {
+    if (playEdit === id) {
+      const f = (lbl, html) => '<label class="field">' + esc(lbl) + html + '</label>';
+      return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<form class="adm-edit" data-pedit="' + esc(id) + '">' +
+        f(t.date, '<input type="date" name="date" required value="' + esc(p.date || '') + '">') +
+        f(t.nPlayers, '<input type="number" name="players" min="1" max="99" required value="' + esc(p.players) + '">') +
+        f(t.winner, '<input type="text" name="winner" maxlength="80" value="' + esc(p.winner || '') + '">') +
+        f(t.dur, '<input type="number" name="duration" min="1" max="1440" value="' + esc(Number(p.duration) > 0 ? p.duration : '') + '">') +
+        f(t.note, '<input type="text" name="note" maxlength="200" value="' + esc(p.note || '') + '">') +
+        f(t.admBy, '<input type="text" name="loggedBy" maxlength="40" value="' + esc(p.loggedBy || '') + '">') +
+        '<label class="field chk"><input type="checkbox" name="firstPlay"' + (p.firstPlay ? ' checked' : '') + '>' + esc(t.first) + '</label>' +
+        '<span class="acts"><button type="button" class="btn btn-quiet" data-pcancel>' + esc(t.cancel) + '</button><button type="submit" class="btn btn-primary">' + esc(t.admSave) + '</button></span>' +
+        '<span class="err" data-pmsg></span></form></div>';
+    }
     return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<span>' + esc(String(p.date || '').split('-').reverse().join('.')) + '</span><span>' + esc(p.players + ' ' + t.players) + '</span>' +
       (Number(p.duration) > 0 ? '<span>' + esc(p.duration + ' ' + t.min) + '</span>' : '') + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') +
       (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') +
       (p.loggedBy ? '<span class="meta">' + esc(fill(t.byTag, { n: p.loggedBy }) + (p.via === 'qr' ? ' (QR)' : '')) + '</span>' : '') +
-      '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></div>';
+      '<span class="acts"><button type="button" class="btn btn-quiet" data-pedit-open="' + esc(id) + '">' + esc(t.admEdit) + '</button>' +
+      '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></span></div>';
   }).join('') : '<p class="meta" style="margin:0">' + esc(t.admNoPlays) + '</p>';
 }
 
@@ -918,6 +936,19 @@ $('codeForm').addEventListener('submit', async (e) => {
   catch (err) { msg.className = 'err'; msg.textContent = t.codeErr; }
 });
 $('newCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+var playEdit = null;
+$('admPlays').addEventListener('click', (e) => {
+  const o = e.target.closest('[data-pedit-open]'); if (o) { playEdit = o.dataset.peditOpen; pendingDel = null; $('admPlays').innerHTML = ''; renderAdmin(); return; }
+  if (e.target.closest('[data-pcancel]')) { playEdit = null; $('admPlays').innerHTML = ''; renderAdmin(); }
+});
+$('admPlays').addEventListener('submit', async (e) => {
+  const fm = e.target.closest('form[data-pedit]'); if (!fm) return; e.preventDefault();
+  const v = (n) => fm.elements[n].value.trim(), t = T(), msg = fm.querySelector('[data-pmsg]');
+  const b = { date: v('date'), players: Math.round(Number(v('players'))), winner: v('winner'), duration: v('duration') ? Math.round(Number(v('duration'))) : null, note: v('note'), loggedBy: v('loggedBy'), firstPlay: fm.elements.firstPlay.checked };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date) || !(b.players >= 1 && b.players <= 99) || (b.duration != null && !(b.duration >= 1 && b.duration <= 1440))) { msg.textContent = t.admEditErr; return; }
+  try { await api('PUT', '/plays/' + encodeURIComponent(fm.dataset.pedit), b); playEdit = null; $('admPlays').innerHTML = ''; refreshAll(); }
+  catch (x) { msg.textContent = x && x.code === 'invalid' ? t.admEditErr : t.errSave; }
+});
 $('admPlays').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-del]'); if (!b) return;
   const id = b.dataset.del;
