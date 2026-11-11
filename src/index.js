@@ -284,7 +284,7 @@ async function route(req, env, ctx, url) {
 export default {
   async fetch(req, env, ctx) {
     try { return await route(req, env, ctx, new URL(req.url)); }
-    catch (e) { return fail(e.status || 500, e.status ? e.message : 'server_error'); }
+    catch (e) { if (!e.status) console.log('server_error', req.method, new URL(req.url).pathname, e && (e.stack || e.message)); return fail(e.status || 500, e.status ? e.message : 'server_error'); }
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {

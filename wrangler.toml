@@ -33,6 +33,10 @@ DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 # Danach in der Verwaltung „Discord-Befehle registrieren“ klicken und den Bot auf den N3-Server einladen.
 
 # Täglich 03:17 UTC: GeekList von BGG lesen und für die Verwaltung zwischenspeichern.
+# Logs im Cloudflare-Dashboard (Workers → n3-spiele → Observability) aufbewahren.
+[observability]
+enabled = true
+
 [triggers]
 crons = ["17 3 * * *"]
 

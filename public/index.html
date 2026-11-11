@@ -909,7 +909,7 @@ function openLog(g) {
   $('modal').hidden = false; (guest ? $('gQ') : $('fDate')).focus();
 }
 function closeLog() { $('modal').hidden = true; logGame = null; logParty = null; }
-const codeErr = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set' || e.code === 'blocked') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave);
+const codeErr = (e) => (e && (e.code === 'bad_code' || e.code === 'code_not_set' || e.code === 'blocked') ? T().errCode : e && e.code === 'rate_limited' ? T().errRate : T().errSave + ' (' + ((e && (e.code || e.message)) || '?') + ')');
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join(''); }
 
 $('logForm').addEventListener('submit', async (e) => {
