@@ -17,21 +17,22 @@ html, body { margin: 0; background: #e9e9e9; color: var(--ink); font-family: Kar
 .fmt { display: inline-flex; border: 1px solid #bbb; border-radius: 8px; overflow: hidden; }
 .bar .fmt button { background: #fff; border-radius: 0; min-width: 56px; padding: 0 14px; }
 .bar .fmt button[aria-pressed=true] { background: var(--ink); color: #fff; }
-.sheet { width: calc(186mm * var(--s)); height: calc(271mm * var(--s)); margin: 0 auto 24px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(12mm * var(--s)) calc(12mm * var(--s)) calc(10mm * var(--s)); gap: calc(6mm * var(--s)); box-shadow: 0 4px 18px rgba(0,0,0,.15); overflow: hidden; }
+.sheet { width: calc(210mm * var(--s)); height: calc(296mm * var(--s)); margin: 0 auto 24px; background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(16mm * var(--s)) calc(16mm * var(--s)) calc(14mm * var(--s)); gap: calc(5mm * var(--s)); box-shadow: 0 4px 18px rgba(0,0,0,.15); overflow: hidden; }
 .band { width: 100%; background: var(--band); color: #fff; border-radius: calc(6mm * var(--s)); padding: calc(7mm * var(--s)) calc(6mm * var(--s)) calc(6mm * var(--s)); }
 .band small { display: block; color: var(--accent); font: 700 calc(5mm * var(--s)) Rubik, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 h1 { font: 700 calc(13mm * var(--s))/1.05 Rubik, sans-serif; margin: calc(2mm * var(--s)) 0 0; }
 .sub { font-size: calc(5.6mm * var(--s)); margin: calc(2.5mm * var(--s)) 0 0; color: #e6e6e6; line-height: 1.3; }
 .why { width: 100%; background: #fdecd0; color: #5a3600; border-radius: calc(4mm * var(--s)); padding: calc(4mm * var(--s)) calc(6mm * var(--s)); font-size: calc(4.8mm * var(--s)); line-height: 1.35; }
 .why b { font: 700 calc(5.4mm * var(--s)) Rubik, sans-serif; display: block; margin-bottom: calc(1mm * var(--s)); color: #7a4a00; }
-.qr { width: calc(90mm * var(--s)); height: calc(90mm * var(--s)); padding: calc(4mm * var(--s)); border: calc(1.2mm * var(--s)) solid var(--accent); border-radius: calc(5mm * var(--s)); flex: none; }
+.qr { width: calc(var(--q, 90mm) * var(--s)); height: calc(var(--q, 90mm) * var(--s)); padding: calc(4mm * var(--s)); border: calc(1.2mm * var(--s)) solid var(--accent); border-radius: calc(5mm * var(--s)); flex: none; }
 .qr svg { width: 100%; height: 100%; display: block; }
 ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(5mm * var(--s)); width: 100%; }
 li { background: #f5f5f5; border-radius: calc(4mm * var(--s)); padding: calc(3.5mm * var(--s)) calc(3mm * var(--s)); font-size: calc(4.4mm * var(--s)); line-height: 1.3; }
 li b { display: block; font: 700 calc(8mm * var(--s)) Rubik, sans-serif; color: var(--accent); }
 .thanks { font: 700 calc(6mm * var(--s)) Rubik, sans-serif; margin: auto 0 0; }
+.fitting .sheet { height: calc(278mm * var(--s)) !important; } /* Messen mit Reserve: falls ein Browser eigene Ränder/Kopfzeilen druckt */
 .err { max-width: 520px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; font-size: 18px; }
-@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; width: auto; height: calc(271mm * var(--s)); page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; } }
+@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; height: calc(296mm * var(--s)); page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; } }
 </style>
 </head>
 <body>
@@ -70,11 +71,21 @@ li b { display: block; font: 700 calc(8mm * var(--s)) Rubik, sans-serif; color: 
   function setFmt(f) {
     if (!F[f]) f = 'A4';
     document.documentElement.style.setProperty('--s', F[f]);
-    document.getElementById('page').textContent = '@page { size: ' + SZ[f] + '; margin: ' + (12 * F[f]).toFixed(1) + 'mm; }';
+    document.getElementById('page').textContent = '@page { size: ' + SZ[f] + '; margin: 0; }'; fit();
     document.querySelectorAll('.fmt button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.f === f ? 'true' : 'false'); });
-    document.getElementById('hint').textContent = '2 Seiten ' + f + ': vorne Deutsch, hinten Englisch – beidseitig drucken. Im Druckdialog Papierformat ' + f + ' und „Tatsächliche Größe“ (100 %) wählen.';
+    document.getElementById('hint').textContent = '2 Seiten ' + f + ': vorne Deutsch, hinten Englisch – beidseitig drucken. Im Druckdialog: Papierformat ' + f + ', Skalierung 100 % („Tatsächliche Größe“), Kopf- und Fußzeilen aus.';
     try { localStorage.setItem('n3-qr-format', f); } catch (e) {}
   }
+  // Passt alles auf die Seite? Sonst den QR-Code schrittweise verkleinern (z. B. wenn Schriften anders laufen als erwartet).
+  function fit() {
+    var q = 90, de = document.documentElement; de.style.setProperty('--q', q + 'mm'); de.classList.add('fitting');
+    var sheets = document.querySelectorAll('.sheet');
+    var over = function () { for (var i = 0; i < sheets.length; i++) { var x = sheets[i]; if (x.scrollHeight > x.clientHeight + 1) return true; } return false; };
+    while (q > 45 && over()) { q -= 3; de.style.setProperty('--q', q + 'mm'); }
+    de.classList.remove('fitting');
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  window.addEventListener('beforeprint', fit);
   document.querySelector('.fmt').addEventListener('click', function (e) { var b = e.target.closest('button[data-f]'); if (b) setFmt(b.dataset.f); });
   var saved = null; try { saved = localStorage.getItem('n3-qr-format'); } catch (e) {}
   setFmt(saved);
