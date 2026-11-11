@@ -373,6 +373,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
       <p class="note" data-t="admHlNote" style="margin:0"></p>
       <div id="hlList"></div>
       <div class="row">
+        <label class="field" style="flex:1 1 200px"><span data-t="admLangQ"></span><input type="search" id="hlQ" autocomplete="off"></label>
         <label class="field" style="flex:1 1 280px"><span data-t="admAdd"></span><select id="hlAdd"></select></label>
         <button type="button" class="btn btn-quiet" id="hlAddBtn" data-t="admAddBtn"></button>
       </div>
@@ -418,6 +419,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     </div>
     <div class="adm-block">
       <h3 data-t="admPlays"></h3>
+      <div class="row"><label class="field" style="flex:1 1 240px"><span data-t="admPlaysQ"></span><input type="search" id="apQ" autocomplete="off"></label></div>
       <div id="admPlays"></div>
     </div>
     <div class="adm-block">
@@ -572,7 +574,7 @@ const TXT = {
     admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.', admCode: 'Vereinscode ändern', admNewCode: 'Neuer 4-stelliger Code', admSaveCode: 'Code speichern',
     codeSaved: 'Neuer Code ist aktiv.', codeErr: 'Speichern hat nicht geklappt.', admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
     admAdd: 'Spiel hinzufügen', admAddBtn: 'Hinzufügen', admSaveHl: 'Highlights speichern', admResetHl: 'Auf Top 15 zurücksetzen', hlSaved: 'Highlights gespeichert.', hlReset: 'Zurückgesetzt auf Top 15.', hlErr: 'Speichern hat nicht geklappt.',
-    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admEdit: 'Bearbeiten', admSave: 'Speichern', admBy: 'Eingetragen von', admEditErr: 'Bitte gültiges Datum und 1–99 Spieler angeben.', admNoPlays: 'Noch keine Partien eingetragen.',
+    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admPlaysQ: 'Partien durchsuchen (Spiel, Gewinner, Name)', admNoMatch: 'Keine Treffer.', admEdit: 'Bearbeiten', admSave: 'Speichern', admBy: 'Eingetragen von', admEditErr: 'Bitte gültiges Datum und 1–99 Spieler angeben.', admNoPlays: 'Noch keine Partien eingetragen.',
     del: 'Löschen', delConfirm: 'Wirklich löschen?', unsaved: 'Ungespeicherte Änderungen',
     autoPause: 'Automatisches Weiterblättern anhalten', autoPlay: 'Automatisches Weiterblättern starten',
     dur: 'Dauer in Minuten (optional)', first: 'Erstpartie (mit Regelerklärung)', clubTime: 'Bei uns: ~{m} Min ({p} Sp.)', firstTag: 'Erstpartie', errDur: 'Bitte eine Dauer zwischen 1 und 1440 Minuten eingeben oder das Feld leer lassen.',
@@ -629,7 +631,7 @@ const TXT = {
     admin: 'Administration', adminNote: 'Only visible to people with edit access.', admCode: 'Change club code', admNewCode: 'New 4-digit code', admSaveCode: 'Save code',
     codeSaved: 'The new code is active.', codeErr: 'Saving didn’t work.', admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
     admAdd: 'Add a game', admAddBtn: 'Add', admSaveHl: 'Save highlights', admResetHl: 'Reset to top 15', hlSaved: 'Highlights saved.', hlReset: 'Reset to top 15.', hlErr: 'Saving didn’t work.',
-    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admEdit: 'Edit', admSave: 'Save', admBy: 'Logged by', admEditErr: 'Please enter a valid date and 1–99 players.', admNoPlays: 'No plays logged yet.',
+    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admPlaysQ: 'Search plays (game, winner, name)', admNoMatch: 'No matches.', admEdit: 'Edit', admSave: 'Save', admBy: 'Logged by', admEditErr: 'Please enter a valid date and 1–99 players.', admNoPlays: 'No plays logged yet.',
     del: 'Delete', delConfirm: 'Really delete?', unsaved: 'Unsaved changes',
     autoPause: 'Pause automatic slideshow', autoPlay: 'Start automatic slideshow',
     dur: 'Duration in minutes (optional)', first: 'First play (incl. rules explanation)', clubTime: 'At our club: ~{m} min ({p} pl.)', firstTag: 'First play', errDur: 'Please enter a duration between 1 and 1440 minutes, or leave the field empty.',
@@ -718,7 +720,9 @@ const all = D.g.map((x) => {
 const byId = {}; all.forEach((g) => { byId[g.id] = g; });
 // Sprache der Ausgabe: Vorbelegung für Spiele, deren Sprache bekannt ist; in der Verwaltung gespeicherte Werte gehen vor.
 const DEF_LANGS = { '191189 (deutsch)': ['de'], '191189 (englisch, KS)': ['en'], 242705: ['en'], 342444: ['en'], 412735: ['en'], 186751: ['en'], 242993: ['en'], 331398: ['en'],
-  322656: ['en'], 324767: ['en'], 324766: ['en'], 260934: ['en'], 276044: ['en'], 275923: ['en'], 408724: ['en'] };
+  322656: ['en'], 324767: ['en'], 324766: ['en'], 260934: ['en'], 276044: ['en'], 275923: ['en'], 408724: ['en'],
+  // Deutsche Titel in der Sammlung → deutsche Ausgabe
+  478: ['de'], 447243: ['de'], 223040: ['de'], 320718: ['de'], 195194: ['de'], 318184: ['de'], 30549: ['de'], 150658: ['de'], 15045: ['de'], 329839: ['de'], 91534: ['de'], 236475: ['de'], 12333: ['de'], 189932: ['de'], 1111: ['de'], 146496: ['de'], 147949: ['de'], 24480: ['de'], 437: ['de'], 282853: ['de'], 142271: ['de'], 244521: ['de'], 62871: ['de'], 391163: ['de'], 27710: ['de'], 263918: ['de'], 291874: ['de'], 145478: ['de'], 13: ['de'], 325: ['de'], 926: ['de'], 266192: ['de'], 1439: ['de'], 2719: ['de'], 119890: ['de'], 295488: ['de'], 342274: ['de'], 20824: ['de'], 284083: ['de'], 348220: ['de'] };
 const LANGS = ['de', 'en', 'fr'];
 // Vorbelegung aus der Inventurliste (Stand 11.11.2026): [Inventarnummer, Anschaffungsdatum, Zustand 1–6, Leihgeber/Spender (Vorname)]; „?“ = unbekannt.
 const DEF_META = {"142057":["N3000002","2024-01-01",2,"Robin"],"371042":["N3000022","2024-01-01",3,"Markus"],"112869":["N3000073","2024-02-03",2,"Roland"],"1084":["N3000074","2024-02-03",2,"Roland"],"1111":["N3000075","2024-02-03",2,"Roland"],"4355":["N3000076","2024-02-03",2,"Roland"],"146496":["N3000077","2024-02-03",2,"Roland"],"147949":["N3000079","2024-02-03",2,"Roland"],"1927":["N3000080","2024-02-03",2,"Roland"],"24480":["N3000083","2024-02-03",2,"Roland"],"245643":["N3000084","2024-02-03",2,"Roland"],"437":["N3000085","2024-02-03",2,"Roland"],"316995":["N3000081","2024-02-03",1,"Roland"],"303544":["N3000082","2024-02-03",1,"Roland"],"142271":["N3000102","2024-02-03",2,"Roland"],"257700":["N3000088","2024-02-16",2,"Markus"],"282853":["N3000089","2024-02-16",2,"Markus"],"256406":["N3000090","2024-02-16",2,"Markus"],"811":["N3000091","2024-02-16",2,"Markus"],"195194":["N3000093","2024-02-16",2,"Markus"],"28143":["N3000094","2024-02-16",2,"Markus"],"359970":["N3000101","2024-02-03",1,"Johannes"],"160477":["N3000163","2024-07-06",3,"Gino"],"342274":["N3000163","2024-07-06",3,"Gino"],"219326":["N3000163","2024-07-06",3,"Gino"],"244521":["N3000164","2024-07-06",3,"Gino"],"216497":["N3000165","2024-07-06",3,"Gino"],"204583":["N3000166","2024-07-06",3,"Gino"],"378565":["N3000169","2024-07-06",3,"Gino"],"309430":["N3000170","2024-07-06",3,"Gino"],"138788":["N3000171","2024-07-06",3,"Gino"],"62871":["N3000172","2024-07-06",3,"Gino"],"200680":["N3000173","2024-07-06",3,"Gino"],"391163":["N3000174","2024-07-06",3,"Gino"],"27710":["N3000175","2024-07-06",3,"Gino"],"230358":["N3000176","2024-07-06",3,"Gino"],"263918":["N3000177","2024-07-06",3,"Gino"],"4491":["N3000178","2024-07-06",3,"Gino"],"392756":["N3000195","2024-04-01",1,"Markus"],"291874":["N3000196","2025-05-30",1,"Markus"],"184287":["N3000223","",2,"Valentin"],"226162":["N3000224","",2,"Valentin"],"145478":["N3000225","",2,"Valentin"],"21550":["","",0,"Micha"],"13":["","",0,"Micha"],"325":["","",0,"Micha"],"926":["","",0,"Micha"],"248065":["","",0,"Micha"],"266192":["","",0,"Patrick"],"4040":["","",0,"Robin"],"1439":["","",0,"Robin"],"423577":["","",0,"Markus"],"269967":["","",0,"?"],"343384":["","",0,"?"],"343383":["","",0,"?"],"1298":["","",0,"?"],"1218":["","",0,"?"],"2719":["","",0,"?"],"25669":["","",0,"?"],"119890":["","",0,"?"],"295488":["","",0,"?"],"8670":["","",0,"?"],"284083":["","",0,"?"],"20824":["","",0,"?"],"143884":["","",0,"?"],"181336":["","",0,"?"],"374039":["","",0,"?"],"155708":["","",0,"?"],"291508":["","",0,"?"],"331787":["","",0,"?"],"180852":["","",0,"?"],"338628":["","",0,"?"],"151947":["","",0,"?"],"348220":["","",0,"?"],"302425":["","",2,"Johannes"],"318184":["","",2,"Johannes"],"305096":["","",2,"Johannes"],"186751":["","",1,"Johannes"],"331398":["","",1,"Johannes"],"322656":["","",1,"Johannes"],"319910":["","",2,"Johannes"],"349606":["","",2,"Johannes"],"304531":["","",2,"Johannes"],"408724":["","",2,"Johannes"],"223040":["","",3,"Johannes"],"316287":["","",1,"Johannes"],"195856":["","",4,"Johannes"],"242705":["","",2,"Johannes"],"283137":["","",2,"Johannes"],"266967":["","",2,"Johannes"],"30549":["","",3,"Johannes"],"230802":["","",2,"Johannes"],"96848":["","",3,"Johannes"],"157526":["","",1,"Johannes"],"171131":["","",2,"Johannes"],"220308":["","",2,"Johannes"],"209001":["","",2,"Johannes"],"188866":["","",2,"Johannes"],"158899":["","",2,"Johannes"],"258135":["","",3,"Johannes"],"172242":["","",3,"Johannes"],"15062":["","",3,"Johannes"],"283863":["","",2,"Johannes"],"190400":["","",2,"Johannes"],"156129":["","",4,"Johannes"],"260934":["","",2,"Johannes"],"275923":["","",2,"Johannes"],"276044":["","",2,"Johannes"],"22827":["","",4,"Johannes"],"155821":["","",3,"Johannes"],"382054":["","",2,"Johannes"],"162886":["","",2,"Johannes"],"121921":["","",3,"Johannes"],"280136":["","",2,"Johannes"],"68448":["","",3,"Johannes"],"120217":["","",3,"Johannes"],"356123":["","",2,"Johannes"],"181304":["","",2,"Johannes"],"150658":["","",2,"Johannes"],"320718":["","",3,"Johannes"],"10547":["","",4,"Johannes"],"267370":["","",2,"Johannes"],"127096":["","",1,"Johannes"],"302723":["","",2,"Johannes"],"275530":["","",2,"Johannes"],"363369":["","",2,"Johannes"],"209778":["","",2,"Johannes"],"218417":["","",2,"Johannes"],"141572":["","",2,"Johannes"],"50912":["","",3,"Johannes"],"287952":["","",3,"Johannes"],"299252":["","",3,"Johannes"],"266966":["","",2,"Johannes"],"6249":["","",2,"Johannes"],"137269":["","",2,"Johannes"],"200847":["","",2,"Johannes"],"342444":["","",2,"Johannes"],"412735":["","",2,"Johannes"],"176361":["","",2,"Johannes"],"313262":["","",2,"Johannes"],"37046":["","",2,"Johannes"],"132531":["","",2,"Johannes"],"316554":["","",2,"Johannes"],"161936":["","",2,"Johannes"],"189932":["","",2,"Johannes"],"13308":["","",2,"Johannes"],"176494":["","",2,"Johannes"],"34585":["","",3,"Johannes"],"194655":["","",2,"Johannes"],"222531":["","",2,"Johannes"],"201808":["","",4,"Johannes"],"270836":["","",2,"Johannes"],"188834":["","",2,"Johannes"],"30933":["","",4,"Johannes"],"258779":["","",2,"Johannes"],"153938":["","",2,"Johannes"],"256680":["","",3,"Johannes"],"371433":["","",2,"Johannes"]};
@@ -1105,11 +1109,21 @@ function renderAdmin() {
       '<button type="button" class="icon-btn" data-act="down" aria-label="' + esc(t.down) + '"' + (i === hlDraft.ids.length - 1 ? ' disabled' : '') + '>↓</button>' +
       '<button type="button" class="icon-btn danger" data-act="rm" aria-label="' + esc(t.remove) + '">✕</button></div></div>';
   }).join('');
-  const avail = games.filter((g) => !hlDraft.ids.includes(g.id)).sort((a, b) => name(a).localeCompare(name(b), S.lang));
-  $('hlAdd').innerHTML = avail.map((g) => '<option value="' + g.id + '">' + esc(name(g)) + '</option>').join('');
+  fillHlAdd();
   if (hlDirty && !$('hlMsg').textContent) { $('hlMsg').className = 'note'; $('hlMsg').textContent = t.unsaved; }
+  renderAdmPlays();
+}
+function fillHlAdd() {
+  if (!hlDraft) return;
+  const q = $('hlQ').value.trim().toLowerCase();
+  const avail = games.filter((g) => !hlDraft.ids.includes(g.id) && (!q || g.nDe.toLowerCase().includes(q) || g.nEn.toLowerCase().includes(q))).sort((a, b) => name(a).localeCompare(name(b), S.lang));
+  $('hlAdd').innerHTML = avail.map((g) => '<option value="' + g.id + '">' + esc(name(g)) + '</option>').join('');
+}
+function renderAdmPlays() {
+  const t = T(), q = $('apQ').value.trim().toLowerCase();
+  const docs = q ? playDocs.filter(({ p }) => [playName(p), p.winner, p.loggedBy, p.note].some((v) => String(v || '').toLowerCase().includes(q))) : playDocs;
   if (playEdit && $('admPlays').querySelector('form[data-pedit]')) return; // offenes Bearbeiten nicht beim Auffrischen überschreiben
-  $('admPlays').innerHTML = playDocs.length ? playDocs.slice(0, 100).map(({ id, p }) => {
+  $('admPlays').innerHTML = docs.length ? docs.slice(0, 100).map(({ id, p }) => {
     if (playEdit === id) {
       const f = (lbl, html) => '<label class="field">' + esc(lbl) + html + '</label>';
       return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<form class="adm-edit" data-pedit="' + esc(id) + '">' +
@@ -1129,8 +1143,10 @@ function renderAdmin() {
       (p.loggedBy ? '<span class="meta">' + esc(fill(t.byTag, { n: p.loggedBy }) + (p.via === 'qr' ? ' (QR)' : '')) + '</span>' : '') +
       '<span class="acts"><button type="button" class="btn btn-quiet" data-pedit-open="' + esc(id) + '">' + esc(t.admEdit) + '</button>' +
       '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></span></div>';
-  }).join('') : '<p class="meta" style="margin:0">' + esc(t.admNoPlays) + '</p>';
+  }).join('') : '<p class="meta" style="margin:0">' + esc(q ? t.admNoMatch : t.admNoPlays) + '</p>';
 }
+$('hlQ').addEventListener('input', fillHlAdd);
+$('apQ').addEventListener('input', renderAdmPlays);
 
 function renderAll() { renderStatic(); renderFilters(); renderSlider(); renderGrid(); renderPlays(); renderAdmin(); renderStats(); renderParties(); renderView(); renderAdminLink(); if (logGame === GUEST_PENDING || (logGame && logGame.guest)) renderPick(); if (typeof renderAutoBtn === 'function') renderAutoBtn(); }
 
