@@ -1,4 +1,4 @@
-import { parseSearch, parseGeeklist, decodeXml } from '../src/bgg.js';
+import { parseSearch, parseGeeklist, parseCollection, decodeXml } from '../src/bgg.js';
 import assert from 'node:assert/strict';
 const xml = `<?xml version="1.0" encoding="utf-8"?><items total="4" termsofuse="https://boardgamegeek.com/xmlapi/termsofuse">
 <item type="boardgameexpansion" id="926"><name type="primary" value="CATAN: Seafarers"/><yearpublished value="1997"/></item>
@@ -14,3 +14,9 @@ const gl = parseGeeklist(`<geeklist id="1"><item id="1" objecttype="thing" subty
 assert.deepEqual(gl, [{ id: 13, n: 'CATAN & Co' }, { id: 14, n: 'X' }]);
 assert.equal(decodeXml('&#x41;&amp;&lt;'), 'A&<');
 console.log('bgg parser ok', r.map((x) => x.n));
+const col = parseCollection(`<items totalitems="3"><item objecttype="thing" objectid="13" subtype="boardgame" collid="1"><name sortindex="1">CATAN</name><yearpublished>1995</yearpublished><status own="1" prevowned="0"/></item>
+<item objecttype="thing" objectid="99" subtype="boardgame" collid="2"><name sortindex="1">Weg</name><status own="0" wishlist="1"/></item>
+<item objecttype="thing" objectid="926" subtype="boardgame" collid="3"><name sortindex="1">CATAN: Seafarers &amp; more</name><status own="1"/></item>
+<item objecttype="thing" objectid="13" subtype="boardgame" collid="4"><name sortindex="1">CATAN</name><status own="1"/></item></items>`);
+assert.deepEqual(col, [{ id: 13, n: 'CATAN', y: 1995 }, { id: 926, n: 'CATAN: Seafarers & more', y: null }]);
+console.log('bgg collection parser ok');

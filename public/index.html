@@ -193,7 +193,11 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .card.mem::after { content: ""; position: absolute; inset: 0; border: 3px solid var(--mem); border-radius: 8px; pointer-events: none; z-index: 10; }
 .card .cv-tl .src.mem { pointer-events: none; }
 .mem-own { font-size: 14px; color: var(--fg); }
-#mgAuth .or, #brAuth .or { display: none; }
+#mgAuth .or, #brAuth .or, #bgAuth .or { display: none; }
+.bg-list { max-height: 45vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; }
+.bg-list label { display: flex; gap: 10px; align-items: center; min-height: 34px; font-size: 14px; color: var(--fg); }
+.bg-list input { width: 18px; height: 18px; accent-color: #7b5cc4; flex: none; }
+.bg-list .meta { margin-left: auto; }
 .mg-list { display: flex; flex-direction: column; gap: 6px; }
 .mg-list .row { align-items: center; gap: 10px; }
 .br-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
@@ -408,7 +412,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   </section>
 
   <section class="panel recent" aria-labelledby="mgH">
-    <div class="rec-head"><h2 id="mgH" style="font-size:26px" data-t="mgTitle"></h2><button type="button" class="btn btn-quiet" id="mgAddBtn" data-t="mgAdd"></button></div>
+    <div class="rec-head"><h2 id="mgH" style="font-size:26px" data-t="mgTitle"></h2><span class="row"><button type="button" class="btn btn-quiet" id="bgOpenBtn" data-t="bgOpen"></button><button type="button" class="btn btn-quiet" id="mgAddBtn" data-t="mgAdd"></button></span></div>
     <p class="meta" style="margin:0" data-t="mgIntro"></p>
     <div class="mg-list" id="mgMine"></div>
   </section>
@@ -648,6 +652,19 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div class="acts"><button type="button" class="btn btn-quiet" id="mgCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="mgSave" data-t="mgSave"></button></div>
   </form>
 </dialog>
+<dialog class="info wide" id="bgDlg" aria-labelledby="bgT">
+  <h3 id="bgT" data-t="bgTitle"></h3>
+  <form class="mg" id="bgForm">
+    <p class="meta" style="margin:0" data-t="bgNote"></p>
+    <div class="row"><label class="field" style="flex:1 1 220px"><span data-t="bgUser"></span><input type="text" id="bgUser" maxlength="60" autocomplete="off" spellcheck="false"></label><button type="button" class="btn btn-quiet" id="bgLoad" data-t="bgLoad"></button></div>
+    <div id="bgListWrap" hidden><div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="bgAll" data-t="bgAll" style="min-height:36px"></button><button type="button" class="btn btn-quiet" id="bgNone" data-t="bgNone" style="min-height:36px"></button><span class="note" id="bgCount"></span></div>
+      <div class="bg-list" id="bgList"></div></div>
+    <label class="consent"><input type="checkbox" id="bgConsent" checked><span id="bgConsentTxt"></span></label>
+    <div class="auth-box" id="bgAuth" data-authbox></div>
+    <span id="bgMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="bgCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="bgImport" disabled></button></div>
+  </form>
+</dialog>
 <dialog class="info wide" id="brDlg" aria-labelledby="brT">
   <h3 id="brT"></h3>
   <form class="mg" id="brForm">
@@ -717,6 +734,9 @@ const TXT = {
     mgConsentErr: 'Bitte bestätige, dass dein Discord-Name angezeigt werden darf.', mgMembersOnly: 'Das geht nur mit der Mitgliederrolle auf unserem Discord.', mgDup: 'Dieses Spiel hast du schon eingetragen.', mgTooMany: 'Du hast schon sehr viele Spiele eingetragen.', mgAdded: 'Hinzugefügt ✓',
     mgMine: 'Deine Spiele', mgAll: 'Alle Spiele von Mitgliedern (Verwaltung)',
     brTitle: 'Mitbringen anfragen: {n}', brIntro: 'Wir schreiben {o} im Bot-Kanal auf Discord an. Nimmt er oder sie einen Termin an, wird automatisch eine Spielrunde angelegt, in der ihr beide schon eingetragen seid.', brOwn: 'Das ist dein eigenes Spiel. Dich selbst kannst du nicht anfragen. Wenn du es spielen möchtest, biete unter „Mitspieler finden“ eine Runde damit an.',
+    bgOpen: 'Aus meiner BGG-Sammlung importieren', bgTitle: 'Aus BGG-Sammlung importieren', bgUser: 'Dein Benutzername auf BoardGameGeek', bgLoad: 'Sammlung laden', bgLoading: 'Lade Sammlung von BGG … (kann bei großen Sammlungen etwas dauern)',
+    bgNote: 'Gelesen werden nur Spiele, die in deiner BGG-Sammlung als „besitze ich“ markiert sind. Die Sammlung muss öffentlich sein. Du wählst danach aus, was übernommen wird.', bgAll: 'Alle', bgNone: 'Keine', bgHave: 'schon eingetragen',
+    bgImport: '{n} Spiele übernehmen', bgDone: '{n} Spiele übernommen ✓', bgEmpty: 'In dieser Sammlung ist kein Spiel als „besitze ich“ markiert.', bgNoUser: 'Diesen BGG-Benutzernamen gibt es nicht.', bgBusy: 'BGG bereitet die Sammlung gerade vor. Bitte in einer Minute noch einmal laden.', bgErr: 'BGG ist gerade nicht erreichbar.',
     brOwner: 'Wen fragen?', brDates: 'Terminvorschläge (bis zu 3)', brDatesNote: 'Der erste Termin ist Pflicht, die anderen sind optional.', brNote: 'Nachricht (optional)', brSend: 'Anfrage senden',
     brSent: 'Anfrage gesendet ✓ Die Antwort kommt im Bot-Kanal auf Discord.', brErrDates: 'Bitte mindestens einen Termin ab heute wählen.', brErrDup: 'Du hast dieses Spiel schon angefragt. Warte bitte auf die Antwort in Discord.', brErrOff: 'Der Discord-Bot ist gerade nicht erreichbar.', brErrGone: 'Dieses Mitglied ist nicht mehr auf dem Server, das Spiel wurde entfernt.', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
     ptHowSum: 'Wer darf wann eine Runde anbieten? So richtest du Discord ein', ptHowT: 'Wer kann wann eine Runde anbieten?', ptHowMember: 'Mitglieder (mit der Mitgliederrolle auf unserem Discord) an jedem Tag.', ptHowAll: 'Alle anderen an unseren Stammtisch-Tagen: {r} (nächste Termine: {n}). Dabei stellst du dich im Hinweis kurz vor, damit die anderen wissen, mit wem sie spielen.', ptHowEv: 'Mit einem Event-Code vom Orga-Team an den Eventtagen, auch ohne Discord.', ptHowDcT: 'So richtest du Discord ein', ptHowDc1: 'Tritt unserem Discord-Server bei (Button unten) und lies die Regeln.', ptHowDc2: 'Hol dir dort die Brettspiel-Rolle, damit du den Brettspiel-Kanal siehst. Ohne diese Rolle klappt die Anmeldung hier nicht.', ptHowDc3: 'Klicke hier auf „Runde anbieten“ und dann auf „Mit Discord anmelden“. Geht das in deinem Browser nicht, tippe im Brettspiel-Kanal /code und gib den Code hier einmal ein.', ptHowDc4: 'Du kannst Runden auch direkt in Discord mit /party anbieten. Mitspielende tragen sich dort per Klick ein.', ptHowJoin: 'Zum N3-Discord', ptHowNoMember: 'Ohne Mitgliederrolle sind auf dieser Seite nur Stammtisch-Tage wählbar.',
@@ -791,6 +811,9 @@ const TXT = {
     mgConsentErr: 'Please confirm that your Discord name may be shown.', mgMembersOnly: 'This needs the member role on our Discord.', mgDup: 'You have already added this game.', mgTooMany: 'You have already added a lot of games.', mgAdded: 'Added ✓',
     mgMine: 'Your games', mgAll: 'All member games (admin)',
     brTitle: 'Ask to bring: {n}', brIntro: 'We’ll ask {o} in the bot channel on Discord. If they accept a date, a game round is created automatically with both of you already signed up.', brOwn: 'This is your own game. You can’t ask yourself to bring it. If you want to play it, offer a game round under “Find players”.',
+    bgOpen: 'Import from my BGG collection', bgTitle: 'Import from BGG collection', bgUser: 'Your BoardGameGeek username', bgLoad: 'Load collection', bgLoading: 'Loading collection from BGG … (large collections can take a moment)',
+    bgNote: 'Only games marked as “owned” in your BGG collection are read. The collection must be public. You choose afterwards what to import.', bgAll: 'All', bgNone: 'None', bgHave: 'already added',
+    bgImport: 'Import {n} games', bgDone: '{n} games imported ✓', bgEmpty: 'No game in this collection is marked as owned.', bgNoUser: 'This BGG username doesn’t exist.', bgBusy: 'BGG is preparing the collection. Please load again in a minute.', bgErr: 'BGG is not reachable right now.',
     brOwner: 'Whom to ask?', brDates: 'Suggested dates (up to 3)', brDatesNote: 'The first date is required, the others are optional.', brNote: 'Message (optional)', brSend: 'Send request',
     brSent: 'Request sent ✓ The answer will come in the bot channel on Discord.', brErrDates: 'Please pick at least one date from today on.', brErrDup: 'You have already asked for this game. Please wait for the answer on Discord.', brErrOff: 'The Discord bot is not reachable right now.', brErrGone: 'This member is no longer on the server, the game has been removed.', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
     ptHowSum: 'Who can offer a game, and when? Setting up Discord', ptHowT: 'Who can offer a game, and when?', ptHowMember: 'Members (with the member role on our Discord) on any day.', ptHowAll: 'Everyone else on our regular game nights: {r} (next dates: {n}). Please introduce yourself briefly in the note so the others know who they’ll be playing with.', ptHowEv: 'With an event code from the organisers on the event days, even without Discord.', ptHowDcT: 'How to set up Discord', ptHowDc1: 'Join our Discord server (button below) and read the rules.', ptHowDc2: 'Pick up the board game role there so you can see the board game channel. Without it, signing in here won’t work.', ptHowDc3: 'Click “Offer a game” here and then “Sign in with Discord”. If that doesn’t work in your browser, type /code in the board game channel and enter the code here once.', ptHowDc4: 'You can also offer games directly in Discord with /party. Players join there with one click.', ptHowJoin: 'Go to the N3 Discord', ptHowNoMember: 'Without the member role only regular game nights can be picked on this page.',
@@ -2081,7 +2104,7 @@ $('mgMine').addEventListener('click', async (e) => {
   pendingMgDel = null;
   try { await api('DELETE', '/member-games/' + encodeURIComponent(id)); memRows = memRows.filter((r) => r.id !== id); buildMemGames(); renderGrid(); refreshAll(); } catch (x) {} renderMg();
 });
-function renderMgConsent() { $('mgConsentTxt').textContent = fill(T().mgConsent, { n: me ? me.name : T().mgYourName }); }
+function renderMgConsent() { const c = fill(T().mgConsent, { n: me ? me.name : T().mgYourName }); $('mgConsentTxt').textContent = c; $('bgConsentTxt').textContent = c; }
 function renderMgPick() {
   const t = T(); $('mgSel').hidden = !mgGame; $('mgSearchBox').hidden = !!mgGame;
   if (mgGame) { $('mgSelName').textContent = mgGame.n; $('mgSelMeta').textContent = mgGame.gameId ? (mgGame.y ? '(' + mgGame.y + ') · ' : '') + 'BGG #' + mgGame.gameId : '(' + t.gNoBgg + ')'; return; }
@@ -2155,7 +2178,54 @@ $('brForm').addEventListener('submit', async (e) => {
   try { await api('POST', '/member-games/' + encodeURIComponent(id) + '/request', { dates, note: $('brNote').value.trim().slice(0, 300) }); msg.textContent = t.brSent; setTimeout(() => { if ($('brDlg').open) $('brDlg').close(); }, 2500); }
   catch (x) { msg.className = 'err'; $('brSend').disabled = false; msg.textContent = mgErr(x); if (x && x.code === 'owner_gone') refreshAll(); }
 });
-['mgDlg', 'brDlg'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target === $(id)) $(id).close(); }));
+// BGG-Sammlung importieren: Benutzername eingeben, Liste laden, auswählen, übernehmen.
+var bgItems = [], bgHave = new Set();
+function bgSel() { return [...$('bgList').querySelectorAll('input[data-bg]:checked')].map((x) => bgItems[Number(x.dataset.bg)]); }
+function renderBgCount() { const n = bgSel().length; $('bgImport').textContent = fill(T().bgImport, { n }); $('bgImport').disabled = !n; $('bgCount').textContent = n + ' / ' + bgItems.filter((x) => !bgHave.has(x.id)).length; }
+function renderBgList() {
+  const t = T();
+  $('bgList').innerHTML = bgItems.map((x, i) => { const had = bgHave.has(x.id);
+    return '<label><input type="checkbox" data-bg="' + i + '"' + (had ? ' disabled' : ' checked') + '><span>' + esc(x.n) + (x.y ? ' <span class="note">(' + x.y + ')</span>' : '') + '</span>' + (had ? '<span class="meta">' + esc(t.bgHave) + '</span>' : '') + '</label>'; }).join('');
+  $('bgListWrap').hidden = !bgItems.length; renderBgCount();
+}
+$('bgList').addEventListener('change', renderBgCount);
+$('bgAll').onclick = () => { $('bgList').querySelectorAll('input[data-bg]:not(:disabled)').forEach((x) => { x.checked = true; }); renderBgCount(); };
+$('bgNone').onclick = () => { $('bgList').querySelectorAll('input[data-bg]').forEach((x) => { x.checked = false; }); renderBgCount(); };
+function openBg() {
+  const t = T(); bgItems = []; bgHave = new Set(); renderBgList(); $('bgConsent').checked = true;
+  $('bgUser').value = lsGet('n3-bgg-user'); $('bgMsg').textContent = ''; $('bgMsg').className = '';
+  if (me && me.member === false) { $('bgMsg').className = 'err'; $('bgMsg').textContent = t.mgMembersOnly; }
+  renderAuth(); $('bgDlg').showModal(); $('bgUser').focus();
+}
+$('bgOpenBtn').onclick = openBg;
+$('bgCancel').onclick = () => $('bgDlg').close();
+async function loadBg() {
+  const t = T(), msg = $('bgMsg'), user = $('bgUser').value.trim(); msg.className = 'err';
+  if (!me) { msg.textContent = t.errLogin; return; }
+  if (me.member === false) { msg.textContent = t.mgMembersOnly; return; }
+  if (user.length < 2) { $('bgUser').focus(); return; }
+  $('bgLoad').disabled = true; msg.className = 'note'; msg.textContent = t.bgLoading;
+  try {
+    const r = await api('GET', '/member-games/bgg?user=' + encodeURIComponent(user)); lsSet('n3-bgg-user', user);
+    bgItems = r.items || []; bgHave = new Set(r.have || []); renderBgList();
+    msg.className = bgItems.length ? '' : 'err'; msg.textContent = bgItems.length ? '' : t.bgEmpty;
+  } catch (x) { const c = x && x.code; msg.className = 'err'; msg.textContent = c === 'bgg_no_user' ? t.bgNoUser : c === 'bgg_busy' ? t.bgBusy : c === 'bgg_error' || c === 'no_token' ? t.bgErr : mgErr(x); }
+  $('bgLoad').disabled = false;
+}
+$('bgLoad').onclick = loadBg;
+$('bgUser').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); loadBg(); } });
+$('bgForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('bgMsg'), sel = bgSel(); msg.className = 'err';
+  if (!me) { msg.textContent = t.errLogin; return; }
+  if (!sel.length) return;
+  if (!$('bgConsent').checked) { msg.textContent = t.mgConsentErr; return; }
+  $('bgImport').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    const r = await api('POST', '/member-games/import', { items: sel.map((x) => ({ id: x.id, n: x.n, y: x.y })), consent: true });
+    msg.textContent = fill(t.bgDone, { n: r.added }); sel.forEach((x) => bgHave.add(x.id)); renderBgList(); loadMy(); refreshAll();
+  } catch (x) { msg.className = 'err'; msg.textContent = mgErr(x); renderBgCount(); }
+});
+['mgDlg', 'brDlg', 'bgDlg'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target === $(id)) $(id).close(); }));
 
 /* ---------- Ansichten (Tabs) ---------- */
 const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : 'collection');
@@ -2219,7 +2289,7 @@ function renderAuth() {
   const edit = typeof pEditId !== 'undefined' && !!pEditId, ev = typeof evMode !== 'undefined' && evMode;
   $('pAuth').hidden = edit || ev; $('pCodeWrap').hidden = edit || ev || !!me;
   $('meLink').hidden = !me; if (me) $('meLink').textContent = fill(T().logoutN, { n: me.name });
-  $('mgAuth').hidden = !!me; $('brAuth').hidden = !!me; if (typeof renderMgConsent === 'function') renderMgConsent();
+  $('mgAuth').hidden = !!me; $('brAuth').hidden = !!me; $('bgAuth').hidden = !!me; if (typeof renderMgConsent === 'function') renderMgConsent();
   if (typeof applyEvDates === 'function' && !$('pModal').hidden) applyEvDates();
 }
 function startLogin() {

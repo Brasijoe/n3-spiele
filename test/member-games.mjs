@@ -57,6 +57,16 @@ assert.equal(list.length, 2); const cat = list.find((x) => x.id === mg); assert.
 assert.deepEqual((await (await call('GET', '/my', eva)).json()).memberGames, [mg]);
 console.log('add member games ok (server name shown, consent required, members only)');
 
+// Import aus der BGG-Sammlung (ausgewählte Einträge): Zustimmung nötig, Doppelte werden übersprungen
+r = await call('POST', '/member-games/import', eva, { items: [{ id: 822, n: 'Carcassonne', y: 2000 }] }); assert.equal((await r.json()).error, 'consent_missing');
+r = await call('POST', '/member-games/import', gast, { items: [{ id: 822, n: 'Carcassonne' }], consent: true }); assert.equal((await r.json()).error, 'members_only');
+r = await call('POST', '/member-games/import', eva, { items: [{ id: 822, n: 'Carcassonne', y: 2000 }, { id: 13, n: 'CATAN' }, { id: 822, n: 'Carcassonne' }, { id: 0, n: 'x' }], consent: true });
+assert.deepEqual(await r.json(), { added: 1, skipped: 2 });
+assert.equal((await (await fetch(W + '/member-games')).json()).filter((x) => x.owner === 'Eva vom Server').length, 2);
+r = await call('GET', '/member-games/bgg?user=x', eva); assert.equal(r.status, 400);
+console.log('bgg import ok');
+await call('DELETE', '/member-games/' + (await (await fetch(W + '/member-games')).json()).find((x) => x.gameId === 822).id, eva);
+
 // Löschen: nur Besitzer oder Admin
 assert.equal((await call('DELETE', '/member-games/' + mg2, eva)).status, 403);
 assert.equal((await call('DELETE', '/member-games/' + mg2, fritz)).status, 200);

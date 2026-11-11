@@ -73,3 +73,28 @@ async function fetchRetry(url, opts, tries = 4) {
   }
   return res;
 }
+
+// Sammlung eines BGG-Kontos (nur „besitze ich“). BGG liefert Erweiterungen hier mit subtype="boardgame"; Unterscheidung später über thing.
+export function parseCollection(xml) {
+  const items = [], seen = new Set();
+  for (const m of xml.matchAll(/<item\b([^>]*)>([\s\S]*?)<\/item>/g)) {
+    const id = +((/\bobjectid="(\d+)"/.exec(m[1]) || [])[1] || 0);
+    const nm = /<name\b[^>]*>([\s\S]*?)<\/name>/.exec(m[2]);
+    const yr = /<yearpublished>\s*(-?\d+)\s*<\/yearpublished>/.exec(m[2]);
+    const own = /<status\b[^>]*\bown="1"/.test(m[2]);
+    if (!id || !nm || !own || seen.has(id)) continue;
+    seen.add(id);
+    items.push({ id, n: decodeXml(nm[1].trim()), y: yr && +yr[1] > 0 ? +yr[1] : null });
+  }
+  return items.sort((a, b) => a.n.localeCompare(b.n));
+}
+
+export async function fetchCollection(env, user) {
+  if (!env.BGG_TOKEN) throw Object.assign(new Error('no_token'), { code: 'no_token' });
+  const res = await fetchRetry('https://boardgamegeek.com/xmlapi2/collection?own=1&username=' + encodeURIComponent(user), { headers: headers(env) }, 5);
+  if (res.status === 202 || res.status === 429) throw Object.assign(new Error('busy'), { code: 'bgg_busy' });
+  const text = await res.text();
+  if (/<errors?\b[\s\S]*?Invalid username/i.test(text) || res.status === 404) throw Object.assign(new Error('no user'), { code: 'bgg_no_user' });
+  if (!res.ok) throw Object.assign(new Error('bgg ' + res.status), { code: 'bgg_error' });
+  return parseCollection(text);
+}
