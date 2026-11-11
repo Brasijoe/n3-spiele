@@ -128,12 +128,13 @@ async function route(req, env, ctx, url) {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
     if (!req.headers.has('x-session')) return json({ plays: [], parties: [] });
     const u = await checkMember(req, env, ip); if (u.err) return fail(u.err === 'rate_limited' ? 429 : 401, u.err);
-    await ensurePlayCols(env);
+    await ensurePlayCols(env); await ensureCols(env);
     const p1 = await env.DB.prepare('SELECT id FROM plays WHERE by_discord = ?1 ORDER BY created_at DESC LIMIT 500').bind(u.member.discord_id).all();
     const p2 = await env.DB.prepare('SELECT id FROM parties WHERE host_discord = ?1 ORDER BY date DESC LIMIT 200').bind(u.member.discord_id).all();
     const member = isMember(await getBooking(env), u.member.roles);
-    const p3 = await env.DB.prepare('SELECT id FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
-    return json({ name: u.member.name, member, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id) });
+    const p3 = await env.DB.prepare('SELECT id, src FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
+    const bggUser = p3.results.some((r) => r.src === 'bgg') ? ((await env.DB.prepare('SELECT bgg_user FROM members WHERE discord_id = ?1').bind(u.member.discord_id).first().catch(() => null)) || {}).bgg_user || '' : '';
+    return json({ name: u.member.name, member, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();

@@ -383,6 +383,14 @@ export async function ensureCols(env) {
   // Discord-Rollen (JSON) für die Mitgliederregel beim Runden-Anbieten.
   const mc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('members')").all()).results.map((r) => r.name));
   if (!mc.has('roles')) await env.DB.prepare('ALTER TABLE members ADD COLUMN roles TEXT').run();
+  if (!mc.has('bgg_user')) await env.DB.prepare('ALTER TABLE members ADD COLUMN bgg_user TEXT').run();
+  // Herkunft der Mitgliederspiele ('bgg' = aus der BGG-Sammlung importiert; nur diese entfernt ein Abgleich automatisch).
+  const gc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('member_games')").all()).results.map((r) => r.name));
+  if (!gc.has('src')) {
+    await env.DB.prepare('ALTER TABLE member_games ADD COLUMN src TEXT').run();
+    // Bisherige Importe erkennen: mehrere Spiele derselben Person mit identischem Zeitstempel stammen aus einem BGG-Import.
+    await env.DB.prepare("UPDATE member_games SET src = 'bgg' WHERE (discord_id, created_at) IN (SELECT discord_id, created_at FROM member_games GROUP BY discord_id, created_at HAVING COUNT(*) > 1)").run();
+  }
   colsOk = true;
 }
 

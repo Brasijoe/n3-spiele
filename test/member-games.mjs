@@ -61,7 +61,13 @@ console.log('add member games ok (server name shown, consent required, members o
 r = await call('POST', '/member-games/import', eva, { items: [{ id: 822, n: 'Carcassonne', y: 2000 }] }); assert.equal((await r.json()).error, 'consent_missing');
 r = await call('POST', '/member-games/import', gast, { items: [{ id: 822, n: 'Carcassonne' }], consent: true }); assert.equal((await r.json()).error, 'members_only');
 r = await call('POST', '/member-games/import', eva, { items: [{ id: 822, n: 'Carcassonne', y: 2000 }, { id: 13, n: 'CATAN' }, { id: 822, n: 'Carcassonne' }, { id: 0, n: 'x' }], consent: true });
-assert.deepEqual(await r.json(), { added: 1, skipped: 2 });
+assert.deepEqual(await r.json(), { added: 1, skipped: 2, removed: 0 });
+assert.equal((await (await call('GET', '/my', eva)).json()).bggSynced, true);
+// Abgleich: Entfernen nur eigener Spiele
+const carc = (await (await fetch(W + '/member-games')).json()).find((x) => x.gameId === 822 || x.game === 'Carcassonne').id;
+r = await call('POST', '/member-games/import', fritz, { items: [], remove: [carc] }); assert.equal((await r.json()).removed, 0);
+r = await call('POST', '/member-games/import', eva, { items: [], remove: [carc] }); assert.deepEqual(await r.json(), { added: 0, skipped: 0, removed: 1 });
+r = await call('POST', '/member-games/import', eva, { items: [{ id: 822, n: 'Carcassonne', y: 2000 }], consent: true }); assert.equal((await r.json()).added, 1);
 assert.equal((await (await fetch(W + '/member-games')).json()).filter((x) => x.owner === 'Eva vom Server').length, 2);
 r = await call('GET', '/member-games/bgg?user=x', eva); assert.equal(r.status, 400);
 console.log('bgg import ok');
