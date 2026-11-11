@@ -695,7 +695,7 @@ const all = D.g.map((x) => {
   if (p1 === 1) feel.push('solo');
   if (bestR.some(([lo, hi]) => lo <= 2 && 2 <= hi)) feel.push('duo');
   const desc = D.desc[id];
-  return { key: id + (suffix ? suffix : ''), id, nDe, nEn, ldBgg: typeof lang === 'number' ? lang : -1, ld: -1, langs: [], ownFlag: own === 'J' ? 'Johannes' : 'N3', ownDef: '', owner: '', added: '', y, p1, p2, t1, t2, t, a, r, br, u, w, rank, bestR, recR, cats, mechs, exp, feel,
+  return { key: id + (suffix ? suffix : ''), id, nDe, nEn, ldBgg: typeof lang === 'number' ? lang : -1, ld: -1, langs: [], ownFlag: own === 'J' ? 'Johannes' : '?', ownDef: '', owner: '', added: '', y, p1, p2, t1, t2, t, a, r, br, u, w, rank, bestR, recR, cats, mechs, exp, feel,
     types: String(D.sd[id] || '').split('').filter(Boolean), descDe: desc ? desc[0] : '', descEn: desc ? desc[1] : '',
     wl: w ? (w < 1.8 ? 0 : w < 2.4 ? 1 : w < 3.2 ? 2 : w < 4 ? 3 : 4) : 1, tl: t <= 30 ? 0 : t <= 60 ? 1 : t <= 120 ? 2 : 3,
     cover: D.cov[id] ? (String(D.cov[id])[0] === '/' ? D.cov[id] : 'covers/' + D.cov[id]) : '', link: 'https://boardgamegeek.com/boardgame/' + id, expList: [] };
