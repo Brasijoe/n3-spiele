@@ -420,6 +420,12 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
       <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="lgExport" data-t="admExport"></button><span class="note" data-t="admExportNote"></span></div>
       <span id="lgMsg" role="status" class="note"></span>
       <div class="lang-rows" id="lgList"></div>
+      <datalist id="ownerList"></datalist>
+      <details class="own-dir"><summary data-t="admOwnDir"></summary>
+        <p class="note" data-t="admOwnDirNote" style="margin:6px 0"></p>
+        <textarea id="ownDir" rows="8" spellcheck="false" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--fg)"></textarea>
+        <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="ownDirSave" data-t="admOwnDirSave"></button><span id="ownDirMsg" role="status" class="note"></span></div>
+      </details>
     </div>
     <div class="adm-block">
       <h3 data-t="admPlays"></h3>
@@ -605,7 +611,7 @@ const TXT = {
     secLang: 'Auf {l}', secNeutral: 'Sprachneutrale Spiele', secNeutralNote: 'Im Spiel ist kein Text nötig. Welche Sprache die Schachtel hat, spielt keine Rolle, nur die Regeln muss jemand erklären (Einschätzung der BGG-Community).',
     secMostly: 'Fast sprachneutrale Spiele', secMostlyNote: 'Nur wenig Text im Spiel: schnell gelernt oder mit einem kleinen Spickzettel gut spielbar (Einschätzung der BGG-Community).', secEmpty: 'Keine passenden Spiele.',
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
-    admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
+    admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', sortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
   en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
     prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
@@ -662,7 +668,7 @@ const TXT = {
     secLang: 'In {l}', secNeutral: 'Language-neutral games', secNeutralNote: 'No text is needed during play. The language of the box doesn’t matter, someone just has to explain the rules (rated by the BGG community).',
     secMostly: 'Mostly language-neutral games', secMostlyNote: 'Only a little text during play: quickly learned or easy to play with a small crib sheet (rated by the BGG community).', secEmpty: 'No matching games.',
     tagNeutral: 'language-neutral', tagMostly: 'mostly language-neutral', tipNeutral: 'Language-neutral: no text needed during play', tipMostly: 'Mostly language-neutral: only a little text during play',
-    admLang: 'Language, owner and inventory data', admLangNote: 'Language of our copy, language dependence, owner and since when the game is in the collection. Every change is saved right away. Without a language a game only shows up in the language filter if it is (mostly) language-neutral. Language dependence comes from BGG and can be overridden here.', admLangQ: 'Search game', admLangOnlyEmpty: 'Only games without a language', admLangErr: 'Saving didn’t work.', admLangOk: 'Saved: {n}',
+    admOwnDir: 'Owner directory (full names)', admOwnDirNote: 'One line per person: short name = full name. Visible to admins only; the full name shows as a suggestion, on hover and in the Excel export (Leihgeber/Spender).', admOwnDirSave: 'Save directory', admOwnDirOk: 'Saved ({n} names).', admLang: 'Language, owner and inventory data', admLangNote: 'Language of our copy, language dependence, owner and since when the game is in the collection. Every change is saved right away. Without a language a game only shows up in the language filter if it is (mostly) language-neutral. Language dependence comes from BGG and can be overridden here.', admLangQ: 'Search game', admLangOnlyEmpty: 'Only games without a language', admLangErr: 'Saving didn’t work.', admLangOk: 'Saved: {n}',
     owner: 'Owner', ownerUnknown: '?', addedOn: 'In the collection since', inv: 'Inventory number', zLabel: 'Condition', zNames: ['New', 'Very good', 'Good', 'Damaged', 'Needs repair', 'Unusable'], ldLabel: 'Language dependence', ldNames: ['language-neutral (no text)', 'mostly language-neutral (little text)', 'moderate text', 'lots of text', 'unplayable without the language'], ldUnknown: 'unknown', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'mostly neutral', 'moderate', 'lots of text', 'unplayable'], colGame: 'Game', sortBy: 'Sort by {c}', colLd: 'Lang. dep.', colInv: 'Inv. no.', infoMore: 'Details', admExport: 'Export to Excel', admExportNote: 'All games with the columns of the inventory list, plus owner, date, language and BGG data.' },
 };
 const EXPB = { 412735: 342444, 324767: 322656, 324766: 322656, 276044: 260934, 275923: 260934, 242993: 186751, 349606: 319910, 226162: 184287, 325: 13, 926: 13, 181336: 143884, 342274: 160477, 219326: 160477 };
@@ -751,6 +757,8 @@ const games = all.filter((g) => !EXPB[g.id]);
 const top = (key) => { const c = {}; games.forEach((g) => g[key].forEach((k) => { c[k] = (c[k] || 0) + 1; })); return Object.keys(c).sort((a, b) => c[b] - c[a]).slice(0, 18).map((k) => ({ idx: +k, n: c[k] })); };
 const topCats = top('cats'), topMechs = top('mechs');
 const defaultHl = games.filter((g) => !g.exp).sort((a, b) => b.br - a.br).slice(0, 15);
+let ownerDir = {}; // Besitzer-Verzeichnis (nur Admin, vom Server)
+const ownFull = (o) => (ownerDir[o] && ownerDir[o] !== o ? o + ' (' + ownerDir[o] + ')' : o);
 let hlCfg = null, highlights = defaultHl, canEdit = false, hlDraft = null, hlDirty = false, playDocs = [], pendingDel = null;
 const descFor = (g) => { const c = hlCfg && hlCfg.desc && hlCfg.desc[g.id]; return c ? c : [g.descDe, g.descEn]; };
 function applyHl() {
@@ -964,7 +972,7 @@ function renderGrid() {
     const n = name(g), pc = playCount[g.id] || 0;
     // Besitzer und Aufnahmedatum erscheinen erst beim Überfahren (oder Antippen) des Covers.
     // Besitzer vorerst nur für Admins sichtbar.
-    const infoParts = (canEdit ? '<span><b>' + esc(t.owner) + ':</b> ' + esc(g.owner === '?' ? t.ownerUnknown : g.owner) + '</span>' : '') + (g.added ? '<span><b>' + esc(t.addedOn) + ':</b> ' + esc(g.added.split('-').reverse().join('.')) + '</span>' : '');
+    const infoParts = (canEdit ? '<span><b>' + esc(t.owner) + ':</b> ' + esc(g.owner === '?' ? t.ownerUnknown : ownFull(g.owner)) + '</span>' : '') + (g.added ? '<span><b>' + esc(t.addedOn) + ':</b> ' + esc(g.added.split('-').reverse().join('.')) + '</span>' : '');
     const info = infoParts ? '<div class="cv-info">' + infoParts + '</div>' : '';
     return '<article class="card" tabindex="-1"><div class="cv" data-cvinfo>' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + badge(g, 44) +
       '<div class="cv-tl">' + (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + lnIcon(g) + '</div>' + info + '</div><div class="body">' +
@@ -1012,6 +1020,22 @@ $('plays').addEventListener('click', async (e) => {
 
 // Verwaltung: Sprache, Sprachabhängigkeit, Besitzer und Aufnahmedatum je Spiel (inkl. Erweiterungen).
 let lgSort = { col: 'name', dir: 1 };
+function renderOwnerList() {
+  const names = new Set(all.map((g) => g.owner).filter((o) => o && o !== '?').concat(Object.keys(ownerDir)));
+  $('ownerList').innerHTML = [...names].sort((a, b) => a.localeCompare(b, 'de')).map((o) => '<option value="' + esc(o) + '"' + (ownerDir[o] ? ' label="' + esc(ownerDir[o]) + '"' : '') + '></option>').join('');
+}
+async function loadOwners() {
+  if (!canEdit) return;
+  try { ownerDir = (await api('GET', '/config/owners')) || {}; } catch (e) { ownerDir = {}; }
+  if (!$('ownDir').matches(':focus')) $('ownDir').value = Object.entries(ownerDir).map(([k, v]) => k + ' = ' + v).join('\n');
+  renderOwnerList(); renderLangAdmin(); renderGrid();
+}
+$('ownDirSave').onclick = async () => {
+  const t = T(), names = {};
+  $('ownDir').value.split('\n').forEach((l) => { const i = l.indexOf('='); if (i > 0) { const k = l.slice(0, i).trim(), v = l.slice(i + 1).trim(); if (k && v) names[k] = v; } });
+  try { ownerDir = (await api('PUT', '/config/owners', { names })) || {}; $('ownDirMsg').className = 'note ok'; $('ownDirMsg').textContent = fill(t.admOwnDirOk, { n: Object.keys(ownerDir).length }); renderOwnerList(); renderLangAdmin(); renderGrid(); }
+  catch (e) { $('ownDirMsg').className = 'err'; $('ownDirMsg').textContent = t.admLangErr; }
+};
 function renderLangAdmin() {
   const box = $('lgList'); if (!canEdit || box.contains(document.activeElement)) return;
   const t = T(), q = $('lgQ').value.trim().toLowerCase(), onlyEmpty = $('lgEmpty').checked;
@@ -1031,7 +1055,7 @@ function renderLangAdmin() {
     LANGS.map((l) => '<label title="' + l.toUpperCase() + '"><input type="checkbox" data-lg="' + l + '" aria-label="' + l.toUpperCase() + '"' + (g.langs.includes(l) ? ' checked' : '') + '></label>').join('') +
     '<select data-lgld aria-label="' + esc(t.ldLabel) + '" title="' + esc(t.ldLabel) + '"><option value="">' + esc(fill(t.ldBgg, { v: ldName(g.ldBgg) })) + '</option>' +
     t.ldShort.map((x, i) => '<option value="' + i + '" title="' + esc(t.ldNames[i]) + '"' + (g.ldSet && g.ld === i ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select>' +
-    '<input type="text" data-lgown maxlength="60" aria-label="' + esc(t.owner) + '" value="' + esc(g.owner) + '">' +
+    '<input type="text" data-lgown maxlength="60" list="ownerList" aria-label="' + esc(t.owner) + '" title="' + esc(ownFull(g.owner)) + '" value="' + esc(g.owner) + '">' +
     '<input type="date" data-lgdate aria-label="' + esc(t.addedOn) + '" value="' + esc(g.added) + '">' +
     '<input type="text" data-lginv maxlength="20" aria-label="' + esc(t.inv) + '" value="' + esc(g.inv) + '">' +
     '<select data-lgz aria-label="' + esc(t.zLabel) + '"><option value="0">–</option>' + t.zNames.map((x, i) => '<option value="' + (i + 1) + '"' + (g.z === i + 1 ? ' selected' : '') + '>' + (i + 1) + ' ' + esc(x) + '</option>').join('') + '</select></div>').join('');
@@ -1053,7 +1077,7 @@ $('lgList').addEventListener('change', async (e) => {
     z: (() => { const v = Number(row.querySelector('[data-lgz]').value); return v !== g.zDef ? v : 0; })() };
   try {
     const r = await api('PUT', '/config/gamemeta', body);
-    metaCfg[key] = r.meta; applyMeta(); $('lgMsg').className = 'ok'; $('lgMsg').textContent = fill(t.admLangOk, { n: name(g) }); renderGrid();
+    metaCfg[key] = r.meta; applyMeta(); renderOwnerList(); $('lgMsg').className = 'ok'; $('lgMsg').textContent = fill(t.admLangOk, { n: name(g) }); renderGrid();
   } catch (err) { $('lgMsg').className = 'err'; $('lgMsg').textContent = t.admLangErr; }
 });
 /* ---------- Excel-Export (xlsx ohne Fremdbibliothek: unkomprimiertes ZIP mit SpreadsheetML) ---------- */
@@ -1102,7 +1126,7 @@ function exportInventory() {
   const rows = [head].concat(list.map((g) => {
     const base = EXPB[g.id] && byId[EXPB[g.id]];
     const own = g.owner;
-    return [g.inv, g.nDe, 'Spiele', '', g.added ? g.added.split('-').reverse().join('.') : '', '', g.z ? g.z + ' ' + TXT.de.zNames[g.z - 1] : '', 'Brettspiel Abteilung', g.owner === 'N3' || g.owner === '?' ? '' : g.owner, '', 'BGG-ID ' + g.id,
+    return [g.inv, g.nDe, 'Spiele', '', g.added ? g.added.split('-').reverse().join('.') : '', '', g.z ? g.z + ' ' + TXT.de.zNames[g.z - 1] : '', 'Brettspiel Abteilung', g.owner === 'N3' || g.owner === '?' ? '' : (ownerDir[g.owner] || g.owner), '', 'BGG-ID ' + g.id,
       g.id, g.nEn, g.exp || base ? 'Erweiterung' : 'Grundspiel', base ? base.nDe : '', own, g.added ? g.added.split('-').reverse().join('.') : '',
       g.langs.map((l) => TXT.de.langNames[l]).join(', '), g.ld >= 0 ? ldTxt[g.ld] + (g.ldSet ? ' (angepasst)' : '') : '', g.y || '', fmt(g.p1, g.p2), g.t || '', g.r || '', playCount[g.id] || 0];
   }));
@@ -1721,7 +1745,7 @@ $('admLink').onclick = () => {
 $('admForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
   try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
-  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); }
   catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
 });
 /* ---------- QR-Code zum Eintragen (Verwaltung) ---------- */
@@ -1844,7 +1868,7 @@ watch('/config/highlights', (cfg) => {
   hlCfg = cfg; applyHl(); renderSlider();
   if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
 }, () => {}, 60000);
-if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
 })();
 </script>
 
