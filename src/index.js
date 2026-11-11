@@ -266,6 +266,17 @@ async function route(req, env, ctx, url) {
       return json({ ok: true, key, meta: e });
     }
   }
+  // Besitzer-Verzeichnis (Kurzname → vollständiger Name), nur für Admins lesbar, damit volle Namen nicht öffentlich sind.
+  if (path === '/config/owners') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    if (m === 'GET') { const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'owners'").first(); return json(row ? JSON.parse(row.value) : {}); }
+    if (m === 'PUT') {
+      const b = await body(req), names = {};
+      for (const [k, v] of Object.entries((b && b.names) || {}).slice(0, 100)) { const sk = str(k, 60), fv = str(v, 80); if (sk && fv) names[sk] = fv; }
+      await env.DB.prepare("INSERT INTO config(key, value) VALUES('owners', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(names)).run();
+      return json(names);
+    }
+  }
   if (path === '/config/club' && m === 'PUT') {
     if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
     const code = String((await body(req)).code || '').replace(/\D/g, '');
