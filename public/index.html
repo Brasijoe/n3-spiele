@@ -192,6 +192,10 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .card.mem { position: relative; }
 .card.mem::after { content: ""; position: absolute; inset: 0; border: 3px solid var(--mem); border-radius: 8px; pointer-events: none; z-index: 10; }
 .card .cv-tl .src.mem { pointer-events: none; }
+.src-tabs { display: flex; gap: 0; background: var(--surface); border-radius: 10px; padding: 6px; }
+.src-tabs button { flex: 1; min-height: 48px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); font-family: var(--font-display); font-weight: 700; font-size: 17px; cursor: pointer; }
+.src-tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.src-tabs button[data-src="mem"][aria-selected="true"] { background: var(--mem); color: #fff; }
 .mem-own { font-size: 14px; color: var(--fg); }
 #mgAuth .or, #brAuth .or, #bgAuth .or { display: none; }
 .bg-list { max-height: 45vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; }
@@ -368,6 +372,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     </div>
   </section>
 
+  <div class="src-tabs" role="tablist" id="srcTabs"><button type="button" role="tab" data-src="club" data-t="srcClub"></button><button type="button" role="tab" data-src="mem" data-t="srcMem"></button></div>
   <section class="panel filters" aria-label="Filter">
     <div class="row">
       <label class="field" style="flex: 1 1 280px;"><span data-t="search"></span>
@@ -970,7 +975,7 @@ function applyHl() {
   highlights = list.length ? list : defaultHl;
 }
 
-const S = { lang: 'de', slide: 0, src: [], langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
+const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
 try { const l = localStorage.getItem('n3-lang'); if (l === 'de' || l === 'en') S.lang = l; } catch (e) {}
 { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'de' || ql === 'en') S.lang = ql; }
 let clubTime = {};
@@ -1029,7 +1034,6 @@ const lnIcon = (g) => { if (g.ld !== 0 && g.ld !== 1) return ''; const tip = g.l
 const catNames = (g) => g.cats.map((c) => (de() ? D.catsDe : D.cats)[c]);
 
 function match(g) {
-  if (S.src.length && !S.src.includes(g.mem ? 'mem' : 'club')) return false;
   if (S.q) { const q = S.q.toLowerCase(); if (!g.nDe.toLowerCase().includes(q) && !g.nEn.toLowerCase().includes(q)) return false; }
   if (S.players.length) {
     const ok = S.players.some((p) => {
@@ -1091,7 +1095,6 @@ function renderStatic() {
 function renderFilters() {
   const t = T();
   const groups = [
-    [t.gSrc, chips('src', [['club', t.srcClub], ['mem', t.srcMem]])],
     [t.gPlayers, chips('players', [[1, t.solo], ['only2', t.only2], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7+']])],
     [t.gWeight, chips('weight', t.weights.map((w, i) => [i, w]))],
     [t.gTime, chips('time', t.times.map((w, i) => [i, w]))],
@@ -1238,7 +1241,8 @@ function memCard(g) {
 }
 function renderGrid() {
   const t = T();
-  let list = games.concat(memGames).filter(match);
+  const pool = S.src === 'mem' ? memGames : games;
+  let list = pool.filter(match);
   const sn = sortN();
   const sorters = { bestFor: (a, b) => (sn == null ? 0 : fitTier(a, sn) - fitTier(b, sn)) || b.r - a.r, rating: (a, b) => b.r - a.r, rank: (a, b) => (a.rank || 1e9) - (b.rank || 1e9), name: (a, b) => name(a).localeCompare(name(b), S.lang),
     weightAsc: (a, b) => (a.w || 9) - (b.w || 9), timeAsc: (a, b) => a.t - b.t, year: (a, b) => b.y - a.y, played: (a, b) => (playCount[b.id] || 0) - (playCount[a.id] || 0) || b.r - a.r };
@@ -1254,7 +1258,10 @@ function renderGrid() {
     secs.push({ h: t.secMostly, note: t.secMostlyNote, list: rest.filter((g) => g.ld === 1) });
     list = [].concat(...secs.map((x) => x.list));
   }
-  $('count').textContent = list.length + ' ' + t.of + ' ' + (games.length + memGames.length) + ' ' + t.games;
+  $('count').textContent = list.length + ' ' + t.of + ' ' + pool.length + ' ' + t.games;
+  document.querySelectorAll('#srcTabs [data-src]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.src === S.src)));
+  $('allH').textContent = S.src === 'mem' ? t.srcMem : t.allGames;
+  const gc = document.querySelector('.guest-cta'); if (gc) gc.hidden = S.src === 'mem';
   const card = (g) => {
     if (g.mem) return memCard(g);
     const n = name(g), pc = playCount[g.id] || 0;
@@ -1633,11 +1640,12 @@ $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
 [['recPct', 'recPct'], ['minRating', 'minRating'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
 $('reset').onclick = () => {
-  Object.assign(S, { src: [], langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  Object.assign(S, { langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
   $('q').value = ''; ['recPct', 'minRating', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
   renderAll();
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
+$('srcTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (!b || S.src === b.dataset.src) return; S.src = b.dataset.src; S.limit = PAGE; renderGrid(); });
 $('grid').addEventListener('click', (e) => { const cv = !e.target.closest('.ln-ic') && e.target.closest('[data-cvinfo]'); if (cv) { cv.classList.toggle('show-info'); return; } });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-bring]'); if (b) openBring(b.dataset.bring); });
 // Eigenes Mitgliederspiel: direkt „Runde anbieten“ mit dem Spiel vorausgewählt.
