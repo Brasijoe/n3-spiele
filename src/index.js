@@ -1,6 +1,7 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
+import { getBooking, cleanBooking, isMember, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
 
 const SALT = 'n3-club:';
@@ -105,6 +106,7 @@ async function body(req) {
 
 const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
 const int = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.round(Number(v)) : null);
+const NOTE_MAX = 500;
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 
 const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', createdAt: r.created_at });
@@ -127,7 +129,8 @@ async function route(req, env, ctx, url) {
     await ensurePlayCols(env);
     const p1 = await env.DB.prepare('SELECT id FROM plays WHERE by_discord = ?1 ORDER BY created_at DESC LIMIT 500').bind(u.member.discord_id).all();
     const p2 = await env.DB.prepare('SELECT id FROM parties WHERE host_discord = ?1 ORDER BY date DESC LIMIT 200').bind(u.member.discord_id).all();
-    return json({ name: u.member.name, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id) });
+    const member = isMember(await getBooking(env), u.member.roles);
+    return json({ name: u.member.name, member, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id) });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();
@@ -197,16 +200,25 @@ async function route(req, env, ctx, url) {
     if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req), ev = auth.event;
-    const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = ev ? str(b.host, 40) : auth.member.name;
+    const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = ev ? str(b.host, 40) : auth.member.name, note = str(b.note, NOTE_MAX);
     if (ev && !host) return fail(400, 'name_missing');
     if (!game || !host || !isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     if (ev && (date < ev.date_from || date > ev.date_to || date < berlinToday())) return fail(400, 'event_date');
+    // Ohne Mitgliederrolle (und ohne Event-Code): nur Stammtisch-Tage, und der Hinweis muss eine kurze Vorstellung enthalten.
+    if (!ev) {
+      const rule = await getBooking(env);
+      if (!isMember(rule, auth.member.roles)) {
+        if (date < berlinToday()) return fail(400, 'invalid');
+        const bad = checkBookingDate(rule, auth.member.roles, date); if (bad) return fail(400, bad);
+        if (!introOk(note)) return fail(400, 'intro_missing');
+      }
+    }
     // Spam-Bremse für Event-Codes (der Code wird weitergegeben): höchstens 60 Runden pro Tag und Event.
     if (ev && !(await allow(env, 'ev:' + ev.id, 60, 86400))) return fail(429, 'rate_limited');
     await ensureCols(env);
     const id = newId(), hostKey = newId() + newId();
     await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord, event_id, event_name) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12,?13,?14,?15)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), str(b.note, 200), new Date().toISOString(), ev ? null : auth.member.discord_id, ev ? ev.id : null, ev ? ev.name : null).run();
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), note, new Date().toISOString(), ev ? null : auth.member.discord_id, ev ? ev.id : null, ev ? ev.name : null).run();
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id, null, true)));
     return json({ id, hostKey });
   }
@@ -241,9 +253,18 @@ async function route(req, env, ctx, url) {
     const taken = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
     if (!isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     if (seats < taken) return fail(400, 'seats_taken');
+    const note = str(b.note, NOTE_MAX);
+    // Eigene Runde ohne Mitgliederrolle: ein neues Datum muss ein Stammtisch-Tag sein, die Vorstellung bleibt Pflicht.
+    if (who.member && !row.event_id) {
+      const rule = await getBooking(env);
+      if (!isMember(rule, who.member.roles)) {
+        if (date !== row.date) { if (date < berlinToday()) return fail(400, 'invalid'); const bad = checkBookingDate(rule, who.member.roles, date); if (bad) return fail(400, bad); }
+        if (!introOk(note)) return fail(400, 'intro_missing');
+      }
+    }
     const same = game === row.game && (b.gameId == null || int(b.gameId) === row.game_id);
     await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, guest = ?4, date = ?5, time = ?6, seats = ?7, note = ?8 WHERE id = ?9')
-      .bind(game, same ? row.game_id : int(b.gameId), same ? row.year : int(b.year), same ? row.guest : (b.guest ? 1 : 0), date, time, seats, str(b.note, 200), g[1]).run();
+      .bind(game, same ? row.game_id : int(b.gameId), same ? row.year : int(b.year), same ? row.guest : (b.guest ? 1 : 0), date, time, seats, note, g[1]).run();
     if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
     return json({ ok: true });
   }
@@ -309,6 +330,21 @@ async function route(req, env, ctx, url) {
       await env.DB.prepare("INSERT INTO config(key, value) VALUES('owners', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(names)).run();
       return json(names);
     }
+  }
+  // Runden-Regeln: Stammtisch-Tage (öffentlich, für den Kalender im Dialog) und Mitgliederrolle (nur Admin sieht die ID).
+  if (path === '/booking' && m === 'GET') {
+    const rule = await getBooking(env), today = berlinToday();
+    const r = json({ memberRule: !!rule.memberRole, weekdays: rule.weekdays, monthly: rule.monthly, extra: rule.extra, skip: rule.skip, next: nextStammtische(today, rule, 6), today, introMin: INTRO_MIN, discordUrl: env.DISCORD_URL || '' });
+    r.headers.set('cache-control', 'public, max-age=60'); return r;
+  }
+  if (path === '/admin/booking' && (m === 'GET' || m === 'PUT')) {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    if (m === 'PUT') {
+      const v = cleanBooking(await body(req));
+      await env.DB.prepare("INSERT INTO config(key, value) VALUES('booking', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(v)).run();
+    }
+    const rule = await getBooking(env);
+    return json({ ...rule, next: nextStammtische(berlinToday(), rule, 8) });
   }
   if (path === '/config/club' && m === 'PUT') {
     if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');

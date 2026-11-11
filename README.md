@@ -156,6 +156,20 @@ Einrichtung (einmalig):
 
 Test: `node test/web-login.mjs` gegen `test/reset.sh` mit einem Mock-Discord (siehe Kopf der Datei).
 
+## Wer darf wann eine Runde anbieten? (Mitglieder und Stammtisch-Tage)
+
+- **Mitglieder** (Discord-Rolle, z. B. „Mitglied“) können Runden an jedem Tag anbieten, auf der Webseite und mit `/party`.
+- **Alle anderen** nur an **Stammtisch-Tagen** (Standard: jeden Dienstag und am ersten Samstag im Monat). Im Kalender des Dialogs sind die übrigen Tage gesperrt. Außerdem ist der Hinweis Pflicht und muss eine kurze Vorstellung enthalten (mind. 40 Zeichen).
+- **Event-Code**: davon ausgenommen, es gelten wie bisher nur die Eventtage.
+
+Einstellungen in der Verwaltung unter „Runden: Mitglieder und Stammtisch-Tage“: Rollen-ID der Mitglieder, wöchentliche und monatliche Termine, zusätzliche Tage und ausfallende Tage (gespeichert in `config`, Schlüssel `booking`). Solange dort nichts gespeichert wurde, gilt `DISCORD_MEMBER_ROLE_ID` aus `wrangler.toml` als Rolle. Rollen-ID leer = keine Einschränkung. Die Rollen werden bei der Anmeldung und danach höchstens alle 10 Minuten über den Bot gelesen (Spalte `members.roles`); in Discord kommen sie direkt mit dem Befehl.
+
+Der Kalender auf nerd-nexus.de/termine (WordPress-Plugin EventPrime) bietet keine lesbare Schnittstelle mit Daten (REST nur Namen, keine iCal-Adresse) und ist nicht aktuell gepflegt. Deshalb kommen die Stammtisch-Tage aus der Regel in der Verwaltung.
+
+Nach dem Deploy einmal „Discord-Befehle registrieren“ klicken (neue Beschreibungen bei `/party`).
+
+Test: `node test/booking.mjs` (siehe Kopf der Datei).
+
 ## Persönliche Codes (statt Vereinscode)
 
 Mitglieder holen sich auf dem Discord-Server mit `/code` einen persönlichen 8-stelligen Code (nur für sie sichtbar). Damit legen sie auf der Webseite Runden an oder tragen Partien ein; der Browser merkt sich den Code. Die Runde trägt den Discord-Namen und gehört dem Discord-Konto, der Ersteller kann sie also auch in Discord über „Verwalten“ ändern. Ein neues `/code` macht den alten ungültig. Wer den Server verlässt, verliert den Code (Prüfung höchstens alle 10 Minuten, braucht `DISCORD_GUILD_ID` und den Bot-Token). Der Code wird nur als Hash gespeichert (Tabelle `members`).

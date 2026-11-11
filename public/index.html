@@ -236,6 +236,21 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .never { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* Mitspieler finden */
+.pt-how { display: grid; gap: 10px; font-size: 15px; color: var(--text); border-top: 1px solid var(--line); padding-top: 14px; }
+.pt-how h3 { font-size: 17px; margin: 0; color: var(--fg); }
+.pt-how ul, .pt-how ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.pt-how .btn-discord { background: #5865f2; color: #fff; border: 0; text-transform: none; letter-spacing: 0; justify-self: start; }
+.cal { border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px; display: grid; gap: 6px; background: var(--surface); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; color: var(--fg); }
+.cal-head button { min-width: 40px; min-height: 36px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--fg); font-size: 18px; cursor: pointer; }
+.cal-head button:disabled { opacity: .35; cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+.cal-grid .wd { font-size: 12px; color: var(--muted); font-weight: 600; padding: 2px 0; }
+.cal-grid button { min-height: 36px; border: 1px solid transparent; border-radius: 6px; background: var(--surface-2); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
+.cal-grid button.stm { border-color: var(--accent); font-weight: 700; }
+.cal-grid button.sel { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.cal-grid button:disabled { background: transparent; color: var(--line-strong); text-decoration: line-through; cursor: not-allowed; border-color: transparent; font-weight: 400; }
+.field textarea { min-height: 76px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font: inherit; font-weight: 400; font-size: 15px; resize: vertical; }
 .pt-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
 .parties { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 .party { background: var(--surface); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
@@ -419,6 +434,18 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <div id="evList"></div>
     </div>
     <div class="adm-block">
+      <h3 data-t="admBk"></h3>
+      <p class="note" data-t="admBkNote" style="margin:0"></p>
+      <label class="field" style="max-width:340px"><span data-t="admBkRole"></span><input type="text" id="bkRole" inputmode="numeric" autocomplete="off" spellcheck="false"></label>
+      <div class="field"><span data-t="admBkWeekly"></span><div class="pills" id="bkWeekly"></div></div>
+      <div class="field"><span data-t="admBkMonthly"></span><div id="bkMonthly" style="overflow-x:auto"></div></div>
+      <div class="row">
+        <label class="field" style="flex:1 1 240px"><span data-t="admBkExtra"></span><input type="text" id="bkExtra" placeholder="24.12.2026, 31.12.2026"></label>
+        <label class="field" style="flex:1 1 240px"><span data-t="admBkSkip"></span><input type="text" id="bkSkip" placeholder="29.12.2026"></label>
+      </div>
+      <div class="row" style="align-items:center"><button type="button" class="btn btn-primary" id="bkSave" data-t="admBkSave"></button><span id="bkMsg" role="status" class="note"></span></div>
+    </div>
+    <div class="adm-block">
       <h3 data-t="admLang"></h3>
       <p class="note" data-t="admLangNote" style="margin:0"></p>
       <div class="row" style="align-items:flex-end">
@@ -454,6 +481,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <section class="panel st-panel">
     <div class="pt-head"><h2 data-t="ptTitle"></h2><button type="button" class="btn btn-primary" id="ptNew" data-t="ptNew"></button></div>
     <p class="meta" data-t="ptIntro" style="margin:0"></p>
+    <div class="pt-how" id="ptHow"></div>
   </section>
   <p class="meta" id="ptState" style="margin:0"></p>
   <h2 class="sec-h" style="font-size:24px" data-t="ptUpcoming"></h2>
@@ -534,11 +562,11 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <label class="field"><span data-t="ptGame"></span><input type="search" id="pQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pRes"></label>
       <ul class="gres" id="pRes" role="listbox"></ul>
     </div>
-    <div class="row"><label class="field" style="flex:1 1 150px"><span data-t="date"></span><input type="date" id="pDate" required></label>
-      <label class="field" style="flex:1 1 110px"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label></div>
+    <div class="field"><span data-t="date"></span><input type="hidden" id="pDate"><div class="cal" id="pCal"></div><span class="note" id="pDateNote"></span></div>
+    <label class="field"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label>
     <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
     <label class="field" id="pHostWrap" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
-    <label class="field"><span data-t="note"></span><input type="text" id="pNote" maxlength="200"></label>
+    <label class="field"><span id="pNoteLbl" data-t="note"></span><textarea id="pNote" maxlength="500" rows="2"></textarea><span class="note" id="pNoteHelp" hidden></span></label>
     <div class="auth-box" id="pAuth" data-authbox></div>
     <label class="field code" id="pCodeWrap"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <label class="field code" id="pEvWrap" hidden><span data-t="evCode"></span><input type="text" id="pEvCode" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" id="pEvInfo"></span></label>
@@ -594,6 +622,7 @@ const TXT = {
     ciTitle: 'Anmelden', ciP1: 'Zum Anlegen von Spielrunden und Eintragen von Partien meldest du dich einmal an, am einfachsten mit „Mit Discord anmelden“. Dein Browser bleibt angemeldet; deine eigenen Partien und Runden kannst du danach bearbeiten und löschen.', ciP2: 'Voraussetzung: Du bist auf dem N3-Discord-Server und kannst dort den Brettspiel-Kanal sehen (Brettspiel-Rolle). Wer den Server verlässt, wird abgemeldet.', ciP3: 'Ohne Discord-Anmeldung im Browser geht es auch mit einem Code: Tippe im Bot-Kanal /code, der Bot schickt ihn dir (nur für dich sichtbar). Gib ihn hier einmal ein. Partien ohne Discord kannst du über den QR-Code im Club eintragen.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
     code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Im Bot-Kanal auf dem N3-Discord mit /code abholen. Nur einmal nötig.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
     admQr: 'Eintragen per QR-Code', admQrNote: 'Wer den QR-Code im Club scannt, kann Partien ohne Discord eintragen (mit Namen). Ein neuer Schlüssel macht alte Ausdrucke sofort ungültig.', admQrPrint: 'Aushang drucken', admQrCopy: 'Link kopieren', admQrCopied: 'Link kopiert.', admQrMake: 'Schlüssel erzeugen', admQrRenew: 'Neuen Schlüssel erzeugen', admQrRenewSure: 'Alte Ausdrucke werden ungültig – wirklich?', admQrNone: 'Noch kein Schlüssel. Erst erzeugen, dann drucken.', admQrRenewed: 'Neuer Schlüssel aktiv. Bitte den neuen Aushang drucken.', admQrErr: 'Das hat nicht geklappt.', byTag: 'von {n}',
+    admBk: 'Runden: Mitglieder und Stammtisch-Tage', admBkNote: 'Mitglieder (Discord-Rolle unten) können Runden an jedem Tag anbieten. Alle anderen nur an Stammtisch-Tagen und mit einer kurzen Vorstellung im Hinweis; Runden mit Event-Code sind davon ausgenommen. Rollen-ID leer = keine Einschränkung. Rollen-ID: in Discord Entwicklermodus an, Rechtsklick auf die Rolle → „Rollen-ID kopieren“.', admBkRole: 'Discord-Rollen-ID der Mitglieder', admBkWeekly: 'Jede Woche', admBkMonthly: 'Jeden Monat', admBkExtra: 'Zusätzliche Tage', admBkSkip: 'Fällt aus', admBkSave: 'Speichern', admBkOk: 'Gespeichert. Nächste Stammtische: {n}', admBkBad: 'Bitte Daten als TT.MM.JJJJ eingeben, durch Komma getrennt.', admBkLast: 'letzter',
     admEv: 'Event-Codes', admEvNote: 'Mit einem Event-Code kann jede Person ohne Discord eine Runde anbieten (mit Namen), bis einschließlich „Code gültig bis“ und nur an den Eventtagen. In Discord steht dann der Eventname dabei. Code leer lassen = er wird automatisch erzeugt.', admEvName: 'Eventname', admEvCode: 'Code (optional, mind. 6 Zeichen)', admEvCodePh: 'leer = automatisch', admEvFrom: 'Event von', admEvTo: 'Event bis', admEvUntil: 'Code gültig bis', admEvAdd: 'Event-Code anlegen', admEvNone: 'Noch keine Event-Codes.', admEvValid: 'gültig bis {d}', admEvExpired: 'abgelaufen ({d})', admEvCopy: 'Link kopieren', admEvCopied: 'Link kopiert.', admEvDel: 'Löschen', admEvTaken: 'Diesen Code gibt es schon.', admEvShort: 'Der Code braucht mindestens 6 Buchstaben oder Ziffern.', admEvBad: 'Bitte Name und alle drei Daten ausfüllen („bis“ nicht vor „von“).', admEvMade: 'Event-Code {c} ist aktiv.',
     evUseEvent: 'Ich habe einen Event-Code', evUsePersonal: 'Doch mit persönlichem Code', evCode: 'Event-Code', evHint: 'Den Code bekommst du vom Orga-Team des Events.', evInfo: 'Event „{n}“ · {d}', evBad: 'Diesen Event-Code gibt es nicht.', evExpired: 'Dieser Event-Code ist abgelaufen.', evDateErr: 'Bitte einen Tag des Events wählen ({d}).', evOver: 'Die Eventtage sind schon vorbei.',
     cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
@@ -618,6 +647,10 @@ const TXT = {
     admGl: 'GeekList-Abgleich', admGlNote: 'Vergleicht die BGG-GeekList mit den Spielen dieser Seite. Die Liste wird nachts automatisch geladen.', admGlRefresh: 'Jetzt von BGG laden',
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
     gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
+    ptHowT: 'Wer kann wann eine Runde anbieten?', ptHowMember: 'Mitglieder (mit der Mitgliederrolle auf unserem Discord) an jedem Tag.', ptHowAll: 'Alle anderen an unseren Stammtisch-Tagen: {r} (nächste Termine: {n}). Dabei stellst du dich im Hinweis kurz vor, damit die anderen wissen, mit wem sie spielen.', ptHowEv: 'Mit einem Event-Code vom Orga-Team an den Eventtagen, auch ohne Discord.', ptHowDcT: 'So richtest du Discord ein', ptHowDc1: 'Tritt unserem Discord-Server bei (Button unten) und lies die Regeln.', ptHowDc2: 'Hol dir dort die Brettspiel-Rolle, damit du den Brettspiel-Kanal siehst. Ohne diese Rolle klappt die Anmeldung hier nicht.', ptHowDc3: 'Klicke hier auf „Runde anbieten“ und dann auf „Mit Discord anmelden“. Geht das in deinem Browser nicht, tippe im Brettspiel-Kanal /code und gib den Code hier einmal ein.', ptHowDc4: 'Du kannst Runden auch direkt in Discord mit /party anbieten. Mitspielende tragen sich dort per Klick ein.', ptHowJoin: 'Zum N3-Discord', ptHowNoMember: 'Ohne Mitgliederrolle sind auf dieser Seite nur Stammtisch-Tage wählbar.',
+    wdLong: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], wdMin: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], nthTxt: { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' }, ruleEvery: 'jeden {d}', ruleNth: 'am {n} {d} im Monat', ruleNone: 'nach Ankündigung',
+    calPrev: 'Vorheriger Monat', calNext: 'Nächster Monat', calStm: 'Umrandet = Stammtisch.', calNonMember: 'Ohne Mitgliederrolle nur an Stammtisch-Tagen (die anderen Tage sind gesperrt).', calGuest: 'Gesperrte Tage sind nur für Mitglieder. Mitglied? Bitte zuerst anmelden.', calPicked: 'Gewählt: {d}',
+    noteIntro: 'Hinweis mit kurzer Vorstellung (Pflicht)', noteIntroHelp: 'Da du ohne Mitgliederrolle anbietest: Schreib bitte kurz, wer du bist, ob du schon mal bei uns warst, wie gut du das Spiel kennst und ob du es erklären kannst oder erklärt bekommen möchtest. Mindestens {n} Zeichen ({c}/{n}).', errIntro: 'Bitte stell dich im Hinweis kurz vor (mindestens {n} Zeichen).', errStammtisch: 'Ohne Mitgliederrolle geht das nur an Stammtisch-Tagen ({r}).',
     ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Geplante Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
     ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
@@ -654,6 +687,7 @@ const TXT = {
     ciTitle: 'Sign in', ciP1: 'To create game rounds and log plays, sign in once, easiest with “Sign in with Discord”. Your browser stays signed in; afterwards you can edit and delete your own plays and rounds.', ciP2: 'Requirement: you are on the N3 Discord server and can see the board game channel there (board game role). Leaving the server signs you out.', ciP3: 'If Discord sign-in doesn’t work in your browser, use a code: type /code in the bot channel, the bot sends it to you (only visible to you). Enter it here once. Without Discord you can log plays via the QR code at the club.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
     code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it with /code in the bot channel on the N3 Discord. Only needed once.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
     admQr: 'Logging via QR code', admQrNote: 'Anyone who scans the QR code at the club can log plays without Discord (with their name). A new key instantly invalidates old printouts.', admQrPrint: 'Print poster', admQrCopy: 'Copy link', admQrCopied: 'Link copied.', admQrMake: 'Create key', admQrRenew: 'Create new key', admQrRenewSure: 'Old printouts stop working – sure?', admQrNone: 'No key yet. Create one, then print.', admQrRenewed: 'New key active. Please print the new poster.', admQrErr: 'That didn’t work.', byTag: 'by {n}',
+    admBk: 'Games: members and game nights', admBkNote: 'Members (Discord role below) can offer games on any day. Everyone else only on game nights and with a short introduction in the note; games with an event code are exempt. Empty role ID = no restriction. Role ID: turn on developer mode in Discord, right-click the role → “Copy Role ID”.', admBkRole: 'Discord role ID of members', admBkWeekly: 'Every week', admBkMonthly: 'Every month', admBkExtra: 'Extra days', admBkSkip: 'Cancelled', admBkSave: 'Save', admBkOk: 'Saved. Next game nights: {n}', admBkBad: 'Please enter dates as DD.MM.YYYY, separated by commas.', admBkLast: 'last',
     admEv: 'Event codes', admEvNote: 'With an event code anyone can offer a game without Discord (with their name), up to and including “Code valid until”, and only on the event days. Discord then shows the event name. Leave the code empty to generate one.', admEvName: 'Event name', admEvCode: 'Code (optional, min. 6 characters)', admEvCodePh: 'empty = automatic', admEvFrom: 'Event from', admEvTo: 'Event to', admEvUntil: 'Code valid until', admEvAdd: 'Create event code', admEvNone: 'No event codes yet.', admEvValid: 'valid until {d}', admEvExpired: 'expired ({d})', admEvCopy: 'Copy link', admEvCopied: 'Link copied.', admEvDel: 'Delete', admEvTaken: 'This code already exists.', admEvShort: 'The code needs at least 6 letters or digits.', admEvBad: 'Please fill in the name and all three dates (“to” not before “from”).', admEvMade: 'Event code {c} is active.',
     evUseEvent: 'I have an event code', evUsePersonal: 'Use my personal code instead', evCode: 'Event code', evHint: 'You get the code from the event’s organisers.', evInfo: 'Event “{n}” · {d}', evBad: 'This event code doesn’t exist.', evExpired: 'This event code has expired.', evDateErr: 'Please pick a day of the event ({d}).', evOver: 'The event days are already over.',
     cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
@@ -678,6 +712,10 @@ const TXT = {
     admGl: 'GeekList check', admGlNote: 'Compares the BGG GeekList with the games on this page. The list is fetched automatically every night.', admGlRefresh: 'Fetch from BGG now',
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
     gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
+    ptHowT: 'Who can offer a game, and when?', ptHowMember: 'Members (with the member role on our Discord) on any day.', ptHowAll: 'Everyone else on our regular game nights: {r} (next dates: {n}). Please introduce yourself briefly in the note so the others know who they’ll be playing with.', ptHowEv: 'With an event code from the organisers on the event days, even without Discord.', ptHowDcT: 'How to set up Discord', ptHowDc1: 'Join our Discord server (button below) and read the rules.', ptHowDc2: 'Pick up the board game role there so you can see the board game channel. Without it, signing in here won’t work.', ptHowDc3: 'Click “Offer a game” here and then “Sign in with Discord”. If that doesn’t work in your browser, type /code in the board game channel and enter the code here once.', ptHowDc4: 'You can also offer games directly in Discord with /party. Players join there with one click.', ptHowJoin: 'Go to the N3 Discord', ptHowNoMember: 'Without the member role only regular game nights can be picked on this page.',
+    wdLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], wdMin: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], nthTxt: { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' }, ruleEvery: 'every {d}', ruleNth: 'the {n} {d} of the month', ruleNone: 'as announced',
+    calPrev: 'Previous month', calNext: 'Next month', calStm: 'Outlined = game night.', calNonMember: 'Without the member role only on game nights (other days are locked).', calGuest: 'Locked days are for members only. Member? Please sign in first.', calPicked: 'Picked: {d}',
+    noteIntro: 'Note with a short introduction (required)', noteIntroHelp: 'As you’re offering without the member role: please write who you are, whether you’ve been with us before, how well you know the game and whether you can teach it or would like it explained. At least {n} characters ({c}/{n}).', errIntro: 'Please introduce yourself briefly in the note (at least {n} characters).', errStammtisch: 'Without the member role this is only possible on game nights ({r}).',
     ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Planned games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
     ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
@@ -1324,7 +1362,7 @@ $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) close
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeLog(); if (e.key === 'Escape' && !$('pModal').hidden) closeParty(); });
 $('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
 
-$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); renderAuth(); if (canEdit) { renderQr(); renderEvents(); } });
+$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); renderAuth(); if (canEdit) { renderQr(); renderEvents(); renderBkAdm(); } renderParties(); });
 const AUTO_MS = 5000;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let autoOn = !reduceMotion, hoverPause = false, autoTimer = null;
@@ -1565,6 +1603,7 @@ function partyCard(x, past) {
 }
 function renderParties() {
   const t = T(), td = todayIso();
+  renderPtHow();
   $('ptState').textContent = partyState === 'off' || dbState === 'off' ? t.recentOff : partyState !== 'ready' ? '…' : '';
   $('ptState').hidden = !$('ptState').textContent;
   const up = parties.filter((x) => String(x.p.date) >= td).sort((a, b) => (String(a.p.date) + (a.p.time || '')).localeCompare(String(b.p.date) + (b.p.time || '')));
@@ -1623,7 +1662,7 @@ function pPick(i) {
   else if (q) pGame = { n: q.slice(0, 120), gameId: null, guest: true, y: null }; else return;
   const g = !pGame.guest && byId[pGame.gameId];
   if (g && !$('pSeats').value) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
-  $('pMsg').textContent = ''; renderPPick(); $('pDate').focus();
+  $('pMsg').textContent = ''; renderPPick(); $('pTime').focus();
 }
 let pTimer = null;
 $('pQ').addEventListener('input', () => { pActive = 0; startLive($('pQ').value, (r) => { pResults = r; pActive = r.length ? Math.max(0, Math.min(pActive, r.length - 1)) : -1; renderPPick(); }); });
@@ -1637,6 +1676,7 @@ $('pRes').addEventListener('click', (e) => { const li = e.target.closest('li[dat
 $('pChange').onclick = () => { pGame = null; renderPPick(); $('pQ').focus(); };
 // Vorbelegung für neue Runden: der nächste Termin aus „Dienstag 18:00“ und „erster Samstag im Monat“.
 function nextEventDay() {
+  if (bk) { const now = new Date(), from = now.getHours() < 18 ? todayIso() : isoAdd(todayIso(), 1); const d = nextStm(from, 1)[0]; if (d) return d; }
   const now = new Date(), at18 = (d) => { const x = new Date(d); x.setHours(18, 0, 0, 0); return x; };
   const tue = new Date(now); tue.setHours(0, 0, 0, 0); tue.setDate(tue.getDate() + ((2 - tue.getDay() + 7) % 7));
   if (at18(tue) <= now) tue.setDate(tue.getDate() + 7);
@@ -1644,6 +1684,66 @@ function nextEventDay() {
   let sat = firstSat(now.getFullYear(), now.getMonth());
   if (at18(sat) <= now) sat = firstSat(now.getFullYear(), now.getMonth() + 1);
   return isoDay(sat < tue ? sat : tue);
+}
+/* Stammtisch-Regel (aus der Verwaltung, /api/booking): ohne Mitgliederrolle nur an diesen Tagen; Hinweis mit Vorstellung ist Pflicht. */
+var bk = null, calMonth = null;
+const isoAdd = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return isoDay(d); };
+function isStm(iso) {
+  if (!bk || !iso) return false;
+  if (bk.skip.includes(iso)) return false;
+  if (bk.extra.includes(iso)) return true;
+  const d = new Date(iso + 'T12:00:00'), wd = d.getDay(), day = d.getDate(), len = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  return bk.weekdays.includes(wd) || bk.monthly.some((x) => x.wd === wd && (x.nth === -1 ? day + 7 > len : Math.ceil(day / 7) === x.nth));
+}
+function nextStm(from, n) { const out = []; for (let i = 0, d = from; i < 400 && out.length < n; i++, d = isoAdd(d, 1)) if (isStm(d)) out.push(d); return out; }
+function ruleTxt() {
+  const t = T(); if (!bk) return '';
+  const p = bk.weekdays.map((w) => fill(t.ruleEvery, { d: t.wdLong[w] })).concat(bk.monthly.map((x) => fill(t.ruleNth, { n: t.nthTxt[x.nth], d: t.wdLong[x.wd] })));
+  return p.join(', ') || t.ruleNone;
+}
+const introMin = () => (bk && bk.introMin) || 40;
+// Gilt die Einschränkung gerade? Nicht mit Event-Code, nicht für angemeldete Mitglieder, nicht wenn keine Mitgliederrolle eingetragen ist.
+const restricted = () => !!(bk && bk.memberRule) && !evMode && !(me && me.member);
+const needsIntro = () => restricted() && (!pEditId || !!me);
+function dayOk(iso) {
+  const min = $('pDate').min || todayIso(), max = $('pDate').max || '';
+  if (iso < min || (max && iso > max)) return iso === pEditDate;
+  return !restricted() || isStm(iso) || iso === pEditDate;
+}
+function renderCal() {
+  const t = T(), v = $('pDate').value, td = todayIso();
+  if (!calMonth) calMonth = (v || td).slice(0, 7);
+  const y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7), first = new Date(y, m - 1, 1), off = (first.getDay() + 6) % 7, days = new Date(y, m, 0).getDate();
+  const title = first.toLocaleDateString(S.lang === 'de' ? 'de-DE' : 'en-GB', { month: 'long', year: 'numeric' });
+  let h = '<div class="cal-head"><button type="button" data-cal="-1" aria-label="' + esc(t.calPrev) + '"' + (calMonth <= td.slice(0, 7) ? ' disabled' : '') + '>‹</button><span>' + esc(title) + '</span><button type="button" data-cal="1" aria-label="' + esc(t.calNext) + '">›</button></div><div class="cal-grid">';
+  h += t.wdMin.map((w) => '<span class="wd">' + esc(w) + '</span>').join('') + '<span></span>'.repeat(off);
+  for (let d = 1; d <= days; d++) {
+    const iso = calMonth + '-' + String(d).padStart(2, '0'), ok = dayOk(iso);
+    h += '<button type="button" data-day="' + iso + '" class="' + (iso === v ? 'sel ' : '') + (isStm(iso) ? 'stm' : '') + '"' + (ok ? '' : ' disabled') + ' aria-pressed="' + (iso === v) + '">' + d + '</button>';
+  }
+  $('pCal').innerHTML = h + '</div>';
+  const pick = v ? fill(t.calPicked, { d: new Date(v + 'T12:00:00').toLocaleDateString(S.lang === 'de' ? 'de-DE' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) }) + '. ' : '';
+  $('pDateNote').textContent = pick + (evMode ? '' : restricted() ? (me ? t.calNonMember : t.calGuest) : bk ? t.calStm : '');
+}
+function renderNoteRule() {
+  const t = T(), on = needsIntro();
+  $('pNoteLbl').textContent = on ? t.noteIntro : t.note; $('pNote').required = on; $('pNote').rows = on ? 4 : 2;
+  $('pNoteHelp').hidden = !on; if (on) $('pNoteHelp').textContent = fill(t.noteIntroHelp, { n: introMin(), c: $('pNote').value.trim().length });
+}
+$('pNote').addEventListener('input', renderNoteRule);
+$('pCal').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (b.dataset.cal) { const d = new Date(+calMonth.slice(0, 4), +calMonth.slice(5, 7) - 1 + Number(b.dataset.cal), 1); calMonth = isoDay(d).slice(0, 7); renderCal(); return; }
+  if (b.dataset.day) { $('pDate').value = b.dataset.day; renderCal(); }
+});
+const bookErr = (e) => { const t = T(), c = e && e.code; return c === 'stammtisch_only' ? fill(t.errStammtisch, { r: ruleTxt() }) : c === 'intro_missing' ? fill(t.errIntro, { n: introMin() }) : ''; };
+function renderPtHow() {
+  const t = T(), el = $('ptHow'); if (!el) return;
+  const url = (bk && bk.discordUrl) || '', next = bk ? nextStm(todayIso(), 4).map((d) => t.wdMin[(new Date(d + 'T12:00:00').getDay() + 6) % 7] + ' ' + (+d.slice(8, 10)) + '.' + (+d.slice(5, 7)) + '.').join(', ') : '…';
+  const li = (x) => '<li>' + esc(x) + '</li>';
+  el.innerHTML = '<h3>' + esc(t.ptHowT) + '</h3><ul>' + (!bk || bk.memberRule ? li(t.ptHowMember) : '') + li(fill(t.ptHowAll, { r: ruleTxt() || '…', n: next })) + li(t.ptHowEv) + '</ul>' +
+    '<h3>' + esc(t.ptHowDcT) + '</h3><ol>' + [t.ptHowDc1, t.ptHowDc2, t.ptHowDc3, t.ptHowDc4].map(li).join('') + '</ol>' +
+    (url ? '<a class="btn btn-discord" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(t.ptHowJoin) + '</a>' : '');
 }
 /* Event-Code: Runde ohne persönlichen Code, nur an Eventtagen. Der Code wird auf dem Gerät gemerkt (auch aus ?event=…). */
 const normEv = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
@@ -1658,8 +1758,9 @@ function applyEvDates() {
     $('pEvInfo').className = 'note'; $('pEvInfo').textContent = fill(t.evInfo, { n: evInfo.name, d: evRange(evInfo) }) + (min > evInfo.to ? ' – ' + t.evOver : '');
   } else {
     $('pDate').min = td; $('pDate').removeAttribute('max');
-    if (!$('pDate').value || $('pDate').value < td) $('pDate').value = nextEventDay();
+    if (!$('pDate').value || (!pEditId && !dayOk($('pDate').value))) $('pDate').value = nextEventDay();
   }
+  calMonth = ($('pDate').value || td).slice(0, 7); renderCal(); renderNoteRule();
 }
 function setEvMode(on) {
   const t = T(); evMode = on; $('pEvWrap').hidden = !on; $('pHostWrap').hidden = !on; renderAuth();
@@ -1681,9 +1782,9 @@ async function checkEv(auto) {
 }
 $('pEvToggle').onclick = () => { setEvMode(!evMode); if (evMode) $('pEvCode').focus(); };
 $('pEvCode').addEventListener('input', () => { clearTimeout(evTimer); evTimer = setTimeout(() => checkEv(false), 600); });
-var pEditId = null;
+var pEditId = null, pEditDate = null;
 function openParty() {
-  pEditId = null; $('pH').textContent = T().ptNew; $('pSave').textContent = T().ptCreate; $('pEvToggle').hidden = false;
+  pEditId = null; pEditDate = null; $('pH').textContent = T().ptNew; $('pSave').textContent = T().ptCreate; $('pEvToggle').hidden = false;
   pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextEventDay(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
   $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
   try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
@@ -1696,10 +1797,10 @@ function openPartyEdit(x) {
   openParty(); setEvMode(false);
   pEditId = x.id; $('pH').textContent = t.ptEditTitle; $('pSave').textContent = t.ptSaveEdit; $('pEvToggle').hidden = true; $('pEvWrap').hidden = true; $('pHostWrap').hidden = true;
   pGame = { n: p.game, gameId: p.gameId || null, guest: !!p.guest, y: p.year || null };
-  $('pDate').value = p.date; $('pTime').value = p.time || ''; $('pSeats').value = p.seats; $('pNote').value = p.note || '';
-  renderPPick(); renderAuth(); $('pDate').focus();
+  $('pDate').value = p.date; pEditDate = p.date; $('pTime').value = p.time || ''; $('pSeats').value = p.seats; $('pNote').value = p.note || '';
+  renderPPick(); renderAuth(); applyEvDates(); $('pQ').blur();
 }
-function closeParty() { $('pModal').hidden = true; pEditId = null; }
+function closeParty() { $('pModal').hidden = true; pEditId = null; pEditDate = null; }
 $('ptNew').onclick = openParty; $('pCancel').onclick = closeParty;
 $('pModal').addEventListener('click', (e) => { if (e.target === $('pModal')) closeParty(); });
 $('pCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
@@ -1715,17 +1816,22 @@ $('pForm').addEventListener('submit', async (e) => {
     if (!host) { msg.textContent = t.ptErrName; $('pHost').focus(); return; }
     if (!date || date < evInfo.from || date > evInfo.to || date < todayIso()) { msg.textContent = fill(t.evDateErr, { d: evRange(evInfo) }); return; }
   } else if (!pEditId && !me && code.length !== 8) { msg.textContent = t.errLogin; return; }
+  if (needsIntro()) {
+    if (!date || (date !== pEditDate && !isStm(date))) { msg.textContent = fill(t.errStammtisch, { r: ruleTxt() }); return; }
+    if ($('pNote').value.trim().length < introMin()) { msg.textContent = fill(t.errIntro, { n: introMin() }); $('pNote').focus(); return; }
+  }
+  if (!date) { msg.textContent = fill(t.errStammtisch, { r: ruleTxt() }); return; }
   $('pSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   if (pEditId) {
     try {
-      await api('PUT', '/parties/' + encodeURIComponent(pEditId), { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) });
+      await api('PUT', '/parties/' + encodeURIComponent(pEditId), { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 500) });
       refreshAll(); msg.textContent = t.saved; setTimeout(closeParty, 500);
-    } catch (err) { msg.className = 'err'; $('pSave').disabled = false; msg.textContent = err && err.code === 'seats_taken' ? t.ptSeatsTaken : err && err.code === 'already_logged' ? t.ptLoggedAlready : codeErr(err); }
+    } catch (err) { msg.className = 'err'; $('pSave').disabled = false; msg.textContent = err && err.code === 'seats_taken' ? t.ptSeatsTaken : err && err.code === 'already_logged' ? t.ptLoggedAlready : bookErr(err) || codeErr(err); }
     return;
   }
   try {
     if (!evMode) await ensureLogin(code);
-    const body = { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) };
+    const body = { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 500) };
     if (evMode) body.host = host;
     const r = await api('POST', '/parties', body, evMode ? { 'X-Event-Code': normEv($('pEvCode').value) } : {});
     if (evMode) lsSet('n3-name', host);
@@ -1739,6 +1845,7 @@ $('pForm').addEventListener('submit', async (e) => {
       if (c === 'event_date' && evInfo) { msg.textContent = fill(t.evDateErr, { d: evRange(evInfo) }); return; }
       if (c === 'name_missing') { msg.textContent = t.ptErrName; return; }
     }
+    if (bookErr(err)) { msg.textContent = bookErr(err); if (me) loadMy(); return; }
     if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.textContent = codeErr(err);
   }
 });
@@ -1784,7 +1891,7 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { name: r.name }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties) }; }
+  try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); authMsg = loginErr(e.code); } }
   renderAuth(); renderPlays(); renderParties();
 }
@@ -1805,6 +1912,7 @@ function renderAuth() {
   const edit = typeof pEditId !== 'undefined' && !!pEditId, ev = typeof evMode !== 'undefined' && evMode;
   $('pAuth').hidden = edit || ev; $('pCodeWrap').hidden = edit || ev || !!me;
   $('meLink').hidden = !me; if (me) $('meLink').textContent = fill(T().logoutN, { n: me.name });
+  if (typeof applyEvDates === 'function' && !$('pModal').hidden) applyEvDates();
 }
 function startLogin() {
   const n = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -1893,7 +2001,7 @@ $('admLink').onclick = () => {
 $('admForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
   try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
-  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); }
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); loadBkAdm(); }
   catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
 });
 /* ---------- QR-Code zum Eintragen (Verwaltung) ---------- */
@@ -1928,6 +2036,38 @@ function renderEvents() {
     '<button type="button" class="btn ' + (evDelSure === e.id ? 'btn-primary' : 'btn-quiet') + '" data-evdel="' + esc(e.id) + '">' + esc(evDelSure === e.id ? t.delConfirm : t.admEvDel) + '</button></span></div>').join('')
     : '<p class="meta" style="margin:0">' + esc(t.admEvNone) + '</p>';
 }
+/* Verwaltung: Mitgliederrolle und Stammtisch-Regel */
+var bkAdm = null;
+const toDmy = (a) => (a || []).map(dmy).join(', ');
+function parseDates(v) {
+  const out = [];
+  for (const part of String(v || '').split(/[,;\s]+/).filter(Boolean)) {
+    let m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(part), iso = m ? m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0') : /^\d{4}-\d{2}-\d{2}$/.test(part) ? part : null;
+    if (!iso || isNaN(Date.parse(iso))) return null; out.push(iso);
+  }
+  return out;
+}
+function renderBkAdm() {
+  const t = T(), r = bkAdm; if (!r) return;
+  $('bkRole').value = r.memberRole || ''; $('bkExtra').value = toDmy(r.extra); $('bkSkip').value = toDmy(r.skip);
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  $('bkWeekly').innerHTML = order.map((w) => '<label class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:14px"><input type="checkbox" data-bkw="' + w + '" style="width:18px;height:18px;padding:0"' + (r.weekdays.includes(w) ? ' checked' : '') + '> ' + esc(t.wdLong[w]) + '</label>').join(' ');
+  const nths = [1, 2, 3, 4, -1], has = (n, w) => r.monthly.some((x) => x.nth === n && x.wd === w);
+  $('bkMonthly').innerHTML = '<table class="bk-tbl"><tr><th></th>' + order.map((w) => '<th>' + esc(t.wdMin[(w + 6) % 7]) + '</th>').join('') + '</tr>' +
+    nths.map((n) => '<tr><th style="text-align:left;padding-right:8px">' + esc(n === -1 ? t.admBkLast : n + '.') + '</th>' + order.map((w) => '<td style="text-align:center"><input type="checkbox" data-bkn="' + n + '" data-bkd="' + w + '"' + (has(n, w) ? ' checked' : '') + ' style="width:20px;height:20px"></td>').join('') + '</tr>').join('') + '</table>';
+}
+async function loadBkAdm() { try { bkAdm = await api('GET', '/admin/booking'); renderBkAdm(); } catch (e) {} }
+$('bkSave').onclick = async () => {
+  const t = T(), msg = $('bkMsg'), extra = parseDates($('bkExtra').value), skip = parseDates($('bkSkip').value);
+  if (!extra || !skip) { msg.className = 'err'; msg.textContent = t.admBkBad; return; }
+  const weekdays = Array.from(document.querySelectorAll('[data-bkw]:checked'), (x) => Number(x.dataset.bkw));
+  const monthly = Array.from(document.querySelectorAll('[data-bkn]:checked'), (x) => ({ nth: Number(x.dataset.bkn), wd: Number(x.dataset.bkd) }));
+  try {
+    bkAdm = await api('PUT', '/admin/booking', { memberRole: $('bkRole').value, weekdays, monthly, extra, skip }); renderBkAdm();
+    msg.className = 'note ok'; msg.textContent = fill(t.admBkOk, { n: bkAdm.next.slice(0, 5).map(dmy).join(', ') });
+    api('GET', '/booking?' + Date.now()).then((r) => { bk = r; renderPtHow(); }).catch(() => {});
+  } catch (e) { msg.className = 'err'; msg.textContent = t.admLangErr; }
+};
 async function loadEvents() { try { evRows = await api('GET', '/admin/events'); } catch (e) { evRows = []; } renderEvents(); }
 // Vorschlag: „gültig bis“ = letzter Eventtag, solange niemand das Feld selbst geändert hat.
 let evUntilAuto = true;
@@ -2009,6 +2149,8 @@ if (evParam && normEv(evParam).length >= 4) {
   const n = lsGet('n3-login-nonce'); if (!sess && /^[0-9a-f]{32}$/.test(n)) pollLogin(n);
   loadMy();
 })();
+// Stammtisch-Regel für Kalender und Beschreibung (erst hier, weil api() Konstanten von weiter unten braucht).
+api('GET', '/booking').then((r) => { bk = r; renderPtHow(); if (!$('pModal').hidden) applyEvDates(); }).catch(() => {});
 watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); partyState = 'ready'; renderParties(); }, () => { partyState = 'off'; renderParties(); }, 15000);
 watch('/plays', (rows) => {
   playDocs = rows.map((p) => ({ id: p.id, p })); plays = rows; playCount = {};
@@ -2023,7 +2165,7 @@ watch('/config/highlights', (cfg) => {
   hlCfg = cfg; applyHl(); renderSlider();
   if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
 }, () => {}, 60000);
-if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); loadBkAdm(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
 })();
 </script>
 

@@ -2,6 +2,7 @@
 // Befehle: /party (Spielrunde anlegen), /log (Partie eintragen). Buttons: Dabei / Absagen / Partie eintragen.
 import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
+import { getBooking, isMember, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
 
 const enc = new TextEncoder();
 const hex = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
@@ -73,6 +74,14 @@ export function hasStarted(r, now = new Date()) {
   return r.date <= berlin(now).date; // ab dem Tag der Runde (deutsche Zeit)
 }
 export const berlinToday = () => berlin().date;
+// Standardtermin nach der Regel aus der Verwaltung: heute, wenn Stammtisch ist und es noch vor 18 Uhr ist, sonst der nächste.
+export function nextStammtischDate(rule, now = new Date()) {
+  const b = berlin(now), from = b.hour < 18 ? b.date : addDays(b.date, 1);
+  return nextStammtische(from, rule, 1, 400)[0] || nextEventDate(now);
+}
+const fmtDay = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
+// Antwort für Nicht-Mitglieder, die einen anderen Tag wollen.
+const stammtischOnly = (rule) => `Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anbieten (${ruleText(rule)}). Nächste Termine: ${nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ')}\nFür andere Tage brauchst du einen Event-Code oder fragst ein Mitglied.`;
 // Erste Zeile der Discord-Nachricht; bei Runden mit Event-Code steht der Eventname dabei.
 export const headline = (r) => `**${r.host}** sucht Mitspielende${r.event_name ? ` am Event „${r.event_name}“` : ''}!`;
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
@@ -127,7 +136,7 @@ function editModal(r) {
     row('datum', 'Datum (z. B. 17.11. oder 2026-11-17)', fmtDate(r.date), { max_length: 20 }),
     row('uhrzeit', 'Uhrzeit (HH:MM)', r.time || '18:00', { max_length: 5, min_length: 5 }),
     row('plaetze', 'Plätze inkl. Gastgeber (2–30)', r.seats, { max_length: 2 }),
-    row('hinweis', 'Hinweis', r.note || '', { required: false, max_length: 200 }),
+    row('hinweis', 'Hinweis / kurze Vorstellung', r.note || '', { required: false, max_length: 500, style: 2 }),
   ] } };
 }
 
@@ -146,12 +155,19 @@ async function cmdParty(i, env) {
   let gameId = null, game = raw, year = null;
   const m = /^(\d+)\|(.*?)\|(\d*)$/.exec(raw);
   if (m) { gameId = +m[1]; game = m[2]; year = m[3] ? +m[3] : null; }
-  const date = parseDate(opt(i, 'datum')); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17, 17.11., heute, morgen.');
+  const rule = await getBooking(env), roles = (i.member && i.member.roles) || [];
+  const date = opt(i, 'datum') ? parseDate(opt(i, 'datum')) : nextStammtischDate(rule); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17, 17.11., heute, morgen.');
   const time = str(opt(i, 'uhrzeit') || '18:00', 5); if (!/^\d{2}:\d{2}$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.');
   const seats = Number(opt(i, 'plaetze') || 4); if (!(seats >= 2 && seats <= 30)) return say('Plätze: 2 bis 30.');
+  const note = str(opt(i, 'hinweis'), 500);
+  if (!isMember(rule, roles)) {
+    if (date < berlinToday()) return say('Das Datum liegt in der Vergangenheit.');
+    if (!isStammtisch(date, rule)) return say(stammtischOnly(rule));
+    if (!introOk(note)) return say(INTRO_HELP + ' Bitte `/party` noch einmal mit `hinweis` ausfüllen.');
+  }
   const id = newId();
   await env.DB.prepare("INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'{}',?12,?13)")
-    .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), str(opt(i, 'hinweis'), 200), new Date().toISOString(), w.id).run();
+    .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), note, new Date().toISOString(), w.id).run();
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   // Per REST posten, damit wir die Nachricht später aktualisieren können; sonst normale Antwort.
   try {
@@ -248,11 +264,20 @@ async function editSubmit(i, env) {
   const date = parseDate(f.datum); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17 oder 17.11.');
   const time = str(f.uhrzeit, 5); if (!/^\d{2}:\d{2}$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.');
   const seats = Number(f.plaetze);
+  const note = str(f.hinweis, 500);
+  // Eigene Runde ohne Mitgliederrolle (Moderierende ausgenommen): neues Datum nur an Stammtisch-Tagen, Vorstellung bleibt Pflicht.
+  if (!modOf(i) && !row.event_id) {
+    const rule = await getBooking(env);
+    if (!isMember(rule, (i.member && i.member.roles) || [])) {
+      if (date !== row.date && (date < berlinToday() || !isStammtisch(date, rule))) return say(stammtischOnly(rule));
+      if (!introOk(note)) return say(INTRO_HELP);
+    }
+  }
   const taken = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
   if (!(seats >= 2 && seats <= 30) || seats < taken) return say(`Plätze: 2 bis 30, mindestens ${taken} (so viele sind schon dabei).`);
   const same = game === row.game;
   await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, date = ?4, time = ?5, seats = ?6, note = ?7 WHERE id = ?8')
-    .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, str(f.hinweis, 200), id).run();
+    .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, note, id).run();
   await syncParty(env, id, true);
   return done('Gespeichert ✓');
 }
@@ -298,10 +323,10 @@ export const COMMANDS = [
   { name: 'code', description: 'Persönlichen Code für die Webseite abholen (nur für dich sichtbar)' },
   { name: 'party', description: 'Spielrunde anlegen und Mitspielende suchen', options: [
     GAME,
-    { type: 3, name: 'datum', description: 'Standard: nächster Termin (Di 18:00 oder erster Sa im Monat). Format 2026-11-17, 17.11., heute, morgen' },
+    { type: 3, name: 'datum', description: 'Standard: nächster Stammtisch. Format 2026-11-17, 17.11., heute, morgen' },
     { type: 3, name: 'uhrzeit', description: 'HH:MM, Standard 18:00' },
     { type: 4, name: 'plaetze', description: 'Plätze inkl. dir, Standard 4', min_value: 2, max_value: 30 },
-    { type: 3, name: 'hinweis', description: 'Zusatzinfo, z. B. Regeln erklärt' },
+    { type: 3, name: 'hinweis', description: 'Zusatzinfo. Ohne Mitgliederrolle Pflicht: stell dich kurz vor', max_length: 500 },
   ] },
   { name: 'log', description: 'Eine gespielte Partie eintragen', options: [
     GAME,
@@ -348,6 +373,9 @@ export async function ensureCols(env) {
   const pc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('plays')").all()).results.map((r) => r.name));
   for (const c of ['logged_by', 'via', 'by_discord']) if (!pc.has(c)) await env.DB.prepare(`ALTER TABLE plays ADD COLUMN ${c} TEXT`).run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS members (discord_id TEXT PRIMARY KEY, name TEXT NOT NULL, code_hash TEXT NOT NULL UNIQUE, blocked INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, checked_at INTEGER NOT NULL DEFAULT 0)').run();
+  // Discord-Rollen (JSON) für die Mitgliederregel beim Runden-Anbieten.
+  const mc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('members')").all()).results.map((r) => r.name));
+  if (!mc.has('roles')) await env.DB.prepare('ALTER TABLE members ADD COLUMN roles TEXT').run();
   colsOk = true;
 }
 
@@ -395,7 +423,7 @@ export async function stillMember(env, m) {
 async function cmdCode(i, env) {
   const w = who(i);
   const code = newMemberCode();
-  await env.DB.prepare('INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at) VALUES(?1, ?2, ?3, 0, ?4, ?5) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, code_hash = excluded.code_hash, checked_at = excluded.checked_at')
-    .bind(w.id, w.name, await codeHash(code), new Date().toISOString(), Date.now()).run();
+  await env.DB.prepare('INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at, roles) VALUES(?1, ?2, ?3, 0, ?4, ?5, ?6) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, code_hash = excluded.code_hash, checked_at = excluded.checked_at, roles = excluded.roles')
+    .bind(w.id, w.name, await codeHash(code), new Date().toISOString(), Date.now(), JSON.stringify((i.member && i.member.roles) || [])).run();
   return say(`**Dein persönlicher Code: \`${showCode(code)}\`**\nGib ihn auf der Webseite ein, um Spielrunden anzulegen oder Partien einzutragen. Er gehört zu deinem Discord-Konto (Name: ${w.name}). Gib ihn nicht weiter. Mit einem neuen \`/code\` wird der alte ungültig.`);
 }

@@ -26,12 +26,16 @@ DISCORD_GUILD_ID = "1569484372112052305"
 DISCORD_CHANNEL_ID = "1569484372757848238"
 # Optional: Rollen-ID (z. B. „Brettspiel“). Gesetzt = Anmeldung auf der Webseite nur mit dieser Rolle; leer = keine Rollenprüfung (Testserver hat keine Rollen).
 DISCORD_ROLE_ID = ""
+# Mitgliederrolle: Mitglieder dürfen Runden an jedem Tag anbieten, alle anderen nur an Stammtisch-Tagen (mit Vorstellung im Hinweis).
+# Startwert; danach in der Verwaltung („Runden: Mitglieder und Stammtisch-Tage“) änderbar. Leer = keine Einschränkung. Testserver-Rolle:
+DISCORD_MEMBER_ROLE_ID = "1570156932440924232"
 # Link, der im Info-Fenster beim persönlichen Code erscheint (Einladungs- oder Kanallink; leer = kein Button).
 DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 # --- VORGEMERKT für den Umzug auf den echten N3-Server (noch NICHT aktiv, Test läuft auf dem Testserver) ---
 # DISCORD_GUILD_ID   = "1168441429345972285"
 # DISCORD_CHANNEL_ID = "1172228534194946148"
 # DISCORD_URL        = "https://discord.com/invite/9BzjwUMW2T"
+# DISCORD_MEMBER_ROLE_ID = "1168456754305179718"   (Mitgliederrolle auf dem N3-Server; ggf. auch in der Verwaltung ändern)
 # Danach in der Verwaltung „Discord-Befehle registrieren“ klicken und den Bot auf den N3-Server einladen.
 
 # Täglich 03:17 UTC: GeekList von BGG lesen und für die Verwaltung zwischenspeichern.
