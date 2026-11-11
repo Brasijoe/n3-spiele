@@ -33,6 +33,16 @@ main.wrap { padding-block: 32px 64px; display: flex; flex-direction: column; gap
 .hl h2, .sec-h { font-size: 30px; }
 .hl h2 { padding-inline: 28px; }
 .stage { position: relative; }
+/* Umschalter Highlights / Zuletzt gespielt (wechselt automatisch etwa jede Minute) */
+.hl-tabs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; margin: 0; padding: 0; }
+.hl-tab { border: 0; background: none; padding: 0 0 4px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+.hl-tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.hl-tabs.single .hl-tab { cursor: default; color: var(--fg); border-bottom-color: transparent; padding-bottom: 0; }
+@media (max-width: 600px) { .hl h2.hl-tabs { font-size: 19px; column-gap: 14px; } .hl-tab { white-space: nowrap; } }
+.hl-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.track.swap .slide { opacity: 0 !important; }
+.slide .cv .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 96px var(--font-display); color: var(--muted); }
+.slide-info .last { font-size: 14px; color: var(--text); }
 /* Karussell: alle Highlights stehen auf einem Ring, das aktive Spiel vorne; Wechsel = Drehung des Rings */
 .track { position: relative; height: 460px; perspective: 1400px; perspective-origin: 50% 40%; overflow: hidden; }
 .slide { position: absolute; left: 50%; top: 14px; width: 300px; height: 340px; margin-left: -150px; border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; color: inherit;
@@ -338,7 +348,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <main class="wrap" id="viewCollection">
   <section class="panel hl" aria-labelledby="hlH">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-inline:28px">
-      <h2 id="hlH" style="padding:0">Highlights</h2>
+      <h2 id="hlH" class="hl-tabs" style="padding:0"><button type="button" class="hl-tab" data-hlmode="hl" aria-selected="true">Highlights</button><button type="button" class="hl-tab" data-hlmode="recent" aria-selected="false" hidden data-t="recTab"></button></h2>
       <button type="button" class="icon-btn" id="autoBtn" aria-pressed="false" style="min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"></button>
     </div>
     <div class="stage">
@@ -400,11 +410,6 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div class="rec-head"><h2 id="mgH" style="font-size:26px" data-t="mgTitle"></h2><button type="button" class="btn btn-quiet" id="mgAddBtn" data-t="mgAdd"></button></div>
     <p class="meta" style="margin:0" data-t="mgIntro"></p>
     <div class="mg-list" id="mgMine"></div>
-  </section>
-  <section class="panel recent" aria-labelledby="recH">
-    <div class="rec-head"><h2 id="recH" style="font-size:26px" data-t="recent"></h2><button type="button" class="btn btn-quiet" data-guest-log data-t="logGuest"></button></div>
-    <p class="meta" id="recentState" style="margin:0"></p>
-    <div id="plays"></div>
   </section>
 
   <section class="panel admin" id="admin" hidden aria-labelledby="admH">
@@ -532,6 +537,11 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div style="position:relative"><div class="months" id="stMonths"></div><div class="tip" id="stTip" hidden></div></div>
     <div class="mlabels" id="stMLabels"></div>
     <details><summary class="meta" data-t="stAsTable" style="cursor:pointer"></summary><table class="st-table" id="stMTable"></table></details>
+  </section>
+  <section class="panel recent" aria-labelledby="recH">
+    <div class="rec-head"><h2 id="recH" style="font-size:26px" data-t="recent"></h2><button type="button" class="btn btn-quiet" data-guest-log data-t="logGuest"></button></div>
+    <p class="meta" id="recentState" style="margin:0"></p>
+    <div id="plays"></div>
   </section>
   <section class="panel st-panel" aria-labelledby="stNeverH">
     <h2 id="stNeverH" data-t="stNever"></h2>
@@ -665,7 +675,7 @@ const TXT = {
     advOpen: 'Erweiterte Filter', advClose: 'Erweiterte Filter schließen', pModeLabel: 'Spielerzahl gilt …',
     recNote: 'Die Prozent-Schwelle wirkt erst mit der BGG-API (vollständige Umfragedaten).', minVotes: 'Mindestanzahl Bewertungen', rank: 'BGG-Rang', any: 'egal',
     age: 'Geeignet ab Alter', yearFrom: 'Erschienen ab', cats: 'Kategorien', mechs: 'Mechaniken', allGames: 'Alle Spiele',
-    recent: 'Zuletzt im Club gespielt', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
+    recent: 'Zuletzt im Club gespielt', recTab: 'Zuletzt gespielt', lastPlayed: 'Zuletzt gespielt am {d}', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
     loginDiscord: 'Mit Discord anmelden', loginOr: 'oder einmalig mit deinem Code von /code:', loggedAs: 'Angemeldet als {n}', logout: 'Abmelden', logoutN: 'Abmelden ({n})', loginWait: 'Bitte im Discord-Fenster bestätigen …', loginPopup: 'Das Anmeldefenster wurde blockiert. Bitte Popups für diese Seite erlauben.',
@@ -739,7 +749,7 @@ const TXT = {
     advOpen: 'Advanced filters', advClose: 'Close advanced filters', pModeLabel: 'Player count based on …',
     recNote: 'The percentage threshold only works once the BGG API (full poll data) is connected.', minVotes: 'Minimum number of ratings', rank: 'BGG rank', any: 'any',
     age: 'Suitable from age', yearFrom: 'Published from', cats: 'Categories', mechs: 'Mechanics', allGames: 'All games',
-    recent: 'Recently played at the club', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
+    recent: 'Recently played at the club', recTab: 'Recently played', lastPlayed: 'Last played on {d}', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
     loginDiscord: 'Sign in with Discord', loginOr: 'or once with your code from /code:', loggedAs: 'Signed in as {n}', logout: 'Sign out', logoutN: 'Sign out ({n})', loginWait: 'Please confirm in the Discord window …', loginPopup: 'The sign-in window was blocked. Please allow pop-ups for this site.',
@@ -1066,23 +1076,67 @@ function renderFilters() {
   $('maxTimeL').textContent = fill(t.maxTime, { v: S.maxTime >= 240 ? t.any : S.maxTime + ' ' + t.min });
 }
 
+// Zweiter Modus der Slideshow: die letzten 10 verschiedenen Spiele, die im Club gespielt wurden (erst ab 10 verschiedenen Spielen).
+const RECENT_N = 10;
+let hlMode = 'hl', recentCache = null, recentFor = null;
+function recentSlides() {
+  if (recentFor === plays && recentCache) return recentCache;
+  const seen = {}, out = [];
+  // Nach Spieldatum sortieren (neueste zuerst); bei gleichem Datum bleibt die Eintragsreihenfolge.
+  const sorted = plays.slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  sorted.forEach((p) => {
+    const g = playGame(p), k = g ? 'c' + g.id : Number(p.gameId) > 0 ? 'c' + Number(p.gameId) : 'n' + String(p.game || '').trim().toLowerCase();
+    if (k === 'n') return;
+    if (seen[k]) { seen[k].n++; return; }
+    seen[k] = { k, g, p, n: 1, cover: coverOf(p, g) };
+    out.push(seen[k]);
+  });
+  // Spiele, die als Gastspiel und als Sammlungsspiel geloggt wurden, teilen sich die BGG-ID und damit den Schlüssel.
+  recentCache = out.length >= RECENT_N ? out.slice(0, RECENT_N) : [];
+  recentFor = plays;
+  return recentCache;
+}
+const recentOk = () => recentSlides().length >= RECENT_N;
+function slideItems() {
+  if (hlMode === 'recent' && recentOk()) return recentSlides().map((r) => ({ id: 'r' + r.k, g: r.g, r, cover: r.cover, nm: r.g ? name(r.g) : String(r.p.game || '?') }));
+  return highlights.map((g) => ({ id: 'h' + g.id, g, cover: g.cover, nm: name(g) }));
+}
+const slideKey = () => (hlMode === 'recent' && recentOk() ? 'rslide' : 'slide');
+function renderHlTabs() {
+  const ok = recentOk();
+  if (!ok) hlMode = 'hl';
+  document.querySelectorAll('.hl-tab').forEach((b) => {
+    const on = b.dataset.hlmode === hlMode;
+    b.setAttribute('aria-selected', String(on));
+    if (b.dataset.hlmode === 'recent') b.hidden = !ok;
+  });
+  $('hlH').classList.toggle('single', !ok);
+  $('hlH').setAttribute('role', ok ? 'tablist' : 'presentation');
+  document.querySelectorAll('.hl-tab').forEach((b) => b.setAttribute('role', ok ? 'tab' : 'presentation'));
+}
 let builtFor = null, lastInfoId = null, infoTimer = null;
 const STEP_DEG = 30, FOCUS_SCALE = 1.25;
 function ringOffset(i, idx, N) { let d = i - idx; if (d > N / 2) d -= N; if (d < -N / 2) d += N; return d; }
 function renderSlider() {
-  const t = T(), N = highlights.length, idx = ((S.slide % N) + N) % N, track = $('track');
-  if (builtFor !== highlights) {
-    track.innerHTML = highlights.map((g, i) => '<button type="button" class="slide" data-i="' + i + '"><span class="cv"><img src="' + esc(g.cover) + '" alt="">' + badge(g, 52) + '</span></button>').join('');
-    builtFor = highlights; lastInfoId = null;
+  renderHlTabs();
+  const t = T(), items = slideItems(), N = items.length, sk = slideKey(), idx = (((S[sk] || 0) % N) + N) % N, track = $('track');
+  const sig = hlMode + '|' + items.map((x) => x.id).join(',');
+  let fresh = false;
+  if (builtFor !== sig) {
+    track.innerHTML = items.map((x, i) => '<button type="button" class="slide" data-i="' + i + '"><span class="cv">' +
+      (x.cover ? '<img src="' + esc(x.cover) + '" alt="" data-ph="' + esc(String(x.nm).charAt(0).toUpperCase()) + '">' : '<span class="ph" aria-hidden="true">' + esc(String(x.nm).charAt(0).toUpperCase()) + '</span><img alt="" hidden>') +
+      (x.g ? badge(x.g, 52) : '') + '</span></button>').join('');
+    builtFor = sig; lastInfoId = null; fresh = true;
   }
   const narrow = track.clientWidth < 600;
   const R = Math.max(220, Math.min(560, track.clientWidth * (narrow ? 0.62 : 0.42)));
   const maxVisible = narrow ? 1 : 2;
   track.querySelectorAll('.slide').forEach((el) => {
-    const i = Number(el.dataset.i), g = highlights[i], d = ringOffset(i, idx, N), a = Math.abs(d), n = name(g);
+    const i = Number(el.dataset.i), x = items[i], d = ringOffset(i, idx, N), a = Math.abs(d), n = x.nm;
     const th = d * STEP_DEG * Math.PI / 180;
-    const x = R * Math.sin(th), z = R * (Math.cos(th) - 1);
-    el.style.transform = 'translate3d(' + x.toFixed(1) + 'px, 0, ' + z.toFixed(1) + 'px) rotateY(' + (d * STEP_DEG) + 'deg) scale(' + (a === 0 ? FOCUS_SCALE : 1) + ')';
+    const px = R * Math.sin(th), z = R * (Math.cos(th) - 1);
+    if (fresh) el.style.transition = 'none';
+    el.style.transform = 'translate3d(' + px.toFixed(1) + 'px, 0, ' + z.toFixed(1) + 'px) rotateY(' + (d * STEP_DEG) + 'deg) scale(' + (a === 0 ? FOCUS_SCALE : 1) + ')';
     el.style.opacity = a === 0 ? 1 : a <= maxVisible ? (a === 1 ? 0.85 : 0.5) : 0;
     el.style.filter = a === 0 ? 'none' : 'brightness(' + (a === 1 ? 0.8 : 0.6) + ')';
     el.style.zIndex = String(100 - a);
@@ -1093,20 +1147,45 @@ function renderSlider() {
     el.setAttribute('aria-label', fill(a === 0 ? t.current : t.jump, { n }));
     el.querySelector('img').alt = fill(t.cover, { n });
   });
-  const cg = highlights[idx];
+  if (fresh) { void track.offsetWidth; track.querySelectorAll('.slide').forEach((el) => { el.style.transition = ''; }); }
+  const cx = items[idx], cg = cx.g;
   const info = $('hlInfo');
-  const html = '<span class="nm">' + esc(name(cg)) + ' <span class="yr">(' + cg.y + ')</span></span>' +
-    '<span>' + esc(fmt(cg.p1, cg.p2) + ' ' + t.players + ' · ' + tTxt(cg) + ' · ' + t.weights[cg.wl] + ' · ' + t.bestWith + ' ' + bestTxt(cg)) + '</span>' +
-    ((descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) ? '<span class="desc">' + esc(descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) + '</span>' : '') +
-    expHtml(cg, 'exp');
+  let html;
+  if (cx.r) {
+    const p = cx.r.p, last = String(p.date || '').split('-').reverse().join('.');
+    html = '<span class="nm">' + esc(cx.nm) + (cg && cg.y ? ' <span class="yr">(' + cg.y + ')</span>' : '') + '</span>' +
+      (cg ? '<span>' + esc(fmt(cg.p1, cg.p2) + ' ' + t.players + ' · ' + tTxt(cg) + ' · ' + t.weights[cg.wl]) + '</span>' : '<span>' + srcTag(p) + '</span>') +
+      '<span class="last">' + esc([fill(t.lastPlayed, { d: last }), p.players ? p.players + ' ' + t.players : '', p.winner ? t.win + p.winner : ''].filter(Boolean).join(' · ')) + '</span>' +
+      '<span class="desc">' + esc(fill(t.playedN, { n: cx.r.n })) + '</span>';
+  } else {
+    html = '<span class="nm">' + esc(name(cg)) + ' <span class="yr">(' + cg.y + ')</span></span>' +
+      '<span>' + esc(fmt(cg.p1, cg.p2) + ' ' + t.players + ' · ' + tTxt(cg) + ' · ' + t.weights[cg.wl] + ' · ' + t.bestWith + ' ' + bestTxt(cg)) + '</span>' +
+      ((descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) ? '<span class="desc">' + esc(descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) + '</span>' : '') +
+      expHtml(cg, 'exp');
+  }
   clearTimeout(infoTimer);
-  if (lastInfoId !== null && lastInfoId !== cg.id && !reduceMotionQ()) {
+  if (lastInfoId !== null && lastInfoId !== cx.id && !reduceMotionQ()) {
     info.classList.add('fading');
     infoTimer = setTimeout(() => { info.innerHTML = html; info.classList.remove('fading'); }, 300);
   } else { info.innerHTML = html; info.classList.remove('fading'); }
-  lastInfoId = cg.id;
-  $('hlBgg').href = cg.link; $('hlLog').onclick = () => openLog(cg);
+  lastInfoId = cx.id;
+  const bgg = cg ? cg.link : cx.r && Number(cx.r.p.gameId) > 0 ? 'https://boardgamegeek.com/boardgame/' + Number(cx.r.p.gameId) : '';
+  $('hlBgg').hidden = !bgg; if (bgg) $('hlBgg').href = bgg;
+  $('hlLog').onclick = () => openLog(cg || GUEST_PENDING);
 }
+// Moduswechsel mit kurzem Ausblenden, damit die neuen Cover nicht über die alten fliegen.
+let swapTimer = null;
+function setHlMode(m) {
+  if (m === hlMode || (m === 'recent' && !recentOk())) return;
+  const track = $('track');
+  clearTimeout(swapTimer);
+  if (reduceMotionQ()) { hlMode = m; renderSlider(); return; }
+  track.classList.add('swap');
+  swapTimer = setTimeout(() => { hlMode = m; renderSlider(); requestAnimationFrame(() => track.classList.remove('swap')); }, 350);
+}
+// Cover eines Gastspiels nicht ladbar -> Anfangsbuchstabe statt kaputtem Bild.
+$('track').addEventListener('error', (e) => { const im = e.target; if (!im || im.tagName !== 'IMG' || im.dataset.ph == null) return; im.hidden = true;
+  const s = document.createElement('span'); s.className = 'ph'; s.setAttribute('aria-hidden', 'true'); s.textContent = im.dataset.ph; im.before(s); delete im.dataset.ph; }, true);
 function reduceMotionQ() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 window.addEventListener('resize', () => { renderSlider(); });
 
@@ -1461,7 +1540,7 @@ $('logForm').addEventListener('submit', async (e) => {
     await api('POST', '/plays', { guest: !!logGame.guest, year: logGame.guest ? (logGame.y || null) : null, gameId: logGame.id, game: logGame.nDe, date: $('fDate').value, players: Number($('fPlayers').value) || 0,
       winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined, by: useKey ? by : undefined }, useKey ? { 'X-Log-Key': logKey } : {});
     if (useKey) lsSet('n3-log-name', by); refreshAll();
-    msg.textContent = t.saved; setTimeout(() => { closeLog(); if (useKey) $('recH').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 600);
+    msg.textContent = t.saved; setTimeout(() => { closeLog(); if (useKey) { if (location.hash !== '#statistik') location.hash = '#statistik'; setTimeout(() => $('recH').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); } }, 600);
   } catch (err) {
     if (err && err.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); renderAuth(); msg.className = 'err'; msg.textContent = t.errKey; $('save').disabled = false; return; }
     if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('save').disabled = false; }
@@ -1474,7 +1553,8 @@ $('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target
 $('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); renderAuth(); if (canEdit) { renderQr(); renderEvents(); renderBkAdm(); } renderParties(); });
 const AUTO_MS = 5000;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let autoOn = !reduceMotion, hoverPause = false, autoTimer = null;
+const MODE_TICKS = 12; // 12 × 5 s ≈ 1 Minute, dann wechselt die Slideshow zwischen Highlights und Zuletzt gespielt
+let autoOn = !reduceMotion, hoverPause = false, autoTimer = null, modeTicks = 0;
 function renderAutoBtn() {
   const b = $('autoBtn'); b.setAttribute('aria-pressed', String(!autoOn));
   b.setAttribute('aria-label', autoOn ? T().autoPause : T().autoPlay);
@@ -1486,7 +1566,8 @@ function restartAuto() {
   clearInterval(autoTimer); autoTimer = null;
   if (autoOn) autoTimer = setInterval(() => {
     if (hoverPause || document.hidden || !$('modal').hidden || currentView() !== 'collection') return;
-    S.slide++; renderSlider();
+    if (++modeTicks >= MODE_TICKS && recentOk()) { modeTicks = 0; setHlMode(hlMode === 'hl' ? 'recent' : 'hl'); return; }
+    S[slideKey()] = (S[slideKey()] || 0) + 1; renderSlider();
   }, AUTO_MS);
 }
 $('autoBtn').onclick = () => { autoOn = !autoOn; renderAutoBtn(); restartAuto(); };
@@ -1495,12 +1576,14 @@ stage.addEventListener('mouseenter', () => { hoverPause = true; });
 stage.addEventListener('mouseleave', () => { hoverPause = false; });
 stage.addEventListener('focusin', () => { hoverPause = true; });
 stage.addEventListener('focusout', (e) => { if (!stage.contains(e.relatedTarget)) hoverPause = false; });
-$('prev').onclick = () => { S.slide--; renderSlider(); restartAuto(); };
-$('next').onclick = () => { S.slide++; renderSlider(); restartAuto(); };
+$('prev').onclick = () => { S[slideKey()] = (S[slideKey()] || 0) - 1; renderSlider(); restartAuto(); };
+$('next').onclick = () => { S[slideKey()] = (S[slideKey()] || 0) + 1; renderSlider(); restartAuto(); };
+$('hlH').addEventListener('click', (e) => { const b = e.target.closest('.hl-tab'); if (!b) return; modeTicks = 0; setHlMode(b.dataset.hlmode); restartAuto(); });
+$('hlH').addEventListener('keydown', (e) => { if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.closest('.hl-tab') && recentOk()) { e.preventDefault(); const m = hlMode === 'hl' ? 'recent' : 'hl'; modeTicks = 0; setHlMode(m); restartAuto(); document.querySelector('.hl-tab[data-hlmode="' + m + '"]').focus(); } });
 $('track').addEventListener('click', (e) => {
   const b = e.target.closest('.slide'); if (!b) return;
-  const N = highlights.length, idx = ((S.slide % N) + N) % N, d = ringOffset(Number(b.dataset.i), idx, N);
-  if (d) { S.slide += d; renderSlider(); restartAuto(); }
+  const N = slideItems().length, sk = slideKey(), idx = (((S[sk] || 0) % N) + N) % N, d = ringOffset(Number(b.dataset.i), idx, N);
+  if (d) { S[sk] = (S[sk] || 0) + d; renderSlider(); restartAuto(); }
 });
 document.querySelector('.filters').addEventListener('click', (e) => {
   const c = e.target.closest('button.chip');
