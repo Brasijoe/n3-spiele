@@ -1174,7 +1174,7 @@ function renderSlider() {
   if (builtFor !== sig) {
     track.innerHTML = items.map((x, i) => '<button type="button" class="slide" data-i="' + i + '"><span class="cv">' +
       (x.cover ? '<img src="' + esc(x.cover) + '" alt="" data-ph="' + esc(String(x.nm).charAt(0).toUpperCase()) + '">' : '<span class="ph" aria-hidden="true">' + esc(String(x.nm).charAt(0).toUpperCase()) + '</span><img alt="" hidden>') +
-      (x.g ? badge(x.g, 52) : '') + '</span></button>').join('');
+      '</span></button>').join('');
     builtFor = sig; lastInfoId = null; fresh = true;
   }
   const narrow = track.clientWidth < 600;
