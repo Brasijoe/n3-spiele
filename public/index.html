@@ -88,6 +88,13 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .pills { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
 .pill { background: var(--surface-2); color: var(--fg); padding: 3px 8px; border-radius: 4px; }
 .played { font-size: 13px; font-weight: 600; color: var(--fg); }
+.exp-list { margin: 2px 0 0; padding-left: 2px; list-style: disc inside; font-weight: 500; }
+.exp-list li { margin: 1px 0; }
+.exp-list li, .exp-box > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-box { min-width: 0; }
+.exp-more { background: none; border: 0; padding: 2px 0 0 2px; font: inherit; font-weight: 700; color: var(--club); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+dialog.info .exp-list { font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+dialog.info .exp-list li { white-space: normal; }
 .card .actions { margin-top: auto; display: flex; gap: 8px; padding-top: 6px; }
 .card .actions .btn-primary { flex: 1; font-size: 13px; padding: 0 10px; }
 .bgg { min-width: 44px; min-height: 44px; border-radius: 8px; border: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; text-decoration: none; color: var(--fg); }
@@ -511,7 +518,7 @@ const TXT = {
     bestFor: 'Am besten für {n} Spieler', bestForSolo: 'Am besten solo',
     sorts: ['BGG-Bewertung', 'BGG-Rang', 'Name (A–Z)', 'Komplexität (leicht zuerst)', 'Spieldauer (kurz zuerst)', 'Erscheinungsjahr (neu zuerst)', 'Im Club gespielt (häufig zuerst)'],
     typeNames: { S: 'Strategie', T: 'Thematisch', F: 'Familie', P: 'Party', A: 'Abstrakt', K: 'Kinder', W: 'Konflikt', C: 'Sammelkarten' },
-    years: 'Jahre', min: 'Min', players: 'Spieler', pl: 'Sp.', bestWith: 'Am besten mit', exp1: '+ Erweiterung: ', expN: '+ Erweiterungen: ', of: 'von', games: 'Spielen',
+    years: 'Jahre', min: 'Min', players: 'Spieler', pl: 'Sp.', bestWith: 'Am besten mit', exp1: '+ Erweiterung: ', expN: '+ Erweiterungen: ', expMore: '+ {n} weitere …', expTitle: 'Erweiterungen: {n}', of: 'von', games: 'Spielen',
     more: 'Weitere Spiele anzeigen ({n})', recPct: 'Empfohlen von mind. {p} % der BGG-Stimmen', minRating: 'BGG-Bewertung mindestens: {v}', weightRange: 'Komplexität (BGG-Gewicht) {a} – {b}',
     maxTime: 'Spieldauer höchstens: {v}', win: 'Sieg: ', jump: 'Zu {n} springen', current: '{n}, aktuelles Highlight', onBgg: '{n} auf BoardGameGeek öffnen', cover: 'Cover von {n}', playedN: '{n}× im Club gespielt',
     admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.', admCode: 'Vereinscode ändern', admNewCode: 'Neuer 4-stelliger Code', admSaveCode: 'Code speichern',
@@ -561,7 +568,7 @@ const TXT = {
     bestFor: 'Best for {n} players', bestForSolo: 'Best solo',
     sorts: ['BGG rating', 'BGG rank', 'Name (A–Z)', 'Complexity (lightest first)', 'Play time (shortest first)', 'Year (newest first)', 'Played at the club (most first)'],
     typeNames: { S: 'Strategy', T: 'Thematic', F: 'Family', P: 'Party', A: 'Abstract', K: "Children's", W: 'Wargame', C: 'Customizable' },
-    years: 'years', min: 'min', players: 'players', pl: 'pl.', bestWith: 'Best with', exp1: '+ Expansion: ', expN: '+ Expansions: ', of: 'of', games: 'games',
+    years: 'years', min: 'min', players: 'players', pl: 'pl.', bestWith: 'Best with', exp1: '+ Expansion: ', expN: '+ Expansions: ', expMore: '+ {n} more …', expTitle: 'Expansions: {n}', of: 'of', games: 'games',
     more: 'Show more games ({n})', recPct: 'Recommended by at least {p} % of BGG votes', minRating: 'Minimum BGG rating: {v}', weightRange: 'Complexity (BGG weight) {a} – {b}',
     maxTime: 'Maximum play time: {v}', win: 'Winner: ', jump: 'Jump to {n}', current: '{n}, current highlight', onBgg: 'Open {n} on BoardGameGeek', cover: 'Cover of {n}', playedN: 'Played {n}× at the club',
     admin: 'Administration', adminNote: 'Only visible to people with edit access.', admCode: 'Change club code', admNewCode: 'New 4-digit code', admSaveCode: 'Save code',
@@ -685,7 +692,25 @@ const typeTxt = (g) => g.types.map((k) => T().typeNames[k] || k).join(' · ');
 const badge = (g, size) => { const c = g.r >= 8 ? '#1e6b35' : g.r >= 7 ? '#2b7a40' : g.r >= 6 ? '#2c6aa0' : g.r >= 5 ? '#5a5f8a' : '#8a3b3b'; return '<span class="badge" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size / 2.9) + 'px;background:' + c + '">' + (g.r ? g.r.toFixed(1) : '–') + '</span>'; };
 const tTxt = (g) => (g.t1 === g.t2 || !g.t2 ? g.t : g.t1 + '–' + g.t2) + ' ' + T().min;
 const bestTxt = (g) => (g.bestR.length ? g.bestR.map(([lo, hi]) => fmt(lo, hi)).join(', ') : fmt(g.p1, g.p2));
-const expTxt = (g) => { if (!g.expList.length) return ''; const bn = name(g).split(':')[0]; const ns = g.expList.map((e) => name(e).replace(bn + ': ', '').replace(/^.*? – /, '')); return (ns.length > 1 ? T().expN : T().exp1) + ns.join(', '); };
+// Erweiterungen als Liste, ein Punkt pro Erweiterung. Der Grundspielname wird vorne abgeschnitten,
+// auch wenn das Grundspiel einen Zusatz trägt (z. B. „Aeon's End (englisch, KS)“ → „The Depths“).
+const apo = (x) => x.replace(/[’‘`´]/g, "'");
+const expNames = (g) => { const bn = apo(name(g).split(/\s*[:(]/)[0].trim()); return g.expList.map((e) => { const n = name(e); return (apo(n).startsWith(bn + ': ') ? n.slice(bn.length + 2) : n).replace(/^.*? – /, ''); }); };
+// Höchstens 3 Zeilen, damit die Karten gleich hoch bleiben; bei mehr gibt es „+ N weitere“ mit der ganzen Liste im Popup.
+const EXP_MAX = 3;
+const expHtml = (g, cls) => {
+  if (!g.expList.length) return '';
+  const ns = expNames(g), cut = ns.length > EXP_MAX, shown = cut ? ns.slice(0, EXP_MAX - 1) : ns;
+  return '<div class="' + cls + ' exp-box"><span>' + esc((ns.length > 1 ? T().expN : T().exp1).replace(/:\s*$/, ':')) + '</span><ul class="exp-list">' + shown.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+    (cut ? '<button type="button" class="exp-more" data-exps="' + esc(g.key) + '">' + esc(fill(T().expMore, { n: ns.length - shown.length })) + '</button>' : '') + '</div>';
+};
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-exps]'); if (!b) return;
+  const g = all.find((x) => x.key === b.dataset.exps); if (!g) return;
+  $('expT').textContent = fill(T().expTitle, { n: name(g) });
+  $('expL').innerHTML = expNames(g).map((x) => '<li>' + esc(x) + '</li>').join('');
+  $('expDlg').showModal();
+});
 const playGame = (p) => (p.guest ? null : byId[p.gameId]);
 const playName = (p) => { const g = playGame(p); return g ? name(g) : String(p.game || '?'); };
 const srcTag = (p) => (p.guest ? '<span class="src guest">' + esc(T().guestTag) + '</span>' : '<span class="src club">' + esc(T().clubTag) + '</span>');
@@ -807,7 +832,7 @@ function renderSlider() {
   const html = '<span class="nm">' + esc(name(cg)) + ' <span class="yr">(' + cg.y + ')</span></span>' +
     '<span>' + esc(fmt(cg.p1, cg.p2) + ' ' + t.players + ' · ' + tTxt(cg) + ' · ' + t.weights[cg.wl] + ' · ' + t.bestWith + ' ' + bestTxt(cg)) + '</span>' +
     ((descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) ? '<span class="desc">' + esc(descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) + '</span>' : '') +
-    (cg.expList.length ? '<span class="exp">' + esc(expTxt(cg)) + '</span>' : '');
+    expHtml(cg, 'exp');
   clearTimeout(infoTimer);
   if (lastInfoId !== null && lastInfoId !== cg.id && !reduceMotionQ()) {
     info.classList.add('fading');
@@ -834,7 +859,7 @@ function renderGrid() {
       '<h3>' + esc(n) + '</h3><span class="meta">' + g.y + ' · ' + esc(catNames(g).slice(0, 2).join(', ')) + '</span>' +
       '<div class="pills"><span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span><span class="pill">' + esc(tTxt(g)) + '</span><span class="pill">' + esc(t.weights[g.wl]) + '</span></div>' +
       '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' +
-      (g.expList.length ? '<span class="played">' + esc(expTxt(g)) + '</span>' : '') + (pc ? '<span class="meta">' + esc(fill(t.playedN, { n: pc })) + '</span>' : '') +
+      expHtml(g, 'played') + (pc ? '<span class="meta">' + esc(fill(t.playedN, { n: pc })) + '</span>' : '') +
       '<div class="actions"><button type="button" class="btn btn-primary" data-log="' + esc(g.key) + '">' + esc(t.logPlay) + '</button><a class="bgg" target="_blank" rel="noopener" href="' + g.link + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a></div></div></article>';
   }).join('');
   const rest = list.length - S.limit;
@@ -1544,6 +1569,8 @@ $('glRefresh').onclick = async () => {
 
 document.addEventListener('click', (e) => { if (e.target.closest('[data-codeinfo]')) { e.preventDefault(); $('codeInfo').showModal(); } });
 $('ciClose').onclick = () => $('codeInfo').close();
+$('expClose').onclick = () => $('expDlg').close();
+$('expDlg').addEventListener('click', (e) => { if (e.target === $('expDlg')) $('expDlg').close(); });
 $('codeInfo').addEventListener('click', (e) => { if (e.target === $('codeInfo')) $('codeInfo').close(); });
 api('GET', '/config/public').then((c) => { if (c && c.discordUrl) { $('ciLink').href = c.discordUrl; $('ciLink').hidden = false; } }).catch(() => {});
 renderAll();
@@ -1583,5 +1610,10 @@ if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAd
   <h3 id="ciT" data-t="ciTitle"></h3>
   <p data-t="ciP1"></p><p data-t="ciP2"></p><p data-t="ciP3"></p>
   <div class="acts"><a class="btn btn-primary" id="ciLink" href="#" target="_blank" rel="noopener" data-t="ciLink" hidden></a><button type="button" class="btn btn-quiet" id="ciClose" data-t="ciClose"></button></div>
+</dialog>
+<dialog class="info" id="expDlg" aria-labelledby="expT">
+  <h3 id="expT"></h3>
+  <ul class="exp-list" id="expL"></ul>
+  <div class="acts"><button type="button" class="btn btn-quiet" id="expClose" data-t="ciClose"></button></div>
 </dialog>
 </body></html>
