@@ -34,12 +34,10 @@ main.wrap { padding-block: 32px 64px; display: flex; flex-direction: column; gap
 .hl h2 { padding-inline: 28px; }
 .stage { position: relative; }
 /* Umschalter Highlights / Zuletzt gespielt (wechselt automatisch etwa jede Minute) */
-.hl-tabs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; margin: 0; padding: 0; }
-.hl-tab { border: 0; background: none; padding: 0 0 4px; font: inherit; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
-.hl-tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-.hl-tabs.single .hl-tab { cursor: default; color: var(--fg); border-bottom-color: transparent; padding-bottom: 0; }
-@media (max-width: 600px) { .hl h2.hl-tabs { font-size: 19px; column-gap: 14px; } .hl-tab { white-space: nowrap; } }
-.hl-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hl-title { margin: 0; padding: 0; transition: opacity .35s ease; }
+.hl-title.swap { opacity: 0; }
+@media (max-width: 600px) { .hl h2.hl-title { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { .hl-title { transition: none; } }
 .track.swap .slide { opacity: 0 !important; }
 .slide .cv .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 96px var(--font-display); color: var(--muted); }
 .slide-info .last { font-size: 14px; color: var(--text); }
@@ -357,7 +355,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <main class="wrap" id="viewCollection">
   <section class="panel hl" aria-labelledby="hlH">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-inline:28px">
-      <h2 id="hlH" class="hl-tabs" style="padding:0"><button type="button" class="hl-tab" data-hlmode="hl" aria-selected="true">Highlights</button><button type="button" class="hl-tab" data-hlmode="recent" aria-selected="false" hidden data-t="recTab"></button></h2>
+      <h2 id="hlH" class="hl-title">Highlights</h2>
       <button type="button" class="icon-btn" id="autoBtn" aria-pressed="false" style="min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"></button>
     </div>
     <div class="stage">
@@ -1180,14 +1178,9 @@ const slideKey = () => (hlMode === 'recent' && recentOk() ? 'rslide' : 'slide');
 function renderHlTabs() {
   const ok = recentOk();
   if (!ok) hlMode = 'hl';
-  document.querySelectorAll('.hl-tab').forEach((b) => {
-    const on = b.dataset.hlmode === hlMode;
-    b.setAttribute('aria-selected', String(on));
-    if (b.dataset.hlmode === 'recent') b.hidden = !ok;
-  });
-  $('hlH').classList.toggle('single', !ok);
-  $('hlH').setAttribute('role', ok ? 'tablist' : 'presentation');
-  document.querySelectorAll('.hl-tab').forEach((b) => b.setAttribute('role', ok ? 'tab' : 'presentation'));
+  // Nur die Überschrift der gerade sichtbaren Slideshow, keine Reiter.
+  const txt = hlMode === 'recent' ? T().recTab : 'Highlights';
+  if ($('hlH').textContent !== txt) $('hlH').textContent = txt;
 }
 let builtFor = null, lastInfoId = null, infoTimer = null;
 const STEP_DEG = 30, FOCUS_SCALE = 1.25;
@@ -1255,8 +1248,8 @@ function setHlMode(m) {
   const track = $('track');
   clearTimeout(swapTimer);
   if (reduceMotionQ()) { hlMode = m; renderSlider(); return; }
-  track.classList.add('swap');
-  swapTimer = setTimeout(() => { hlMode = m; renderSlider(); requestAnimationFrame(() => track.classList.remove('swap')); }, 350);
+  track.classList.add('swap'); $('hlH').classList.add('swap');
+  swapTimer = setTimeout(() => { hlMode = m; renderSlider(); requestAnimationFrame(() => { track.classList.remove('swap'); $('hlH').classList.remove('swap'); }); }, 350);
 }
 // Cover eines Gastspiels nicht ladbar -> Anfangsbuchstabe statt kaputtem Bild.
 $('track').addEventListener('error', (e) => { const im = e.target; if (!im || im.tagName !== 'IMG' || im.dataset.ph == null) return; im.hidden = true;
@@ -1635,7 +1628,7 @@ $('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target
 $('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); renderAuth(); if (canEdit) { renderQr(); renderEvents(); renderBkAdm(); } renderParties(); });
 const AUTO_MS = 5000;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const MODE_TICKS = 12; // 12 × 5 s ≈ 1 Minute, dann wechselt die Slideshow zwischen Highlights und Zuletzt gespielt
+const MODE_TICKS = 6; // 6 × 5 s = 30 Sekunden, dann wechselt die Slideshow zwischen Highlights und Zuletzt gespielt
 let autoOn = !reduceMotion, hoverPause = false, autoTimer = null, modeTicks = 0;
 function renderAutoBtn() {
   const b = $('autoBtn'); b.setAttribute('aria-pressed', String(!autoOn));
@@ -1660,8 +1653,6 @@ stage.addEventListener('focusin', () => { hoverPause = true; });
 stage.addEventListener('focusout', (e) => { if (!stage.contains(e.relatedTarget)) hoverPause = false; });
 $('prev').onclick = () => { S[slideKey()] = (S[slideKey()] || 0) - 1; renderSlider(); restartAuto(); };
 $('next').onclick = () => { S[slideKey()] = (S[slideKey()] || 0) + 1; renderSlider(); restartAuto(); };
-$('hlH').addEventListener('click', (e) => { const b = e.target.closest('.hl-tab'); if (!b) return; modeTicks = 0; setHlMode(b.dataset.hlmode); restartAuto(); });
-$('hlH').addEventListener('keydown', (e) => { if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.closest('.hl-tab') && recentOk()) { e.preventDefault(); const m = hlMode === 'hl' ? 'recent' : 'hl'; modeTicks = 0; setHlMode(m); restartAuto(); document.querySelector('.hl-tab[data-hlmode="' + m + '"]').focus(); } });
 $('track').addEventListener('click', (e) => {
   const b = e.target.closest('.slide'); if (!b) return;
   const N = slideItems().length, sk = slideKey(), idx = (((S[sk] || 0) % N) + N) % N, d = ringOffset(Number(b.dataset.i), idx, N);
