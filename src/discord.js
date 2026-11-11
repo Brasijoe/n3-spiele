@@ -72,6 +72,9 @@ export function parseDate(input, now = new Date()) {
 export function hasStarted(r, now = new Date()) {
   return r.date <= berlin(now).date; // ab dem Tag der Runde (deutsche Zeit)
 }
+export const berlinToday = () => berlin().date;
+// Erste Zeile der Discord-Nachricht; bei Runden mit Event-Code steht der Eventname dabei.
+export const headline = (r) => `**${r.host}** sucht Mitspielende${r.event_name ? ` am Event „${r.event_name}“` : ''}!`;
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
 
@@ -338,6 +341,9 @@ export async function ensureCols(env) {
   if (!have.has('discord_channel')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_channel TEXT').run();
   if (!have.has('discord_msg')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_msg TEXT').run();
   if (!have.has('host_discord')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN host_discord TEXT').run();
+  if (!have.has('event_id')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_id TEXT').run();
+  if (!have.has('event_name')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_name TEXT').run();
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, valid_until TEXT NOT NULL, date_from TEXT NOT NULL, date_to TEXT NOT NULL, created_at TEXT NOT NULL)').run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS members (discord_id TEXT PRIMARY KEY, name TEXT NOT NULL, code_hash TEXT NOT NULL UNIQUE, blocked INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, checked_at INTEGER NOT NULL DEFAULT 0)').run();
   colsOk = true;
 }
@@ -357,7 +363,7 @@ export async function announceParty(env, id, channelId, fromWeb = false) {
   channelId = channelId || channelIds(env)[0];
   const row = await getParty(env, id); if (!row) return null;
   if (row.game_id) { try { await Promise.race([warmCover(env, row.game_id), new Promise((r) => setTimeout(r, 4000))]); } catch { /* ohne Vorwärmen */ } }
-  const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row, env) });
+  const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: headline(row), ...view(row, env) });
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
   return msg.id;
 }
@@ -365,7 +371,7 @@ export async function syncParty(env, id, internal = false) {
   if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   const row = await getParty(env, id);
   if (!row || !row.discord_msg) return;
-  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `**${row.host}** sucht Mitspielende!`, ...view(row, env) });
+  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: headline(row), ...view(row, env) });
 }
 export async function cancelPartyMessage(env, row, internal = false) {
   if (!row || !row.discord_msg) return;

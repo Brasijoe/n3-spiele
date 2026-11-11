@@ -136,6 +136,16 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .src.guest::before { background: var(--guest); }
 .src.club { background: var(--surface-2); color: var(--fg); }
 .src.club::before { background: var(--club); }
+.src.event { background: var(--surface-2); color: var(--fg); margin-left: 6px; }
+.src.event::before { background: var(--accent); border-radius: 50%; }
+.adm-play .acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.adm-play .acts .btn { margin-left: 0; }
+.adm-edit { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 12px; width: 100%; align-items: end; padding: 4px 0 6px; }
+.adm-edit .acts, .adm-edit [data-pmsg] { grid-column: 1 / -1; justify-content: flex-end; }
+.adm-edit .chk { flex-direction: row; align-items: center; gap: 8px; min-height: 44px; }
+.ev-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; letter-spacing: .08em; }
+#pEvCode { width: 100%; max-width: 280px; letter-spacing: .12em; }
+.linkish { align-self: flex-start; min-height: 36px; font-size: 13px; }
 .rec-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
 .guest-cta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; background: var(--surface); border-radius: 8px; padding: 16px 20px; }
 /* BGG-Suche im Dialog */
@@ -343,6 +353,22 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
         <span id="qrMsg" role="status" class="note"></span></div></div>
     </div>
     <div class="adm-block">
+      <h3 data-t="admEv"></h3>
+      <p class="note" data-t="admEvNote" style="margin:0"></p>
+      <form id="evForm" class="row">
+        <label class="field" style="flex:2 1 220px"><span data-t="admEvName"></span><input type="text" id="evName" maxlength="60" required></label>
+        <label class="field" style="flex:1 1 180px"><span data-t="admEvCode"></span><input type="text" id="evCode" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      </form>
+      <div class="row">
+        <label class="field" style="flex:1 1 150px"><span data-t="admEvFrom"></span><input type="date" id="evFrom" form="evForm" required></label>
+        <label class="field" style="flex:1 1 150px"><span data-t="admEvTo"></span><input type="date" id="evTo" form="evForm" required></label>
+        <label class="field" style="flex:1 1 150px"><span data-t="admEvUntil"></span><input type="date" id="evUntil" form="evForm" required></label>
+        <button type="submit" form="evForm" class="btn btn-primary" data-t="admEvAdd"></button>
+      </div>
+      <span id="evMsg" role="status" class="note"></span>
+      <div id="evList"></div>
+    </div>
+    <div class="adm-block">
       <h3 data-t="admPlays"></h3>
       <div id="admPlays"></div>
     </div>
@@ -442,9 +468,11 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
     <div class="row"><label class="field" style="flex:1 1 150px"><span data-t="date"></span><input type="date" id="pDate" required></label>
       <label class="field" style="flex:1 1 110px"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label></div>
     <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
-    <label class="field" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
+    <label class="field" id="pHostWrap" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="pNote" maxlength="200"></label>
-    <label class="field code"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
+    <label class="field code" id="pCodeWrap"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
+    <label class="field code" id="pEvWrap" hidden><span data-t="evCode"></span><input type="text" id="pEvCode" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" id="pEvInfo"></span></label>
+    <button type="button" class="btn btn-quiet linkish" id="pEvToggle"></button>
     <span id="pMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
       <button type="button" class="btn btn-quiet" id="pCancel" data-t="cancel"></button>
@@ -470,6 +498,8 @@ const TXT = {
     ciTitle: 'Dein persönlicher Code', ciP1: 'Damit wir wissen, wer eine Spielrunde anlegt oder eine Partie einträgt, hat jedes Mitglied einen eigenen Code. Er ist mit deinem Discord-Konto verknüpft.', ciP2: 'So bekommst du ihn: Tritt dem N3-Discord-Server bei, akzeptiere die Brettspiel-Rolle und tippe dann im Bot-Kanal /code. Der Bot schickt dir den Code als Nachricht, die nur du sehen kannst. Gib ihn hier ein; dein Browser merkt ihn sich.', ciP3: 'Gib den Code nicht weiter. Ein neues /code macht den alten ungültig, und wer den Server verlässt, verliert den Code.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
     code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Auf dem N3-Discord-Server mit /code abholen.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
     admQr: 'Eintragen per QR-Code', admQrNote: 'Wer den QR-Code im Club scannt, kann Partien ohne Discord eintragen (mit Namen). Ein neuer Schlüssel macht alte Ausdrucke sofort ungültig.', admQrPrint: 'Aushang drucken', admQrCopy: 'Link kopieren', admQrCopied: 'Link kopiert.', admQrMake: 'Schlüssel erzeugen', admQrRenew: 'Neuen Schlüssel erzeugen', admQrRenewSure: 'Alte Ausdrucke werden ungültig – wirklich?', admQrNone: 'Noch kein Schlüssel. Erst erzeugen, dann drucken.', admQrRenewed: 'Neuer Schlüssel aktiv. Bitte den neuen Aushang drucken.', admQrErr: 'Das hat nicht geklappt.', byTag: 'von {n}',
+    admEv: 'Event-Codes', admEvNote: 'Mit einem Event-Code kann jede Person ohne Discord eine Runde anbieten (mit Namen), bis einschließlich „Code gültig bis“ und nur an den Eventtagen. In Discord steht dann der Eventname dabei. Code leer lassen = er wird automatisch erzeugt.', admEvName: 'Eventname', admEvCode: 'Code (optional, mind. 6 Zeichen)', admEvCodePh: 'leer = automatisch', admEvFrom: 'Event von', admEvTo: 'Event bis', admEvUntil: 'Code gültig bis', admEvAdd: 'Event-Code anlegen', admEvNone: 'Noch keine Event-Codes.', admEvValid: 'gültig bis {d}', admEvExpired: 'abgelaufen ({d})', admEvCopy: 'Link kopieren', admEvCopied: 'Link kopiert.', admEvDel: 'Löschen', admEvTaken: 'Diesen Code gibt es schon.', admEvShort: 'Der Code braucht mindestens 6 Buchstaben oder Ziffern.', admEvBad: 'Bitte Name und alle drei Daten ausfüllen („bis“ nicht vor „von“).', admEvMade: 'Event-Code {c} ist aktiv.',
+    evUseEvent: 'Ich habe einen Event-Code', evUsePersonal: 'Doch mit persönlichem Code', evCode: 'Event-Code', evHint: 'Den Code bekommst du vom Orga-Team des Events.', evInfo: 'Event „{n}“ · {d}', evBad: 'Diesen Event-Code gibt es nicht.', evExpired: 'Dieser Event-Code ist abgelaufen.', evDateErr: 'Bitte einen Tag des Events wählen ({d}).', evOver: 'Die Eventtage sind schon vorbei.',
     cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
     errLen: 'Bitte deinen persönlichen Code eingeben (8 Zeichen).', errCode: 'Der Code stimmt nicht. Hol dir mit /code auf dem Discord-Server einen neuen.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
     gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
@@ -484,7 +514,7 @@ const TXT = {
     admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.', admCode: 'Vereinscode ändern', admNewCode: 'Neuer 4-stelliger Code', admSaveCode: 'Code speichern',
     codeSaved: 'Neuer Code ist aktiv.', codeErr: 'Speichern hat nicht geklappt.', admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
     admAdd: 'Spiel hinzufügen', admAddBtn: 'Hinzufügen', admSaveHl: 'Highlights speichern', admResetHl: 'Auf Top 15 zurücksetzen', hlSaved: 'Highlights gespeichert.', hlReset: 'Zurückgesetzt auf Top 15.', hlErr: 'Speichern hat nicht geklappt.',
-    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admNoPlays: 'Noch keine Partien eingetragen.',
+    descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admEdit: 'Bearbeiten', admSave: 'Speichern', admBy: 'Eingetragen von', admEditErr: 'Bitte gültiges Datum und 1–99 Spieler angeben.', admNoPlays: 'Noch keine Partien eingetragen.',
     del: 'Löschen', delConfirm: 'Wirklich löschen?', unsaved: 'Ungespeicherte Änderungen',
     autoPause: 'Automatisches Weiterblättern anhalten', autoPlay: 'Automatisches Weiterblättern starten',
     dur: 'Dauer in Minuten (optional)', first: 'Erstpartie (mit Regelerklärung)', clubTime: 'Bei uns: ~{m} Min ({p} Sp.)', firstTag: 'Erstpartie', errDur: 'Bitte eine Dauer zwischen 1 und 1440 Minuten eingeben oder das Feld leer lassen.',
@@ -518,6 +548,8 @@ const TXT = {
     ciTitle: 'Your personal code', ciP1: 'So we know who creates a game round or logs a play, every member has their own code. It is linked to your Discord account.', ciP2: 'How to get it: join the N3 Discord server, accept the board game role, then type /code in the bot channel. The bot sends you the code in a message only you can see. Enter it here; your browser remembers it.', ciP3: 'Don’t share it. A new /code invalidates the old one, and anyone who leaves the server loses their code.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
     code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it on the N3 Discord server with /code.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
     admQr: 'Logging via QR code', admQrNote: 'Anyone who scans the QR code at the club can log plays without Discord (with their name). A new key instantly invalidates old printouts.', admQrPrint: 'Print poster', admQrCopy: 'Copy link', admQrCopied: 'Link copied.', admQrMake: 'Create key', admQrRenew: 'Create new key', admQrRenewSure: 'Old printouts stop working – sure?', admQrNone: 'No key yet. Create one, then print.', admQrRenewed: 'New key active. Please print the new poster.', admQrErr: 'That didn’t work.', byTag: 'by {n}',
+    admEv: 'Event codes', admEvNote: 'With an event code anyone can offer a game without Discord (with their name), up to and including “Code valid until”, and only on the event days. Discord then shows the event name. Leave the code empty to generate one.', admEvName: 'Event name', admEvCode: 'Code (optional, min. 6 characters)', admEvCodePh: 'empty = automatic', admEvFrom: 'Event from', admEvTo: 'Event to', admEvUntil: 'Code valid until', admEvAdd: 'Create event code', admEvNone: 'No event codes yet.', admEvValid: 'valid until {d}', admEvExpired: 'expired ({d})', admEvCopy: 'Copy link', admEvCopied: 'Link copied.', admEvDel: 'Delete', admEvTaken: 'This code already exists.', admEvShort: 'The code needs at least 6 letters or digits.', admEvBad: 'Please fill in the name and all three dates (“to” not before “from”).', admEvMade: 'Event code {c} is active.',
+    evUseEvent: 'I have an event code', evUsePersonal: 'Use my personal code instead', evCode: 'Event code', evHint: 'You get the code from the event’s organisers.', evInfo: 'Event “{n}” · {d}', evBad: 'This event code doesn’t exist.', evExpired: 'This event code has expired.', evDateErr: 'Please pick a day of the event ({d}).', evOver: 'The event days are already over.',
     cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
     errLen: 'Please enter your personal code (8 characters).', errCode: 'Wrong code. Get a new one with /code on the Discord server.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
     gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
@@ -532,7 +564,7 @@ const TXT = {
     admin: 'Administration', adminNote: 'Only visible to people with edit access.', admCode: 'Change club code', admNewCode: 'New 4-digit code', admSaveCode: 'Save code',
     codeSaved: 'The new code is active.', codeErr: 'Saving didn’t work.', admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
     admAdd: 'Add a game', admAddBtn: 'Add', admSaveHl: 'Save highlights', admResetHl: 'Reset to top 15', hlSaved: 'Highlights saved.', hlReset: 'Reset to top 15.', hlErr: 'Saving didn’t work.',
-    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admNoPlays: 'No plays logged yet.',
+    descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admEdit: 'Edit', admSave: 'Save', admBy: 'Logged by', admEditErr: 'Please enter a valid date and 1–99 players.', admNoPlays: 'No plays logged yet.',
     del: 'Delete', delConfirm: 'Really delete?', unsaved: 'Unsaved changes',
     autoPause: 'Pause automatic slideshow', autoPlay: 'Start automatic slideshow',
     dur: 'Duration in minutes (optional)', first: 'First play (incl. rules explanation)', clubTime: 'At our club: ~{m} min ({p} pl.)', firstTag: 'First play', errDur: 'Please enter a duration between 1 and 1440 minutes, or leave the field empty.',
@@ -712,7 +744,7 @@ function renderStatic() {
   $('prev').setAttribute('aria-label', t.prev); $('next').setAttribute('aria-label', t.next);
   $('q').placeholder = t.searchPh; $('gQ').placeholder = t.bggPh; $('pQ').placeholder = t.bggPh;
   $('tabs').setAttribute('aria-label', de() ? 'Bereiche' : 'Sections');
-  $('fWinner').placeholder = t.winnerPh; $('fNote').placeholder = t.notePh; $('fCode').placeholder = t.codePh; $('pCode').placeholder = t.codePh;
+  $('fWinner').placeholder = t.winnerPh; $('fNote').placeholder = t.notePh; $('fCode').placeholder = t.codePh; $('pCode').placeholder = t.codePh; $('evCode').placeholder = t.admEvCodePh; $('pEvToggle').textContent = evMode ? t.evUsePersonal : t.evUseEvent;
   renderSortOpts();
   $('minVotes').innerHTML = [[0, t.any], [500, '500+'], [2000, '2.000+'], [10000, '10.000+']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('minVotes').value = S.minVotes;
   $('rankMax').innerHTML = [[0, t.any], [100, 'Top 100'], [500, 'Top 500'], [1000, 'Top 1.000'], [2500, 'Top 2.500']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('rankMax').value = S.rankMax;
@@ -842,12 +874,27 @@ function renderAdmin() {
   const avail = games.filter((g) => !hlDraft.ids.includes(g.id)).sort((a, b) => name(a).localeCompare(name(b), S.lang));
   $('hlAdd').innerHTML = avail.map((g) => '<option value="' + g.id + '">' + esc(name(g)) + '</option>').join('');
   if (hlDirty && !$('hlMsg').textContent) { $('hlMsg').className = 'note'; $('hlMsg').textContent = t.unsaved; }
+  if (playEdit && $('admPlays').querySelector('form[data-pedit]')) return; // offenes Bearbeiten nicht beim Auffrischen überschreiben
   $('admPlays').innerHTML = playDocs.length ? playDocs.slice(0, 100).map(({ id, p }) => {
+    if (playEdit === id) {
+      const f = (lbl, html) => '<label class="field">' + esc(lbl) + html + '</label>';
+      return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<form class="adm-edit" data-pedit="' + esc(id) + '">' +
+        f(t.date, '<input type="date" name="date" required value="' + esc(p.date || '') + '">') +
+        f(t.nPlayers, '<input type="number" name="players" min="1" max="99" required value="' + esc(p.players) + '">') +
+        f(t.winner, '<input type="text" name="winner" maxlength="80" value="' + esc(p.winner || '') + '">') +
+        f(t.dur, '<input type="number" name="duration" min="1" max="1440" value="' + esc(Number(p.duration) > 0 ? p.duration : '') + '">') +
+        f(t.note, '<input type="text" name="note" maxlength="200" value="' + esc(p.note || '') + '">') +
+        f(t.admBy, '<input type="text" name="loggedBy" maxlength="40" value="' + esc(p.loggedBy || '') + '">') +
+        '<label class="field chk"><input type="checkbox" name="firstPlay"' + (p.firstPlay ? ' checked' : '') + '>' + esc(t.first) + '</label>' +
+        '<span class="acts"><button type="button" class="btn btn-quiet" data-pcancel>' + esc(t.cancel) + '</button><button type="submit" class="btn btn-primary">' + esc(t.admSave) + '</button></span>' +
+        '<span class="err" data-pmsg></span></form></div>';
+    }
     return '<div class="adm-play"><strong>' + esc(playName(p)) + '</strong>' + srcTag(p) + '<span>' + esc(String(p.date || '').split('-').reverse().join('.')) + '</span><span>' + esc(p.players + ' ' + t.players) + '</span>' +
       (Number(p.duration) > 0 ? '<span>' + esc(p.duration + ' ' + t.min) + '</span>' : '') + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') +
       (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') +
       (p.loggedBy ? '<span class="meta">' + esc(fill(t.byTag, { n: p.loggedBy }) + (p.via === 'qr' ? ' (QR)' : '')) + '</span>' : '') +
-      '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></div>';
+      '<span class="acts"><button type="button" class="btn btn-quiet" data-pedit-open="' + esc(id) + '">' + esc(t.admEdit) + '</button>' +
+      '<button type="button" class="btn ' + (pendingDel === id ? 'btn-primary' : 'btn-quiet') + '" data-del="' + esc(id) + '">' + esc(pendingDel === id ? t.delConfirm : t.del) + '</button></span></div>';
   }).join('') : '<p class="meta" style="margin:0">' + esc(t.admNoPlays) + '</p>';
 }
 
@@ -889,6 +936,19 @@ $('codeForm').addEventListener('submit', async (e) => {
   catch (err) { msg.className = 'err'; msg.textContent = t.codeErr; }
 });
 $('newCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
+var playEdit = null;
+$('admPlays').addEventListener('click', (e) => {
+  const o = e.target.closest('[data-pedit-open]'); if (o) { playEdit = o.dataset.peditOpen; pendingDel = null; $('admPlays').innerHTML = ''; renderAdmin(); return; }
+  if (e.target.closest('[data-pcancel]')) { playEdit = null; $('admPlays').innerHTML = ''; renderAdmin(); }
+});
+$('admPlays').addEventListener('submit', async (e) => {
+  const fm = e.target.closest('form[data-pedit]'); if (!fm) return; e.preventDefault();
+  const v = (n) => fm.elements[n].value.trim(), t = T(), msg = fm.querySelector('[data-pmsg]');
+  const b = { date: v('date'), players: Math.round(Number(v('players'))), winner: v('winner'), duration: v('duration') ? Math.round(Number(v('duration'))) : null, note: v('note'), loggedBy: v('loggedBy'), firstPlay: fm.elements.firstPlay.checked };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date) || !(b.players >= 1 && b.players <= 99) || (b.duration != null && !(b.duration >= 1 && b.duration <= 1440))) { msg.textContent = t.admEditErr; return; }
+  try { await api('PUT', '/plays/' + encodeURIComponent(fm.dataset.pedit), b); playEdit = null; $('admPlays').innerHTML = ''; refreshAll(); }
+  catch (x) { msg.textContent = x && x.code === 'invalid' ? t.admEditErr : t.errSave; }
+});
 $('admPlays').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-del]'); if (!b) return;
   const id = b.dataset.del;
@@ -936,7 +996,7 @@ $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) close
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('modal').hidden) closeLog(); if (e.key === 'Escape' && !$('pModal').hidden) closeParty(); });
 $('fCode').addEventListener('input', (e) => { e.target.value = showCode(e.target.value); });
 
-$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); if (canEdit) renderQr(); });
+$('langGroup').addEventListener('click', (e) => { const b = e.target.closest('button[data-lang]'); if (!b) return; S.lang = b.dataset.lang; try { localStorage.setItem('n3-lang', S.lang); } catch (x) {} renderAll(); if (canEdit) { renderQr(); renderEvents(); } });
 const AUTO_MS = 5000;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let autoOn = !reduceMotion, hoverPause = false, autoTimer = null;
@@ -1167,7 +1227,7 @@ function partyCard(x, past) {
   if (String(p.date) <= todayIso()) actions += p.playId ? '<span class="done">' + esc(t.ptLogged) + '</span>' : '<button type="button" class="btn ' + (past ? 'btn-primary' : 'btn-outline') + '" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
   if (canEdit || (my && my.host)) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   const join = joinOpen === x.id ? '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
-  return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + '</div></div>' +
+  return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + '</div></div>' +
     '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
     '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => '<span class="pill">' + esc(a.name) + '</span>').join('') + '</div>' +
     (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') + join + '<div class="actions">' + actions + '</div></div></article>';
@@ -1253,10 +1313,47 @@ function nextEventDay() {
   if (at18(sat) <= now) sat = firstSat(now.getFullYear(), now.getMonth() + 1);
   return isoDay(sat < tue ? sat : tue);
 }
+/* Event-Code: Runde ohne persönlichen Code, nur an Eventtagen. Der Code wird auf dem Gerät gemerkt (auch aus ?event=…). */
+const normEv = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 24);
+var evMode = false, evInfo = null, evTimer = null;
+const evRange = (e) => dmy(e.from) + (e.to !== e.from ? ' – ' + dmy(e.to) : '');
+function applyEvDates() {
+  const t = T(), td = todayIso();
+  if (evMode && evInfo) {
+    const min = evInfo.from > td ? evInfo.from : td, d = $('pDate').value;
+    $('pDate').min = min; $('pDate').max = evInfo.to;
+    if (!d || d < min || d > evInfo.to) $('pDate').value = min <= evInfo.to ? min : '';
+    $('pEvInfo').className = 'note'; $('pEvInfo').textContent = fill(t.evInfo, { n: evInfo.name, d: evRange(evInfo) }) + (min > evInfo.to ? ' – ' + t.evOver : '');
+  } else {
+    $('pDate').min = td; $('pDate').removeAttribute('max');
+    if (!$('pDate').value || $('pDate').value < td) $('pDate').value = nextEventDay();
+  }
+}
+function setEvMode(on) {
+  const t = T(); evMode = on; $('pEvWrap').hidden = !on; $('pCodeWrap').hidden = on; $('pHostWrap').hidden = !on;
+  $('pEvToggle').textContent = on ? t.evUsePersonal : t.evUseEvent;
+  if (on && !evInfo) { $('pEvInfo').className = 'note'; $('pEvInfo').textContent = t.evHint; }
+  if (!on) $('pDate').value = nextEventDay();
+  applyEvDates();
+}
+async function checkEv(auto) {
+  const t = T(), c = normEv($('pEvCode').value); evInfo = null;
+  if (c.length < 4) { setEvMode(evMode); return; }
+  try { evInfo = await api('GET', '/events/check', undefined, { 'X-Event-Code': c }); lsSet('n3-event-code', c); }
+  catch (e) {
+    if (e && (e.code === 'bad_event' || e.code === 'event_expired')) lsSet('n3-event-code', '');
+    if (auto) { setEvMode(false); return; }
+    $('pEvInfo').className = 'err'; $('pEvInfo').textContent = e && e.code === 'event_expired' ? t.evExpired : e && e.code === 'rate_limited' ? t.errRate : t.evBad;
+  }
+  if (normEv($('pEvCode').value) === c) applyEvDates();
+}
+$('pEvToggle').onclick = () => { setEvMode(!evMode); if (evMode) $('pEvCode').focus(); };
+$('pEvCode').addEventListener('input', () => { clearTimeout(evTimer); evTimer = setTimeout(() => checkEv(false), 600); });
 function openParty() {
   pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextEventDay(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
   $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
   try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
+  const ev = lsGet('n3-event-code'); evInfo = null; $('pEvCode').value = ev; setEvMode(!!ev); if (ev) checkEv(true);
   renderPPick(); $('pModal').hidden = false; $('pQ').focus();
 }
 function closeParty() { $('pModal').hidden = true; }
@@ -1269,14 +1366,30 @@ $('pForm').addEventListener('submit', async (e) => {
   msg.className = 'err';
   if (!pGame) { msg.textContent = t.errPick; $('pQ').focus(); return; }
   if (!(seats >= 2 && seats <= 30)) { msg.textContent = t.ptErrSeats; return; }
-  if (code.length !== 8) { msg.textContent = t.errLen; return; }
+  const host = $('pHost').value.trim().slice(0, 40), date = $('pDate').value;
+  if (evMode) {
+    if (!evInfo) { msg.textContent = t.evBad; $('pEvCode').focus(); return; }
+    if (!host) { msg.textContent = t.ptErrName; $('pHost').focus(); return; }
+    if (!date || date < evInfo.from || date > evInfo.to || date < todayIso()) { msg.textContent = fill(t.evDateErr, { d: evRange(evInfo) }); return; }
+  } else if (code.length !== 8) { msg.textContent = t.errLen; return; }
   $('pSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   try {
-    const r = await api('POST', '/parties', { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date: $('pDate').value, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) }, { 'X-Member-Code': code });
-    saveCode(code);
+    const body = { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 200) };
+    if (evMode) body.host = host;
+    const r = await api('POST', '/parties', body, evMode ? { 'X-Event-Code': normEv($('pEvCode').value) } : { 'X-Member-Code': code });
+    if (evMode) lsSet('n3-name', host); else saveCode(code);
     const m = mine(); m[r.id] = { host: true, hostKey: r.hostKey }; setMine(m);
     refreshAll(); msg.textContent = t.ptCreated; setTimeout(closeParty, 500);
-  } catch (err) { if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.className = 'err'; msg.textContent = codeErr(err); $('pSave').disabled = false; }
+  } catch (err) {
+    msg.className = 'err'; $('pSave').disabled = false;
+    if (evMode && err) {
+      const c = err.code;
+      if (c === 'bad_event' || c === 'event_expired') { lsSet('n3-event-code', ''); evInfo = null; msg.textContent = c === 'event_expired' ? t.evExpired : t.evBad; return; }
+      if (c === 'event_date' && evInfo) { msg.textContent = fill(t.evDateErr, { d: evRange(evInfo) }); return; }
+      if (c === 'name_missing') { msg.textContent = t.ptErrName; return; }
+    }
+    if (err && (err.code === 'bad_code' || err.code === 'blocked')) forgetCode(); msg.textContent = codeErr(err);
+  }
 });
 
 /* ---------- Ansichten (Tabs) ---------- */
@@ -1340,7 +1453,7 @@ $('admLink').onclick = () => {
 $('admForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
   try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
-  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); }
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }
   catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
 });
 /* ---------- QR-Code zum Eintragen (Verwaltung) ---------- */
@@ -1364,6 +1477,47 @@ $('qrNew').onclick = async () => {
   try { qrKey = (await api('POST', '/admin/logkey')).key; $('qrMsg').textContent = t.admQrRenewed; } catch (e) { $('qrMsg').textContent = t.admQrErr; }
   renderQr();
 };
+/* ---------- Event-Codes (Verwaltung) ---------- */
+let evRows = [], evDelSure = null;
+const evLink = (c) => location.origin + '/?event=' + encodeURIComponent(c) + '#partys';
+function renderEvents() {
+  const t = T(), td = todayIso();
+  $('evList').innerHTML = evRows.length ? evRows.map((e) => '<div class="adm-play"><strong>' + esc(e.name) + '</strong><span class="ev-code">' + esc(e.code) + '</span><span>' + esc(evRange(e)) + '</span>' +
+    '<span class="meta">' + esc(fill(e.validUntil < td ? t.admEvExpired : t.admEvValid, { d: dmy(e.validUntil) })) + '</span>' +
+    '<span class="acts"><button type="button" class="btn btn-quiet" data-evcopy="' + esc(e.code) + '">' + esc(t.admEvCopy) + '</button>' +
+    '<button type="button" class="btn ' + (evDelSure === e.id ? 'btn-primary' : 'btn-quiet') + '" data-evdel="' + esc(e.id) + '">' + esc(evDelSure === e.id ? t.delConfirm : t.admEvDel) + '</button></span></div>').join('')
+    : '<p class="meta" style="margin:0">' + esc(t.admEvNone) + '</p>';
+}
+async function loadEvents() { try { evRows = await api('GET', '/admin/events'); } catch (e) { evRows = []; } renderEvents(); }
+// Vorschlag: „gültig bis“ = letzter Eventtag, solange niemand das Feld selbst geändert hat.
+let evUntilAuto = true;
+const evSyncUntil = () => { if (evUntilAuto && $('evTo').value) $('evUntil').value = $('evTo').value; };
+$('evFrom').addEventListener('change', () => { const f = $('evFrom').value; if (f && (!$('evTo').value || $('evTo').value < f)) $('evTo').value = f; evSyncUntil(); });
+$('evTo').addEventListener('change', evSyncUntil);
+$('evUntil').addEventListener('change', () => { evUntilAuto = !$('evUntil').value; });
+$('evForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const t = T(), msg = $('evMsg'), raw = $('evCode').value, code = normEv(raw);
+  const b = { name: $('evName').value.trim(), code, from: $('evFrom').value, to: $('evTo').value, validUntil: $('evUntil').value };
+  if (!b.name || !b.from || !b.to || !b.validUntil || b.to < b.from) { msg.textContent = t.admEvBad; return; }
+  if (raw.trim() && code.length < 6) { msg.textContent = t.admEvShort; return; }
+  try {
+    const ev = await api('POST', '/admin/events', b);
+    ['evName', 'evCode', 'evFrom', 'evTo', 'evUntil'].forEach((id) => { $(id).value = ''; }); evUntilAuto = true;
+    msg.textContent = fill(t.admEvMade, { c: ev.code }); loadEvents();
+  } catch (x) { msg.textContent = x && x.code === 'code_taken' ? t.admEvTaken : x && x.code === 'code_short' ? t.admEvShort : x && x.code === 'invalid' ? t.admEvBad : t.admQrErr; }
+});
+$('evList').addEventListener('click', async (e) => {
+  const cp = e.target.closest('[data-evcopy]'), del = e.target.closest('[data-evdel]');
+  if (cp) { const u = evLink(cp.dataset.evcopy); try { await navigator.clipboard.writeText(u); $('evMsg').textContent = T().admEvCopied; } catch (x) { $('evMsg').textContent = u; } }
+  if (del) {
+    const id = del.dataset.evdel;
+    if (evDelSure !== id) { evDelSure = id; renderEvents(); return; }
+    evDelSure = null;
+    try { await api('DELETE', '/admin/events/' + encodeURIComponent(id)); } catch (x) { $('evMsg').textContent = T().admQrErr; }
+    loadEvents();
+  }
+});
 $('qrCopy').onclick = async () => { try { await navigator.clipboard.writeText(qrLink(qrKey)); $('qrMsg').textContent = T().admQrCopied; } catch (e) { $('qrMsg').textContent = qrLink(qrKey); } };
 async function loadGeeklist() {
   if (!canEdit) return; const t = T();
@@ -1397,6 +1551,15 @@ if (qrParam && logKey) {
   api('GET', '/logkey/check', undefined, { 'X-Log-Key': logKey }).catch((e) => { if (e && e.code === 'bad_key') { logKey = ''; lsSet('n3-log-key', ''); $('fByWrap').hidden = true; $('fCodeWrap').hidden = false; $('fMsg').className = 'err'; $('fMsg').textContent = T().errKey; } });
 }
 
+const evParam = new URLSearchParams(location.search).get('event');
+if (evParam && normEv(evParam).length >= 4) {
+  // Link aus der Verwaltung: Code merken, Adresse aufräumen und gleich den Dialog „Runde anbieten“ öffnen.
+  lsSet('n3-event-code', normEv(evParam));
+  try { history.replaceState(null, '', location.pathname + '#partys'); } catch (x) {}
+  if (currentView() !== 'parties') location.hash = 'partys';
+  renderView(); renderParties(); openParty();
+}
+
 watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); partyState = 'ready'; renderParties(); }, () => { partyState = 'off'; renderParties(); }, 15000);
 watch('/plays', (rows) => {
   playDocs = rows.map((p) => ({ id: p.id, p })); plays = rows; playCount = {};
@@ -1408,7 +1571,7 @@ watch('/config/highlights', (cfg) => {
   hlCfg = cfg; applyHl(); renderSlider();
   if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
 }, () => {}, 60000);
-if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderAdminLink(); renderParties(); loadGeeklist(); loadQr(); loadEvents(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
 })();
 </script>
 
