@@ -94,6 +94,15 @@ const btns = m.components[0].components; assert.deepEqual(btns.map((b) => b.cust
 assert.ok(btns[0].label.includes(d1.slice(8, 10) + '.' + d1.slice(5, 7) + '.'));
 console.log('request posted to bot channel ok');
 
+// Ohne Mitgliederrolle: nur mit Event-Code und nur an Eventtagen
+r = await call('POST', `/member-games/${mg}/request`, gast, { dates: [d1] }); assert.equal((await r.json()).error, 'members_only');
+r = await call('POST', '/admin/events', null, { name: 'Spieletag', from: plus(40), to: plus(41), validUntil: plus(41), code: 'SPIELTAG1' }, { 'x-admin-token': 'test-admin-pw' }); assert.equal(r.status, 200);
+r = await call('POST', `/member-games/${mg}/request`, gast, { dates: [plus(40)], eventCode: 'FALSCH99' }); assert.equal((await r.json()).error, 'bad_event');
+r = await call('POST', `/member-games/${mg}/request`, gast, { dates: [plus(40), plus(50)], eventCode: 'spieltag1' }); assert.equal((await r.json()).error, 'event_date');
+r = await call('POST', `/member-games/${mg}/request`, gast, { dates: [plus(40), plus(41)], eventCode: 'SPIELTAG1', note: 'hi' }); assert.equal(r.status, 200);
+assert.match(JSON.stringify(msgs.at(-1).embeds), /Event „Spieletag“ · hi/);
+console.log('event code request for non-members ok');
+
 // Nur der Besitzer kann annehmen; Annehmen öffnet ein Fenster für Uhrzeit und Plätze
 let x = await interact({ type: 3, ...as('556'), data: { custom_id: `bringa:${rq}:0` } }); assert.match(x.data.content, /Nur <@555>/);
 x = await interact({ type: 3, ...as('555'), data: { custom_id: `bringa:${rq}:0` } }); assert.equal(x.type, 9); assert.equal(x.data.components[1].components[0].value, '4');
