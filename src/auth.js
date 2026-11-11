@@ -2,6 +2,7 @@
 // Beides ergibt eine Sitzung (Token im Browser, in der Datenbank nur als Hash). Zugang hat nur, wer auf dem Discord-Server ist,
 // den Bot-Kanal sehen kann und – falls DISCORD_ROLE_ID gesetzt ist – diese Rolle hat. Das wird alle 10 Minuten neu geprüft.
 import { ensureCols, normCode, codeHash, channelIds } from './discord.js';
+import { getBooking, isMember } from './booking.js';
 
 const enc = new TextEncoder();
 const hexOf = (b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -44,7 +45,7 @@ function canView(env, member, roles, chan) {
   apply(ow.find((o) => o.type === 1 && o.id === (member.user && member.user.id)));
   return (p & VIEW) !== 0n;
 }
-// Gibt { ok, name } oder { ok: false, err } zurück. err: not_member | no_role | no_channel
+// Gibt { ok, name, roles } oder { ok: false, err } zurück. err: not_member | no_role | no_channel
 export async function checkAccess(env, discordId) {
   if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) return { ok: true };
   const member = await bot(env, `/guilds/${env.DISCORD_GUILD_ID}/members/${discordId}`);
@@ -56,21 +57,24 @@ export async function checkAccess(env, discordId) {
     if (cache.roles && !canView(env, member, cache.roles, cache.chan)) return { ok: false, err: 'no_channel' };
   }
   const u = member.user || {};
-  return { ok: true, name: member.nick || u.global_name || u.username || '' };
+  return { ok: true, name: member.nick || u.global_name || u.username || '', roles: member.roles || [] };
 }
 
 // Mitglied (Tabelle members) prüfen, höchstens alle 10 Minuten bei Discord. Wer den Server verlässt, wird gelöscht (Code und Sitzungen weg).
 export async function memberOk(env, m) {
   if (m.blocked) return 'blocked';
-  if (Date.now() - m.checked_at < RECHECK_MS) return null;
+  // roles == null: Rollen noch nie gelesen (Einträge von vor der Mitgliederregel) -> gleich prüfen.
+  if (Date.now() - m.checked_at < RECHECK_MS && m.roles != null) return null;
   let a;
   try { a = await checkAccess(env, m.discord_id); } catch (e) { console.log('access check failed', e.message); return null; } // Discord down: nicht aussperren
   if (!a.ok) {
     if (a.err === 'not_member') { await env.DB.prepare('DELETE FROM members WHERE discord_id = ?1').bind(m.discord_id).run(); await env.DB.prepare('DELETE FROM sessions WHERE discord_id = ?1').bind(m.discord_id).run(); }
     return a.err;
   }
-  await env.DB.prepare('UPDATE members SET checked_at = ?1, name = coalesce(nullif(?2, \'\'), name) WHERE discord_id = ?3').bind(Date.now(), (a.name || '').slice(0, 40), m.discord_id).run();
+  const roles = a.roles ? JSON.stringify(a.roles) : m.roles || null;
+  await env.DB.prepare('UPDATE members SET checked_at = ?1, name = coalesce(nullif(?2, \'\'), name), roles = ?3 WHERE discord_id = ?4').bind(Date.now(), (a.name || '').slice(0, 40), roles, m.discord_id).run();
   if (a.name) m.name = a.name.slice(0, 40);
+  m.roles = roles;
   return null;
 }
 
@@ -160,8 +164,8 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
       const old = await env.DB.prepare('SELECT blocked FROM members WHERE discord_id = ?1').bind(u.id).first();
       if (old && old.blocked) return done('blocked');
       // Ohne /code gibt es keinen Code: Platzhalter-Hash, der zu keinem Code passt.
-      await env.DB.prepare("INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at) VALUES(?1, ?2, ?3, 0, ?4, ?5) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, checked_at = excluded.checked_at")
-        .bind(u.id, name, 'none:' + randHex(16), new Date().toISOString(), Date.now()).run();
+      await env.DB.prepare("INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at, roles) VALUES(?1, ?2, ?3, 0, ?4, ?5, ?6) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, checked_at = excluded.checked_at, roles = excluded.roles")
+        .bind(u.id, name, 'none:' + randHex(16), new Date().toISOString(), Date.now(), JSON.stringify(a.roles || [])).run();
       return done(null, await newSession(env, u.id, 'discord'));
     } catch (e) { console.log('oauth failed', e && e.message); return done('failed'); }
   }
@@ -189,7 +193,7 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
   if (path === '/auth/me' && m === 'GET') {
     const r = await currentUser(req, env, allow, ip);
     if (r.err) return fail(r.err === 'rate_limited' ? 429 : 401, r.err);
-    return json({ name: r.member.name });
+    return json({ name: r.member.name, member: isMember(await getBooking(env), r.member.roles) });
   }
 
   if (path === '/auth/logout' && m === 'POST') {
