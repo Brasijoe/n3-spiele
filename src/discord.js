@@ -391,6 +391,10 @@ export async function ensureCols(env) {
     // Bisherige Importe erkennen: mehrere Spiele derselben Person mit identischem Zeitstempel stammen aus einem BGG-Import.
     await env.DB.prepare("UPDATE member_games SET src = 'bgg' WHERE (discord_id, created_at) IN (SELECT discord_id, created_at FROM member_games GROUP BY discord_id, created_at HAVING COUNT(*) > 1)").run();
   }
+  // Mehrere Besitzer desselben Spiels: alle werden gefragt (owners = JSON [{id, name, mg}]), wer zuerst annimmt, bringt es mit.
+  const bc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('bring_requests')").all()).results.map((r) => r.name));
+  if (!bc.has('owners')) await env.DB.prepare('ALTER TABLE bring_requests ADD COLUMN owners TEXT').run();
+  if (!bc.has('declined')) await env.DB.prepare('ALTER TABLE bring_requests ADD COLUMN declined TEXT').run();
   colsOk = true;
 }
 
