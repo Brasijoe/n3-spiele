@@ -134,4 +134,17 @@ assert.equal((await (await fetch(W + '/member-games')).json()).length, 1);
 assert.equal((await call('DELETE', '/member-games/' + mg, null, null, { 'x-admin-token': 'test-admin-pw' })).status, 200);
 assert.equal((await (await fetch(W + '/member-games')).json()).length, 0);
 console.log('membership filter + admin delete ok');
+
+// Nächtliche Prüfung: Rolle verloren oder Server verlassen -> Spiele weg, offene Anfragen ungültig
+await call('PUT', '/admin/booking', null, { memberRole: '777', weekdays: [2] }, { 'x-admin-token': 'test-admin-pw' }); USERS[555].roles = ['777'];
+r = await call('POST', '/member-games', eva, { gameId: 30549, game: 'Pandemic', consent: true }); const mgE = (await r.json()).id;
+r = await call('POST', '/member-games', fritz, { gameId: 822, game: 'Carcassonne', consent: true }); assert.equal(r.status, 200);
+r = await call('POST', `/member-games/${mgE}/request`, fritz, { dates: [d2] }); const rq4 = (await r.json()).id; assert.ok(rq4);
+const cron = () => fetch(W.replace(/\/api$/, '') + '/__scheduled?cron=17+3+*+*+*').then((x) => x.text()).then(() => new Promise((res) => setTimeout(res, 1500)));
+USERS[556].roles = []; await cron();
+list = await (await fetch(W + '/member-games')).json(); assert.deepEqual(list.map((x) => x.game), ['Pandemic']);
+x = await interact({ type: 3, ...as('555'), data: { custom_id: 'bringa:' + rq4 + ':0' } }); assert.match(x.data.content, /gilt nicht mehr/);
+delete USERS[555]; await cron();
+assert.equal((await (await fetch(W + '/member-games')).json()).length, 0);
+console.log('nightly prune (role lost / left server) ok');
 process.exit(0);
