@@ -1,5 +1,6 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
+import { authRoute, currentUser } from './auth.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
 
 const SALT = 'n3-club:';
@@ -49,17 +50,14 @@ async function checkClubCode(req, env, ip) {
   return safeEq(await sha256(SALT + code), row.value) ? null : 'bad_code';
 }
 
-// Persönlicher Code (per Discord /code). Gibt { member } oder { err } zurück.
-async function checkMember(req, env, ip) {
-  const code = normCode(req.headers.get('x-member-code'));
-  if (code.length !== 8) return { err: 'code_format' };
-  if (!(await allow(env, 'code:' + ip, 15, 600))) return { err: 'rate_limited' };
-  await ensureCols(env);
-  const m = await env.DB.prepare('SELECT * FROM members WHERE code_hash = ?1').bind(await codeHash(code)).first();
-  if (!m) return { err: 'bad_code' };
-  if (m.blocked) return { err: 'blocked' };
-  if (!(await stillMember(env, m))) return { err: 'bad_code' };
-  return { member: m };
+// Angemeldet (Sitzung aus Discord-Login oder /code) oder persönlicher Code. Gibt { member } oder { err } zurück.
+const checkMember = (req, env, ip) => currentUser(req, env, allow, ip);
+const status = (err) => (err === 'rate_limited' ? 429 : 403);
+// Eigene Einträge: Partien mit by_discord, Runden mit host_discord.
+async function ownerOrAdmin(req, env, ip, ownerId) {
+  if (req.headers.has('x-admin-token')) return (await isAdmin(req, env, ip)) ? { admin: true } : { err: 'forbidden' };
+  const u = await checkMember(req, env, ip); if (u.err) return u;
+  return ownerId && ownerId === u.member.discord_id ? { member: u.member } : { err: 'forbidden' };
 }
 
 // Club-Schlüssel aus dem QR-Code im Club: erlaubt Partien eintragen ohne Discord. Gibt null oder einen Fehlercode zurück.
@@ -95,6 +93,7 @@ async function ensurePlayCols(env) {
   const have = new Set(results.map((r) => r.name));
   if (!have.has('logged_by')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN logged_by TEXT').run();
   if (!have.has('via')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN via TEXT').run();
+  if (!have.has('by_discord')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN by_discord TEXT').run();
   playColsOk = true;
 }
 
@@ -120,6 +119,16 @@ async function route(req, env, ctx, url) {
   const m = req.method;
   let g;
 
+  const ar = await authRoute(req, env, url, path, m, ip, allow); if (ar) return ar;
+  if (path === '/my' && m === 'GET') {
+    // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
+    if (!req.headers.has('x-session')) return json({ plays: [], parties: [] });
+    const u = await checkMember(req, env, ip); if (u.err) return fail(u.err === 'rate_limited' ? 429 : 401, u.err);
+    await ensurePlayCols(env);
+    const p1 = await env.DB.prepare('SELECT id FROM plays WHERE by_discord = ?1 ORDER BY created_at DESC LIMIT 500').bind(u.member.discord_id).all();
+    const p2 = await env.DB.prepare('SELECT id FROM parties WHERE host_discord = ?1 ORDER BY date DESC LIMIT 200').bind(u.member.discord_id).all();
+    return json({ name: u.member.name, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id) });
+  }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();
     return json(results.map(playOut));
@@ -127,12 +136,12 @@ async function route(req, env, ctx, url) {
   if (path === '/plays' && m === 'POST') {
     // Zwei Wege: persönlicher Code (Discord) oder Club-Schlüssel aus dem QR-Code (dann ist ein Name Pflicht).
     const viaQr = req.headers.has('x-log-key');
-    let by;
+    let by, byId = null;
     if (viaQr) {
       const err = await checkLogKey(req, env, ip); if (err) return fail(err === 'rate_limited' ? 429 : 403, err);
     } else {
       const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
-      by = auth.member.name;
+      by = auth.member.name; byId = auth.member.discord_id;
     }
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req);
@@ -147,16 +156,19 @@ async function route(req, env, ctx, url) {
     if (!game || !isDate(date) || !(players >= 1 && players <= 99)) return fail(400, 'invalid');
     if (duration != null && !(duration >= 1 && duration <= 1440)) return fail(400, 'invalid');
     const id = newId();
-    await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString(), by, viaQr ? 'qr' : 'web').run();
+    await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15)')
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString(), by, viaQr ? 'qr' : 'web', byId).run();
     if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
     return json({ id });
   }
   if ((g = path.match(/^\/plays\/([\w-]+)$/)) && m === 'PUT') {
-    // Verwaltung: eingetragene Partie korrigieren (Spiel bleibt, sonst stimmen Cover und Statistik-Zuordnung nicht mehr).
-    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
-    const b = await body(req);
+    // Verwaltung oder wer die Partie selbst eingetragen hat: korrigieren (Spiel bleibt, sonst stimmen Cover und Statistik-Zuordnung nicht mehr).
     await ensurePlayCols(env);
+    const own = await env.DB.prepare('SELECT by_discord, logged_by FROM plays WHERE id = ?1').bind(g[1]).first();
+    if (!own) return fail(404, 'not_found');
+    const who = await ownerOrAdmin(req, env, ip, own.by_discord); if (who.err) return fail(status(who.err), who.err);
+    const b = await body(req);
+    if (!who.admin) b.loggedBy = own.logged_by;
     const date = str(b.date, 10), players = int(b.players), duration = b.duration == null || b.duration === '' ? null : int(b.duration);
     if (!isDate(date) || !(players >= 1 && players <= 99)) return fail(400, 'invalid');
     if (duration != null && !(duration >= 1 && duration <= 1440)) return fail(400, 'invalid');
@@ -166,7 +178,10 @@ async function route(req, env, ctx, url) {
     return json({ ok: true });
   }
   if ((g = path.match(/^\/plays\/([\w-]+)$/)) && m === 'DELETE') {
-    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    await ensurePlayCols(env);
+    const own = await env.DB.prepare('SELECT by_discord FROM plays WHERE id = ?1').bind(g[1]).first();
+    if (!own) return json({ ok: true });
+    const who = await ownerOrAdmin(req, env, ip, own.by_discord); if (who.err) return fail(status(who.err), who.err);
     await env.DB.prepare('DELETE FROM plays WHERE id = ?1').bind(g[1]).run();
     return json({ ok: true });
   }
@@ -214,12 +229,30 @@ async function route(req, env, ctx, url) {
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
     return json({ ok: true });
   }
+  if ((g = path.match(/^\/parties\/([\w-]+)$/)) && m === 'PUT') {
+    // Eigene Runde bearbeiten (wie „Bearbeiten“ in Discord): Spiel, Datum, Uhrzeit, Plätze, Hinweis.
+    await ensureCols(env);
+    const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first();
+    if (!row) return fail(404, 'not_found');
+    const who = await ownerOrAdmin(req, env, ip, row.host_discord); if (who.err) return fail(status(who.err), who.err);
+    if (row.play_id) return fail(409, 'already_logged');
+    const b = await body(req);
+    const game = str(b.game, 120) || row.game, date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats);
+    const taken = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
+    if (!isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
+    if (seats < taken) return fail(400, 'seats_taken');
+    const same = game === row.game && (b.gameId == null || int(b.gameId) === row.game_id);
+    await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, guest = ?4, date = ?5, time = ?6, seats = ?7, note = ?8 WHERE id = ?9')
+      .bind(game, same ? row.game_id : int(b.gameId), same ? row.year : int(b.year), same ? row.guest : (b.guest ? 1 : 0), date, time, seats, str(b.note, 200), g[1]).run();
+    if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
+    return json({ ok: true });
+  }
   if ((g = path.match(/^\/parties\/([\w-]+)$/)) && m === 'DELETE') {
     const row = await env.DB.prepare('SELECT host_key_hash FROM parties WHERE id = ?1').bind(g[1]).first();
     if (!row) return json({ ok: true });
     const hk = req.headers.get('x-host-key') || '';
     const okHost = hk && safeEq(await sha256(hk), row.host_key_hash);
-    if (!okHost && !(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    if (!okHost) { await ensureCols(env); const r2 = await env.DB.prepare('SELECT host_discord FROM parties WHERE id = ?1').bind(g[1]).first(); const who = await ownerOrAdmin(req, env, ip, r2 && r2.host_discord); if (who.err) return fail(status(who.err), who.err); }
     let old = null; if (discordOn(env)) { await ensureCols(env); old = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first(); }
     await env.DB.prepare('DELETE FROM parties WHERE id = ?1').bind(g[1]).run();
     if (old) bg(ctx, cancelPartyMessage(env, old));

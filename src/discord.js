@@ -168,8 +168,9 @@ async function cmdLog(i, env) {
   const players = Number(opt(i, 'spieler')); if (!game || !(players >= 1 && players <= 99)) return say('Bitte Spiel und Spielerzahl angeben.');
   const date = parseDate(opt(i, 'datum') || 'heute'); if (!date) return say('Datum nicht verstanden.');
   const dur = opt(i, 'dauer');
-  await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,0,?11)')
-    .bind(newId(), gameId, game.slice(0, 120), 0, year, date, players, str(opt(i, 'sieger'), 80), str(opt(i, 'hinweis'), 200), dur ? Math.round(Number(dur)) : null, new Date().toISOString()).run();
+  const w = who(i);
+  await env.DB.prepare("INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,0,?11,?12,'discord',?13)")
+    .bind(newId(), gameId, game.slice(0, 120), 0, year, date, players, str(opt(i, 'sieger'), 80), str(opt(i, 'hinweis'), 200), dur ? Math.round(Number(dur)) : null, new Date().toISOString(), w.name, w.id).run();
   return say(`Eingetragen: ${game}, ${players} Spielende, ${fmtDate(date)} ✓`);
 }
 
@@ -205,8 +206,8 @@ async function button(i, env) {
     if (!row.play_id) {
       const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
       const pid = newId();
-      await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,NULL,0,?10)')
-        .bind(pid, row.game_id, row.game, row.guest, row.year, row.date, att, '', 'Über Discord eingetragen', new Date().toISOString()).run();
+      await env.DB.prepare("INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,NULL,0,?10,?11,'discord',?12)")
+        .bind(pid, row.game_id, row.game, row.guest, row.year, row.date, att, '', 'Über Discord eingetragen', new Date().toISOString(), w.name, row.host_discord || w.id).run();
       await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(pid, id).run();
     }
     await syncParty(env, id, true);
@@ -344,6 +345,8 @@ export async function ensureCols(env) {
   if (!have.has('event_id')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_id TEXT').run();
   if (!have.has('event_name')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_name TEXT').run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, valid_until TEXT NOT NULL, date_from TEXT NOT NULL, date_to TEXT NOT NULL, created_at TEXT NOT NULL)').run();
+  const pc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('plays')").all()).results.map((r) => r.name));
+  for (const c of ['logged_by', 'via', 'by_discord']) if (!pc.has(c)) await env.DB.prepare(`ALTER TABLE plays ADD COLUMN ${c} TEXT`).run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS members (discord_id TEXT PRIMARY KEY, name TEXT NOT NULL, code_hash TEXT NOT NULL UNIQUE, blocked INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, checked_at INTEGER NOT NULL DEFAULT 0)').run();
   colsOk = true;
 }
