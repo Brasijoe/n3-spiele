@@ -3,6 +3,7 @@
 // den Bot-Kanal sehen kann und – falls DISCORD_ROLE_ID gesetzt ist – diese Rolle hat. Das wird alle 10 Minuten neu geprüft.
 import { ensureCols, normCode, codeHash, channelIds } from './discord.js';
 import { getBooking, isMember } from './booking.js';
+import { dropOwner } from './membergames.js';
 
 const enc = new TextEncoder();
 const hexOf = (b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -68,7 +69,10 @@ export async function memberOk(env, m) {
   let a;
   try { a = await checkAccess(env, m.discord_id); } catch (e) { console.log('access check failed', e.message); return null; } // Discord down: nicht aussperren
   if (!a.ok) {
-    if (a.err === 'not_member') { await env.DB.prepare('DELETE FROM members WHERE discord_id = ?1').bind(m.discord_id).run(); await env.DB.prepare('DELETE FROM sessions WHERE discord_id = ?1').bind(m.discord_id).run(); }
+    if (a.err === 'not_member') {
+      await env.DB.prepare('DELETE FROM members WHERE discord_id = ?1').bind(m.discord_id).run(); await env.DB.prepare('DELETE FROM sessions WHERE discord_id = ?1').bind(m.discord_id).run();
+      try { await dropOwner(env, m.discord_id); } catch (e) { /* Tabelle evtl. noch nicht angelegt */ }
+    }
     return a.err;
   }
   const roles = a.roles ? JSON.stringify(a.roles) : m.roles || null;

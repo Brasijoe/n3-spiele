@@ -146,7 +146,7 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
     // Ist der Besitzer noch auf dem Server? Sonst verschwinden seine Spiele.
     try {
       const acc = await checkAccess(env, mg.discord_id);
-      if (!acc.ok && acc.err === 'not_member') { await env.DB.prepare('DELETE FROM member_games WHERE discord_id = ?1').bind(mg.discord_id).run(); return fail(410, 'owner_gone'); }
+      if (!acc.ok && acc.err === 'not_member') { await dropOwner(env, mg.discord_id); return fail(410, 'owner_gone'); }
     } catch { /* Discord gerade nicht erreichbar: trotzdem versuchen */ }
     const d = mg.data ? JSON.parse(mg.data) : null;
     const seats = d && d.p2 ? Math.min(30, Math.max(2, d.p2)) : 4;
@@ -198,7 +198,7 @@ const dmLinks = (r) => [{ type: 1, components: [
 ] }];
 
 const getReq = (env, id) => env.DB.prepare('SELECT * FROM bring_requests WHERE id = ?1').bind(id).first();
-const closed = (r) => (r.status === 'accepted' ? 'Diese Anfrage wurde schon angenommen.' : r.status === 'declined' ? 'Diese Anfrage wurde schon abgelehnt.' : 'Diese Anfrage wurde zurückgezogen.');
+const closed = (r) => (r.status === 'accepted' ? 'Diese Anfrage wurde schon angenommen.' : r.status === 'declined' ? 'Diese Anfrage wurde schon abgelehnt.' : r.status === 'cancelled' ? 'Diese Anfrage gilt nicht mehr (Mitglied nicht mehr auf dem Server oder ohne Mitgliederrolle).' : 'Diese Anfrage wurde zurückgezogen.');
 
 export async function bringButton(i, env, ctx) {
   const [act, id, idx] = String(i.data.custom_id).split(':');
@@ -282,6 +282,29 @@ export async function bringSubmit(i, env, ctx) {
 }
 
 // Nachts: Spieldaten für bis zu 20 Mitgliederspiele ohne Daten nachladen (z. B. nach einem großen BGG-Import).
+// Spiele (und offene Anfragen) eines Mitglieds entfernen, das den Server verlassen oder die Mitgliederrolle verloren hat.
+export async function dropOwner(env, discordId) {
+  const r = await env.DB.prepare('DELETE FROM member_games WHERE discord_id = ?1').bind(discordId).run();
+  await env.DB.prepare("UPDATE bring_requests SET status = 'cancelled' WHERE status = 'open' AND (owner_discord = ?1 OR req_discord = ?1)").bind(discordId).run();
+  return (r.meta && r.meta.changes) || 0;
+}
+
+// Nächtlich: Besitzer bei Discord prüfen (älteste Prüfung zuerst, höchstens 30 pro Lauf wegen der Anfragegrenze).
+export async function pruneMemberGames(env) {
+  if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) return 0;
+  const rule = await getBooking(env);
+  const { results } = await env.DB.prepare('SELECT DISTINCT g.discord_id, m.discord_id AS mid, m.roles, m.checked_at FROM member_games g LEFT JOIN members m ON m.discord_id = g.discord_id ORDER BY coalesce(m.checked_at, 0) LIMIT 30').all();
+  let n = 0;
+  for (const o of results) {
+    if (!o.mid) { n += await dropOwner(env, o.discord_id); continue; } // nicht mehr in members: hat den Server verlassen
+    let a;
+    try { a = await checkAccess(env, o.discord_id); } catch (e) { console.log('prune check failed', e.message); break; } // Discord nicht erreichbar: nächstes Mal
+    if (!a.ok || !isMember(rule, a.roles)) { n += await dropOwner(env, o.discord_id); continue; }
+    await env.DB.prepare('UPDATE members SET checked_at = ?1, roles = ?2, name = coalesce(nullif(?3, \'\'), name) WHERE discord_id = ?4').bind(Date.now(), JSON.stringify(a.roles || []), (a.name || '').slice(0, 40), o.discord_id).run();
+  }
+  return n;
+}
+
 export async function backfillMemberGames(env) {
   if (!env.BGG_TOKEN) return 0;
   // Bis zu 5 Blöcke à 20 pro Lauf (große BGG-Importe sind so nach wenigen Nächten vollständig).
