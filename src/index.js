@@ -145,24 +145,9 @@ async function route(req, env, ctx, url) {
     return json(results.map(partyOut));
   }
   if (path === '/parties' && m === 'POST') {
-    // Zwei Wege: persönlicher Code (Discord) oder Club-Schlüssel aus dem QR-Code (dann ist ein Name Pflicht).
-    const viaQr = req.headers.has('x-log-key');
-    let by;
-    if (viaQr) {
-      const err = await checkLogKey(req, env, ip); if (err) return fail(err === 'rate_limited' ? 429 : 403, err);
-    } else {
-      const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
-      by = auth.member.name;
-    }
+    const auth = await checkMember(req, env, ip); if (auth.err) return fail(auth.err === 'rate_limited' ? 429 : 403, auth.err);
     if (!(await allow(env, 'w:' + ip, 40, 600))) return fail(429, 'rate_limited');
     const b = await body(req);
-    if (viaQr) {
-      by = str(b.by, 40);
-      if (!by) return fail(400, 'name_missing');
-      // Spam-Bremse für den QR-Weg: 40 Partien pro Stunde und IP (Club-WLAN = eine IP für alle), 150 pro Tag insgesamt.
-      if (!(await allow(env, 'qr:' + ip, 40, 3600)) || !(await allow(env, 'qrall', 150, 86400))) return fail(429, 'rate_limited');
-    }
-    await ensurePlayCols(env);
     const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = auth.member.name;
     if (!game || !host || !isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     const id = newId(), hostKey = newId() + newId();
@@ -284,7 +269,7 @@ async function route(req, env, ctx, url) {
 export default {
   async fetch(req, env, ctx) {
     try { return await route(req, env, ctx, new URL(req.url)); }
-    catch (e) { return fail(e.status || 500, e.status ? e.message : 'server_error'); }
+    catch (e) { if (!e.status) console.log('server_error', req.method, new URL(req.url).pathname, e && (e.stack || e.message)); return fail(e.status || 500, e.status ? e.message : 'server_error'); }
   },
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
