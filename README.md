@@ -4,13 +4,41 @@ Die Spielesammlung des Nerd Nexus Nürnberg als eigene Webseite: Sammlung mit Fi
 
 ```
 public/            statische Seite (index.html), Cover, Schriften, _headers
-src/index.js       Worker: API unter /api/*, Prüfung von Vereinscode und Admin, Limits
+src/index.js       Worker: API unter /api/*, Rechteprüfung (Anmeldung, Admin, QR-/Event-Codes), Limits
+src/auth.js        „Mit Discord anmelden“, Sitzungen, Zugangsprüfung über den Bot
+src/discord.js     Discord-Bot (/party, /log, /code) und Abgleich der Runden-Nachrichten
+src/games.js       Spiele, die per GeekList-Import nachgetragen wurden
 src/bgg.js         BGG-XML-API: Suche und GeekList (Token nur hier)
 schema.sql         Tabellen der D1-Datenbank
 seed.sql           übernommene Daten aus dem Prototyp
 docs/              Einbettungs-Snippet für die Homepage
 test/              Parser-Test, Browser-Test (e2e), Hilfsskript
 ```
+
+## Für neue Helfer
+
+Kurzer Einstieg, wenn du (oder dein Claude) hier mitarbeiten willst.
+
+**Wie es läuft:** Ein Push auf `main` wird von Cloudflare automatisch gebaut und ist nach 1–2 Minuten live unter https://n3-spiele.nerdnexus.workers.dev (eingebettet auf nerd-nexus.de). Deshalb wird nie direkt auf `main` gearbeitet, sondern auf einem eigenen Branch mit Pull Request. Gemergt wird erst, wenn Johannes es freigibt. Der fehlschlagende Check „Workers Builds“ bei Pull Requests ist bekannt (Vorschau-Builds sind nicht eingerichtet) und kein Fehler im Code.
+
+**Was du brauchst:**
+- Zum Mitentwickeln: Zugriff auf dieses Repo (Johannes fügt dich unter Settings → Collaborators hinzu). Mehr nicht, lokal läuft alles mit Testwerten.
+- Nur wer selbst deployt oder Einstellungen ändert: Zugang zum Cloudflare-Konto (Worker `n3-spiele`, D1-Datenbank) und zur Discord-App im Developer Portal. Das vergibt Johannes.
+
+**Wo was steht:**
+- Die ganze Seite (HTML, CSS, JS, Texte DE/EN, Spieledaten) ist `public/index.html`. Texte stehen im Objekt `TXT` (`de` und `en`).
+- Öffentliche Einstellungen (Discord-Server, Kanal, Rolle, Adresse) stehen in `wrangler.toml`. Geheimnisse stehen **nur** in Cloudflare (Liste am Ende von `wrangler.toml`).
+- Tabellen legt der Worker beim ersten Zugriff selbst an bzw. ergänzt Spalten. `schema.sql` ist nur der Grundstock.
+
+**Regeln:**
+- Niemals Tokens oder Passwörter (BGG, Discord-Bot, Client-Secret, Admin) ins Repo, in Code oder in Chats schreiben.
+- Volle Namen von Leihgebern gehören nicht ins öffentliche Repo, nur Kurznamen (das Verzeichnis liegt in der Verwaltung).
+- Der Bot läuft noch auf dem **Discord-Testserver**. Umstellen auf den echten N3-Server nur auf Ansage von Johannes (vorbereitete Werte stehen auskommentiert in `wrangler.toml`; dann auch `DISCORD_ROLE_ID` auf die Brettspiel-Rolle setzen).
+- Vor jedem Pull Request: `npm test` und, wenn Anmeldung/Rechte betroffen sind, `node test/web-login.mjs` (siehe Abschnitt 6).
+
+**Mit Claude arbeiten:** Repo in Claude Code (z. B. claude.ai/code) öffnen und sagen, was du willst. Ein guter Startsatz: „Lies zuerst die README, arbeite auf einem eigenen Branch und öffne einen Pull Request, nicht mergen.“ Claude kann von dort aus BGG nicht erreichen; Änderungen am BGG-Import also auf dem eigenen Rechner testen.
+
+**Offene Ideen (nur nach Absprache):** eigene Adresse wie `spiele.nerd-nexus.de` (DNS der Domain zu Cloudflare), Rollenprüfung am Go-Live, `/code` für Nicht-Mitglieder nur befristet, installierbare Web-App (PWA).
 
 ## 1. Einmalig einrichten
 
@@ -78,8 +106,10 @@ Nützliche Parameter für Links und iFrame: `?lang=de` oder `?lang=en`, `#statis
 cp .dev.vars.example .dev.vars   # lokale Testwerte
 npm run db:init:local
 npm run dev                      # http://localhost:8787
-npm test                         # Parser-Test für die BGG-Antworten
+npm test                         # Parser-Tests (BGG, Discord, Spiele)
 ```
+
+`test/reset.sh` startet einen frischen Worker auf Port 8799 (Admin-Passwort `test-admin-pw` aus `.dev.vars`). `test/web-login.mjs` prüft Anmeldung und Rechte gegen ein simuliertes Discord; welche Werte in `.dev.vars` dafür nötig sind, steht oben in der Datei.
 
 Der Browser-Test `test/e2e.cjs` braucht Playwright, eine frische lokale Datenbank (`test/reset.sh`, startet Port 8799 mit Code 1234 und Admin-Passwort `test-admin-pw`) und einen kleinen Webserver für die Elternseite (`cd test/parent && python3 -m http.server 8800`).
 
