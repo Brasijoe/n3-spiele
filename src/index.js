@@ -1,6 +1,7 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
+import { memberGamesRoute } from './membergames.js';
 import { getBooking, cleanBooking, isMember, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
 
@@ -122,6 +123,7 @@ async function route(req, env, ctx, url) {
   let g;
 
   const ar = await authRoute(req, env, url, path, m, ip, allow); if (ar) return ar;
+  if (path.startsWith('/member-games')) { await ensureCols(env); return memberGamesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin }); }
   if (path === '/my' && m === 'GET') {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
     if (!req.headers.has('x-session')) return json({ plays: [], parties: [] });
@@ -130,7 +132,8 @@ async function route(req, env, ctx, url) {
     const p1 = await env.DB.prepare('SELECT id FROM plays WHERE by_discord = ?1 ORDER BY created_at DESC LIMIT 500').bind(u.member.discord_id).all();
     const p2 = await env.DB.prepare('SELECT id FROM parties WHERE host_discord = ?1 ORDER BY date DESC LIMIT 200').bind(u.member.discord_id).all();
     const member = isMember(await getBooking(env), u.member.roles);
-    return json({ name: u.member.name, member, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id) });
+    const p3 = await env.DB.prepare('SELECT id FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
+    return json({ name: u.member.name, member, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id) });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();

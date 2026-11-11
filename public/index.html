@@ -4,15 +4,15 @@
 :root {
   --bg: #e5e5e5; --surface: #ffffff; --surface-2: #f4f4f4; --cover: #efefef; --fg: #1b1b1b; --text: #3a3a3a; --muted: #5c5c5c;
   --line: #d9d9d9; --line-strong: #a8a8a8; --band: #262626; --band-fg: #ffffff; --band-muted: #d6d6d6;
-  --accent: #f09b19; --accent-2: #f0b418; --on-accent: #1b1b1b; --error: #a1260d; --slide-bg: #1f1f1f; --club: #2c6aa0; --guest: #c67c00; --guest-soft: #fdecd0; --guest-ink: #7a4a00;
+  --accent: #f09b19; --accent-2: #f0b418; --on-accent: #1b1b1b; --error: #a1260d; --slide-bg: #1f1f1f; --club: #2c6aa0; --guest: #c67c00; --guest-soft: #fdecd0; --guest-ink: #7a4a00; --mem: #7b5cc4; --mem-soft: #ece6fa; --mem-ink: #46307f;
   --font-display: "Rubik", "Segoe UI", system-ui, sans-serif; --font-body: "Karla", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #141414; --surface: #1f1f1f; --surface-2: #262626; --cover: #2a2a2a; --fg: #f2f2f2; --text: #d9d9d9; --muted: #a8a8a8;
-  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --guest-ink: #f5c77a; color-scheme: dark } }
+  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --mem: #9b80e0; --mem-soft: #2c2440; --mem-ink: #d7cbf7; --guest-ink: #f5c77a; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #141414; --surface: #1f1f1f; --surface-2: #262626; --cover: #2a2a2a; --fg: #f2f2f2; --text: #d9d9d9; --muted: #a8a8a8;
-  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --guest-ink: #f5c77a; color-scheme: dark }
+  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --mem: #9b80e0; --mem-soft: #2c2440; --mem-ink: #d7cbf7; --guest-ink: #f5c77a; color-scheme: dark }
 body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
 h1, h2, h3 { font-family: var(--font-display); color: var(--fg); text-wrap: balance; margin: 0; }
 a { color: inherit; }
@@ -177,6 +177,19 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .src.guest::before { background: var(--guest); }
 .src.club { background: var(--surface-2); color: var(--fg); }
 .src.club::before { background: var(--club); }
+.src.mem { background: var(--mem-soft); color: var(--mem-ink); }
+.src.mem::before { background: var(--mem); border-radius: 50%; }
+.card.mem { box-shadow: inset 0 0 0 2px var(--mem); }
+.card .cv-tl .src.mem { pointer-events: none; }
+.mem-own { font-size: 14px; color: var(--fg); }
+#mgAuth .or, #brAuth .or { display: none; }
+.mg-list { display: flex; flex-direction: column; gap: 6px; }
+.mg-list .row { align-items: center; gap: 10px; }
+.br-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+dialog.info.wide { max-width: min(560px, calc(100vw - 32px)); width: 100%; box-sizing: border-box; }
+dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--fg); }
+.consent input { width: 20px; height: 20px; flex: none; margin-top: 1px; accent-color: #7b5cc4; }
 .src.event { background: var(--surface-2); color: var(--fg); margin-left: 6px; }
 .src.event::before { background: var(--accent); border-radius: 50%; }
 .adm-play .acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
@@ -383,6 +396,11 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div class="more"><button type="button" class="btn btn-dark" id="moreBtn" hidden></button></div>
   </section>
 
+  <section class="panel recent" aria-labelledby="mgH">
+    <div class="rec-head"><h2 id="mgH" style="font-size:26px" data-t="mgTitle"></h2><button type="button" class="btn btn-quiet" id="mgAddBtn" data-t="mgAdd"></button></div>
+    <p class="meta" style="margin:0" data-t="mgIntro"></p>
+    <div class="mg-list" id="mgMine"></div>
+  </section>
   <section class="panel recent" aria-labelledby="recH">
     <div class="rec-head"><h2 id="recH" style="font-size:26px" data-t="recent"></h2><button type="button" class="btn btn-quiet" data-guest-log data-t="logGuest"></button></div>
     <p class="meta" id="recentState" style="margin:0"></p>
@@ -604,6 +622,33 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <p data-t="ciP1"></p><p data-t="ciP2"></p><p data-t="ciP3"></p>
   <div class="acts"><a class="btn btn-primary" id="ciLink" href="#" target="_blank" rel="noopener" data-t="ciLink" hidden></a><button type="button" class="btn btn-quiet" id="ciClose" data-t="ciClose"></button></div>
 </dialog>
+<dialog class="info wide" id="mgDlg" aria-labelledby="mgT">
+  <h3 id="mgT" data-t="mgAdd"></h3>
+  <form class="mg" id="mgForm">
+    <div class="gsel" id="mgSel" hidden><span><strong id="mgSelName"></strong> <span class="meta" id="mgSelMeta"></span></span><button type="button" class="btn btn-quiet" id="mgChange" data-t="change"></button></div>
+    <div id="mgSearchBox" class="gpick">
+      <label class="field"><span data-t="mgGame"></span><input type="search" id="mgQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mgRes"></label>
+      <ul class="gres" id="mgRes" role="listbox"></ul>
+    </div>
+    <label class="field"><span data-t="mgNote"></span><input type="text" id="mgNote" maxlength="120"></label>
+    <label class="consent"><input type="checkbox" id="mgConsent"><span id="mgConsentTxt"></span></label>
+    <div class="auth-box" id="mgAuth" data-authbox></div>
+    <span id="mgMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="mgCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="mgSave" data-t="mgSave"></button></div>
+  </form>
+</dialog>
+<dialog class="info wide" id="brDlg" aria-labelledby="brT">
+  <h3 id="brT"></h3>
+  <form class="mg" id="brForm">
+    <p class="meta" id="brIntro" style="margin:0"></p>
+    <label class="field" id="brOwnerWrap" hidden><span data-t="brOwner"></span><select id="brOwner"></select></label>
+    <div class="field"><span data-t="brDates"></span><div class="br-dates"><input type="date" id="brD0" required><input type="date" id="brD1"><input type="date" id="brD2"></div><span class="note" data-t="brDatesNote"></span></div>
+    <label class="field"><span data-t="brNote"></span><textarea id="brNote" maxlength="300" rows="2"></textarea></label>
+    <div class="auth-box" id="brAuth" data-authbox></div>
+    <span id="brMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="brCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="brSend" data-t="brSend"></button></div>
+  </form>
+</dialog>
 <dialog class="info" id="expDlg" aria-labelledby="expT">
   <h3 id="expT"></h3>
   <ul class="exp-list" id="expL"></ul>
@@ -653,7 +698,16 @@ const TXT = {
     errRate: 'Zu viele Versuche. Bitte in ein paar Minuten noch einmal.', admLink: 'Verwaltung', admOut: 'Abmelden', admPw: 'Admin-Passwort', admIn: 'Anmelden', admBad: 'Passwort falsch oder zu viele Versuche.',
     admGl: 'GeekList-Abgleich', admGlNote: 'Vergleicht die BGG-GeekList mit den Spielen dieser Seite. Die Liste wird nachts automatisch geladen.', admGlRefresh: 'Jetzt von BGG laden',
     admGlNone: 'Die GeekList wurde noch nicht geladen.', admGlMissing: '{n} Einträge der GeekList fehlen auf dieser Seite (Stand {d}):', admGlOk: 'Alle {n} GeekList-Einträge sind auf der Seite (Stand {d}).', admGlErr: 'Laden bei BGG hat nicht geklappt ({c}).',
-    gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
+    gHintLive: 'Live-Suche bei BoardGameGeek. Auswahl mit Pfeiltasten und Enter.', gHintLoading: 'Suche bei BoardGameGeek …', gHintOff: 'BGG-Suche gerade nicht erreichbar, es wird nur die Sammlung durchsucht. Du kannst den Namen trotzdem eintragen.', only2: 'Nur zu zweit',
+    gSrc: 'Herkunft', srcClub: 'Sammlung', srcMem: 'Mitglieder besitzen', memTag: 'Mitglieder besitzen', memOwner: 'Besitzer', memOwners: 'Besitzer', brAsk: 'Mitbringen anfragen',
+    mgTitle: 'Mitglieder besitzen', mgIntro: 'Diese Spiele gehören nicht dem Club, sondern einzelnen Mitgliedern. Sie stehen mit lila Rahmen in der Liste oben (Filter „Herkunft“). Als Mitglied kannst du eigene Spiele hinzufügen und andere bitten, ein Spiel an einem Termin mitzubringen; die Anfrage kommt im Bot-Kanal auf Discord an.',
+    mgAdd: 'Eigenes Spiel hinzufügen', mgGame: 'Spiel (BGG-Suche)', mgNote: 'Hinweis (optional, z. B. Ausgabe, Sprache, Erweiterungen)', mgSave: 'Hinzufügen', mgYourName: 'dein Discord-Name',
+    mgConsent: 'Ich bin einverstanden, dass mein Discord-Name ({n}) auf dieser öffentlichen Seite als Besitzer des Spiels angezeigt wird und andere Mitglieder mich im Bot-Kanal bitten können, es mitzubringen.',
+    mgConsentErr: 'Bitte bestätige, dass dein Discord-Name angezeigt werden darf.', mgMembersOnly: 'Das geht nur mit der Mitgliederrolle auf unserem Discord.', mgDup: 'Dieses Spiel hast du schon eingetragen.', mgTooMany: 'Du hast schon sehr viele Spiele eingetragen.', mgAdded: 'Hinzugefügt ✓',
+    mgMine: 'Deine Spiele', mgAll: 'Alle Spiele von Mitgliedern (Verwaltung)',
+    brTitle: 'Mitbringen anfragen: {n}', brIntro: 'Wir schreiben {o} im Bot-Kanal auf Discord an. Nimmt er oder sie einen Termin an, wird automatisch eine Spielrunde angelegt, in der ihr beide schon eingetragen seid.', brOwn: 'Das ist dein eigenes Spiel.',
+    brOwner: 'Wen fragen?', brDates: 'Terminvorschläge (bis zu 3)', brDatesNote: 'Der erste Termin ist Pflicht, die anderen sind optional.', brNote: 'Nachricht (optional)', brSend: 'Anfrage senden',
+    brSent: 'Anfrage gesendet ✓ Die Antwort kommt im Bot-Kanal auf Discord.', brErrDates: 'Bitte mindestens einen Termin ab heute wählen.', brErrDup: 'Du hast dieses Spiel schon angefragt. Warte bitte auf die Antwort in Discord.', brErrOff: 'Der Discord-Bot ist gerade nicht erreichbar.', brErrGone: 'Dieses Mitglied ist nicht mehr auf dem Server, das Spiel wurde entfernt.', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
     ptHowSum: 'Wer darf wann eine Runde anbieten? So richtest du Discord ein', ptHowT: 'Wer kann wann eine Runde anbieten?', ptHowMember: 'Mitglieder (mit der Mitgliederrolle auf unserem Discord) an jedem Tag.', ptHowAll: 'Alle anderen an unseren Stammtisch-Tagen: {r} (nächste Termine: {n}). Dabei stellst du dich im Hinweis kurz vor, damit die anderen wissen, mit wem sie spielen.', ptHowEv: 'Mit einem Event-Code vom Orga-Team an den Eventtagen, auch ohne Discord.', ptHowDcT: 'So richtest du Discord ein', ptHowDc1: 'Tritt unserem Discord-Server bei (Button unten) und lies die Regeln.', ptHowDc2: 'Hol dir dort die Brettspiel-Rolle, damit du den Brettspiel-Kanal siehst. Ohne diese Rolle klappt die Anmeldung hier nicht.', ptHowDc3: 'Klicke hier auf „Runde anbieten“ und dann auf „Mit Discord anmelden“. Geht das in deinem Browser nicht, tippe im Brettspiel-Kanal /code und gib den Code hier einmal ein.', ptHowDc4: 'Du kannst Runden auch direkt in Discord mit /party anbieten. Mitspielende tragen sich dort per Klick ein.', ptHowJoin: 'Zum N3-Discord', ptHowNoMember: 'Ohne Mitgliederrolle sind auf dieser Seite nur Stammtisch-Tage wählbar.',
     wdLong: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], wdMin: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], nthTxt: { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' }, ruleEvery: 'jeden {d}', ruleNth: 'am {n} {d} im Monat', ruleNone: 'nach Ankündigung',
     calPrev: 'Vorheriger Monat', calNext: 'Nächster Monat', calStm: 'Umrandet = Stammtisch.', calNonMember: 'Ohne Mitgliederrolle nur an Stammtisch-Tagen (die anderen Tage sind gesperrt).', calGuest: 'Gesperrte Tage sind nur für Mitglieder. Mitglied? Bitte zuerst anmelden.', calPicked: 'Gewählt: {d}',
@@ -718,7 +772,16 @@ const TXT = {
     errRate: 'Too many attempts. Please try again in a few minutes.', admLink: 'Admin', admOut: 'Log out', admPw: 'Admin password', admIn: 'Sign in', admBad: 'Wrong password or too many attempts.',
     admGl: 'GeekList check', admGlNote: 'Compares the BGG GeekList with the games on this page. The list is fetched automatically every night.', admGlRefresh: 'Fetch from BGG now',
     admGlNone: 'The GeekList hasn’t been fetched yet.', admGlMissing: '{n} GeekList entries are missing on this page (as of {d}):', admGlOk: 'All {n} GeekList entries are on the page (as of {d}).', admGlErr: 'Fetching from BGG failed ({c}).',
-    gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
+    gHintLive: 'Live BoardGameGeek search. Use arrow keys and Enter to pick.', gHintLoading: 'Searching BoardGameGeek …', gHintOff: 'BGG search is unavailable right now, only the collection is searched. You can still enter the name.', only2: '2 players only',
+    gSrc: 'Source', srcClub: 'Collection', srcMem: 'Members own', memTag: 'Members own', memOwner: 'Owner', memOwners: 'Owners', brAsk: 'Ask to bring it',
+    mgTitle: 'Members own', mgIntro: 'These games don’t belong to the club but to individual members. They appear with a purple frame in the list above (filter “Source”). As a member you can add your own games and ask others to bring a game on a date; the request is posted in the bot channel on Discord.',
+    mgAdd: 'Add your own game', mgGame: 'Game (BGG search)', mgNote: 'Note (optional, e.g. edition, language, expansions)', mgSave: 'Add', mgYourName: 'your Discord name',
+    mgConsent: 'I agree that my Discord name ({n}) is shown on this public page as the owner of the game and that other members can ask me in the bot channel to bring it.',
+    mgConsentErr: 'Please confirm that your Discord name may be shown.', mgMembersOnly: 'This needs the member role on our Discord.', mgDup: 'You have already added this game.', mgTooMany: 'You have already added a lot of games.', mgAdded: 'Added ✓',
+    mgMine: 'Your games', mgAll: 'All member games (admin)',
+    brTitle: 'Ask to bring: {n}', brIntro: 'We’ll ask {o} in the bot channel on Discord. If they accept a date, a game round is created automatically with both of you already signed up.', brOwn: 'This is your own game.',
+    brOwner: 'Whom to ask?', brDates: 'Suggested dates (up to 3)', brDatesNote: 'The first date is required, the others are optional.', brNote: 'Message (optional)', brSend: 'Send request',
+    brSent: 'Request sent ✓ The answer will come in the bot channel on Discord.', brErrDates: 'Please pick at least one date from today on.', brErrDup: 'You have already asked for this game. Please wait for the answer on Discord.', brErrOff: 'The Discord bot is not reachable right now.', brErrGone: 'This member is no longer on the server, the game has been removed.', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
     ptHowSum: 'Who can offer a game, and when? Setting up Discord', ptHowT: 'Who can offer a game, and when?', ptHowMember: 'Members (with the member role on our Discord) on any day.', ptHowAll: 'Everyone else on our regular game nights: {r} (next dates: {n}). Please introduce yourself briefly in the note so the others know who they’ll be playing with.', ptHowEv: 'With an event code from the organisers on the event days, even without Discord.', ptHowDcT: 'How to set up Discord', ptHowDc1: 'Join our Discord server (button below) and read the rules.', ptHowDc2: 'Pick up the board game role there so you can see the board game channel. Without it, signing in here won’t work.', ptHowDc3: 'Click “Offer a game” here and then “Sign in with Discord”. If that doesn’t work in your browser, type /code in the board game channel and enter the code here once.', ptHowDc4: 'You can also offer games directly in Discord with /party. Players join there with one click.', ptHowJoin: 'Go to the N3 Discord', ptHowNoMember: 'Without the member role only regular game nights can be picked on this page.',
     wdLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], wdMin: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], nthTxt: { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' }, ruleEvery: 'every {d}', ruleNth: 'the {n} {d} of the month', ruleNone: 'as announced',
     calPrev: 'Previous month', calNext: 'Next month', calStm: 'Outlined = game night.', calNonMember: 'Without the member role only on game nights (other days are locked).', calGuest: 'Locked days are for members only. Member? Please sign in first.', calPicked: 'Picked: {d}',
@@ -770,19 +833,21 @@ const rg = (s) => String(s || '').split(',').filter(Boolean).map((x) => { const 
 const D = JSON.parse($('gameData').textContent);
 // Über die BGG-GeekList automatisch übernommene Spiele (Worker/D1) zur festen Sammlung hinzufügen.
 const X = await Promise.race([window.__x, new Promise((r) => setTimeout(() => r(null), 3000))]);
+// Daten im Format von /api/games/extra (BGG) als Zeile wie in gameData; Kategorien/Mechaniken werden bei Bedarf ergänzt.
+const idxOf = (list, de, name) => { let k = list.indexOf(name); if (k < 0) { list.push(name); de.push(name); k = list.length - 1; } return k; };
+const extraRow = (e) => [e.id, e.n, e.y, e.p1, e.p2, e.t1, e.t2, e.a, e.r, e.br, e.u, e.w, e.rank, e.best, e.rec, e.ld != null ? e.ld : -1,
+  (e.cats || []).map((c) => idxOf(D.cats, D.catsDe, c)), (e.mechs || []).map((m) => idxOf(D.mechs, D.mechsDe, m)), e.des || '', 'V', e.exp ? 1 : 0, e.n];
 if (X && Array.isArray(X.games)) {
-  const idx = (list, de, name) => { let k = list.indexOf(name); if (k < 0) { list.push(name); de.push(name); k = list.length - 1; } return k; };
   const have = new Set(D.g.map((x) => x[0]));
   for (const e of X.games) {
     if (have.has(e.id)) continue;
-    D.g.push([e.id, e.n, e.y, e.p1, e.p2, e.t1, e.t2, e.a, e.r, e.br, e.u, e.w, e.rank, e.best, e.rec, e.ld != null ? e.ld : -1,
-      e.cats.map((c) => idx(D.cats, D.catsDe, c)), e.mechs.map((m) => idx(D.mechs, D.mechsDe, m)), e.des || '', 'V', e.exp ? 1 : 0, e.n]);
+    D.g.push(extraRow(e));
     if (e.types) D.sd[e.id] = e.types;
     if (e.hasCover !== false) D.cov[e.id] = '/api/cover/' + e.id;
     if (e.base) EXPB[e.id] = e.base;
   }
 }
-const all = D.g.map((x) => {
+function mkGame(x) {
   const [id, nDe, y, p1, p2, t1, t2, a, r, br, u, w, rank, best, rec, lang, cats, mechs, des, own, exp, nEnRaw] = x;
   const suffix = (nDe.match(/ \((deutsch|englisch, KS)\)$/) || [''])[0];
   const nEn = (nEnRaw || nDe).replace(/ \((deutsch|englisch, KS)\)$/, '') + (suffix === ' (deutsch)' ? ' (German)' : suffix ? ' (English, KS)' : '');
@@ -800,7 +865,8 @@ const all = D.g.map((x) => {
     types: String(D.sd[id] || '').split('').filter(Boolean), descDe: desc ? desc[0] : '', descEn: desc ? desc[1] : '',
     wl: w ? (w < 1.8 ? 0 : w < 2.4 ? 1 : w < 3.2 ? 2 : w < 4 ? 3 : 4) : 1, tl: t <= 30 ? 0 : t <= 60 ? 1 : t <= 120 ? 2 : 3,
     cover: D.cov[id] ? (String(D.cov[id])[0] === '/' ? D.cov[id] : 'covers/' + D.cov[id]) : '', link: 'https://boardgamegeek.com/boardgame/' + id, expList: [] };
-});
+}
+const all = D.g.map(mkGame);
 const byId = {}; all.forEach((g) => { byId[g.id] = g; });
 // Sprache der Ausgabe: Vorbelegung für Spiele, deren Sprache bekannt ist; in der Verwaltung gespeicherte Werte gehen vor.
 const DEF_LANGS = { '191189 (deutsch)': ['de'], '191189 (englisch, KS)': ['en'], 242705: ['en'], 342444: ['en'], 412735: ['en'], 186751: ['en'], 242993: ['en'], 331398: ['en'],
@@ -828,6 +894,25 @@ function applyMeta() {
 applyMeta();
 all.forEach((g) => { const b = byId[EXPB[g.id]]; if (b) b.expList.push(g); });
 const games = all.filter((g) => !EXPB[g.id]);
+// „Mitglieder besitzen“: Spiele, die Mitglieder selbst haben (nicht Teil der Sammlung). Eine Karte je Spiel, ggf. mit mehreren Besitzern.
+let memRows = [], memGames = [];
+function buildMemGames() {
+  const groups = new Map();
+  memRows.forEach((r) => { const k = r.gameId ? 'm' + r.gameId : 'm:' + String(r.game).toLowerCase(); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+  memGames = [...groups.entries()].map(([k, rs]) => {
+    const r0 = rs.find((r) => r.data) || rs[0], id = Number(r0.gameId) || 0;
+    let g;
+    if (id && byId[id]) g = Object.assign({}, byId[id], { expList: [], langs: [], owner: '', added: '' });
+    else if (r0.data && r0.data.id) { g = mkGame(extraRow(r0.data)); g.cover = id ? '/api/cover/' + id : ''; }
+    else g = { id, nDe: r0.game, nEn: r0.game, y: r0.year || 0, p1: 0, p2: 0, t1: 0, t2: 0, t: 0, a: 0, r: 0, br: 0, u: 0, w: 0, rank: 0, bestR: [], recR: [], cats: [], mechs: [], exp: 0, feel: [], types: [], wl: 1, tl: 0, ld: -1, langs: [], expList: [],
+      cover: id ? '/api/cover/' + id : '', link: id ? 'https://boardgamegeek.com/boardgame/' + id : '' };
+    if (!(id && byId[id]) && r0.game) { g.nDe = r0.game; g.nEn = r0.game; }
+    g.key = k; g.mem = true; g.owners = rs.map((r) => ({ id: r.id, name: r.owner, note: r.note || '' }));
+    if (!g.y && r0.year) g.y = r0.year;
+    return g;
+  });
+}
+const memById = (key) => memGames.find((g) => g.key === key);
 const top = (key) => { const c = {}; games.forEach((g) => g[key].forEach((k) => { c[k] = (c[k] || 0) + 1; })); return Object.keys(c).sort((a, b) => c[b] - c[a]).slice(0, 18).map((k) => ({ idx: +k, n: c[k] })); };
 const topCats = top('cats'), topMechs = top('mechs');
 const defaultHl = games.filter((g) => !g.exp).sort((a, b) => b.br - a.br).slice(0, 15);
@@ -841,7 +926,7 @@ function applyHl() {
   highlights = list.length ? list : defaultHl;
 }
 
-const S = { lang: 'de', slide: 0, langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
+const S = { lang: 'de', slide: 0, src: [], langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
 try { const l = localStorage.getItem('n3-lang'); if (l === 'de' || l === 'en') S.lang = l; } catch (e) {}
 { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'de' || ql === 'en') S.lang = ql; }
 let clubTime = {};
@@ -900,6 +985,7 @@ const lnIcon = (g) => { if (g.ld !== 0 && g.ld !== 1) return ''; const tip = g.l
 const catNames = (g) => g.cats.map((c) => (de() ? D.catsDe : D.cats)[c]);
 
 function match(g) {
+  if (S.src.length && !S.src.includes(g.mem ? 'mem' : 'club')) return false;
   if (S.q) { const q = S.q.toLowerCase(); if (!g.nDe.toLowerCase().includes(q) && !g.nEn.toLowerCase().includes(q)) return false; }
   if (S.players.length) {
     const ok = S.players.some((p) => {
@@ -961,6 +1047,7 @@ function renderStatic() {
 function renderFilters() {
   const t = T();
   const groups = [
+    [t.gSrc, chips('src', [['club', t.srcClub], ['mem', t.srcMem]])],
     [t.gPlayers, chips('players', [[1, t.solo], ['only2', t.only2], [2, '2'], [3, '3'], [4, '4'], [5, '5'], [6, '6'], [7, '7+']])],
     [t.gWeight, chips('weight', t.weights.map((w, i) => [i, w]))],
     [t.gTime, chips('time', t.times.map((w, i) => [i, w]))],
@@ -1023,9 +1110,21 @@ function renderSlider() {
 function reduceMotionQ() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 window.addEventListener('resize', () => { renderSlider(); });
 
+// Karte für ein Spiel, das Mitglieder besitzen: deutlich markiert, mit Besitzer (Discord-Name) und „Mitbringen anfragen“.
+function memCard(g) {
+  const t = T(), n = name(g), own = g.owners.map((o) => o.name).join(', ');
+  const notes = g.owners.filter((o) => o.note).map((o) => (g.owners.length > 1 ? o.name + ': ' : '') + o.note).join(' · ');
+  const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '');
+  return '<article class="card mem" tabindex="-1"><div class="cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 44) : '') +
+    '<div class="cv-tl"><span class="src mem">' + esc(t.memTag) + '</span>' + lnIcon(g) + '</div></div><div class="body">' +
+    '<h3>' + esc(n) + '</h3><span class="meta">' + esc([g.y || '', catNames(g).slice(0, 2).join(', ')].filter(Boolean).join(' · ')) + '</span>' +
+    (pills ? '<div class="pills">' + pills + '</div>' : '') + (g.bestR.length ? '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' : '') +
+    '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(own) + '</span>' + (notes ? '<span class="meta">' + esc(notes) + '</span>' : '') +
+    '<div class="actions"><button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>' + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
+}
 function renderGrid() {
   const t = T();
-  let list = games.filter(match);
+  let list = games.concat(memGames).filter(match);
   const sn = sortN();
   const sorters = { bestFor: (a, b) => (sn == null ? 0 : fitTier(a, sn) - fitTier(b, sn)) || b.r - a.r, rating: (a, b) => b.r - a.r, rank: (a, b) => (a.rank || 1e9) - (b.rank || 1e9), name: (a, b) => name(a).localeCompare(name(b), S.lang),
     weightAsc: (a, b) => (a.w || 9) - (b.w || 9), timeAsc: (a, b) => a.t - b.t, year: (a, b) => b.y - a.y, played: (a, b) => (playCount[b.id] || 0) - (playCount[a.id] || 0) || b.r - a.r };
@@ -1041,8 +1140,9 @@ function renderGrid() {
     secs.push({ h: t.secMostly, note: t.secMostlyNote, list: rest.filter((g) => g.ld === 1) });
     list = [].concat(...secs.map((x) => x.list));
   }
-  $('count').textContent = list.length + ' ' + t.of + ' ' + games.length + ' ' + t.games;
+  $('count').textContent = list.length + ' ' + t.of + ' ' + (games.length + memGames.length) + ' ' + t.games;
   const card = (g) => {
+    if (g.mem) return memCard(g);
     const n = name(g), pc = playCount[g.id] || 0;
     // Besitzer und Aufnahmedatum erscheinen erst beim Überfahren (oder Antippen) des Covers.
     // Besitzer vorerst nur für Admins sichtbar.
@@ -1212,6 +1312,7 @@ function exportInventory() {
 }
 $('lgExport').onclick = exportInventory;
 function renderAdmin() {
+  if (typeof renderMg === 'function' && $('mgMine')) renderMg();
   $('admin').hidden = !canEdit;
   if (!canEdit) return;
   const t = T();
@@ -1265,7 +1366,7 @@ function renderAdmPlays() {
 $('hlQ').addEventListener('input', fillHlAdd);
 $('apQ').addEventListener('input', renderAdmPlays);
 
-function renderAll() { renderStatic(); renderFilters(); renderSlider(); renderGrid(); renderPlays(); renderAdmin(); renderStats(); renderParties(); renderView(); renderAdminLink(); if (logGame === GUEST_PENDING || (logGame && logGame.guest)) renderPick(); if (typeof renderAutoBtn === 'function') renderAutoBtn(); }
+function renderAll() { renderStatic(); renderFilters(); renderSlider(); renderGrid(); renderPlays(); renderAdmin(); renderMg(); renderStats(); renderParties(); renderView(); renderAdminLink(); if (logGame === GUEST_PENDING || (logGame && logGame.guest)) renderPick(); if (typeof renderAutoBtn === 'function') renderAutoBtn(); }
 
 $('hlList').addEventListener('input', (e) => {
   const ta = e.target.closest('textarea'); if (!ta) return;
@@ -1414,12 +1515,13 @@ $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
 [['recPct', 'recPct'], ['minRating', 'minRating'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
 $('reset').onclick = () => {
-  Object.assign(S, { langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  Object.assign(S, { src: [], langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
   $('q').value = ''; ['recPct', 'minRating', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
   renderAll();
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
 $('grid').addEventListener('click', (e) => { const cv = !e.target.closest('.ln-ic') && e.target.closest('[data-cvinfo]'); if (cv) { cv.classList.toggle('show-info'); return; } });
+$('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-bring]'); if (b) openBring(b.dataset.bring); });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-log]'); if (!b) return; const g = all.find((x) => x.key === b.dataset.log); if (g) openLog(g); });
 
 /* ---------- Gastspiele: BGG-Suche ---------- */
@@ -1859,6 +1961,96 @@ $('pForm').addEventListener('submit', async (e) => {
   }
 });
 
+
+/* ---------- Mitglieder besitzen: eigene Spiele eintragen, Mitbringen anfragen ---------- */
+var pendingMgDel = null, mgGame = null, mgResults = [], mgActive = -1, brKey = null;
+const isMineMg = (id) => isMine('memberGames', id);
+function renderMg() {
+  const t = T(), el = $('mgMine'); if (!el) return;
+  const rows = memRows.filter((r) => canEdit || isMineMg(r.id));
+  el.innerHTML = rows.length ? '<span class="group-label">' + esc(canEdit ? t.mgAll : t.mgMine) + '</span>' + rows.map((r) => '<div class="row"><span>' + esc(r.game) + (r.year ? ' (' + r.year + ')' : '') + (canEdit ? ' · ' + esc(r.owner) : '') +
+    (r.note ? ' <span class="meta">· ' + esc(r.note) + '</span>' : '') + '</span><button type="button" class="btn ' + (pendingMgDel === r.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:36px" data-mgdel="' + esc(r.id) + '">' + esc(pendingMgDel === r.id ? t.delConfirm : t.remove) + '</button></div>').join('') : '';
+}
+$('mgMine').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-mgdel]'); if (!b) return;
+  const id = b.dataset.mgdel; if (pendingMgDel !== id) { pendingMgDel = id; renderMg(); return; }
+  pendingMgDel = null;
+  try { await api('DELETE', '/member-games/' + encodeURIComponent(id)); memRows = memRows.filter((r) => r.id !== id); buildMemGames(); renderGrid(); refreshAll(); } catch (x) {} renderMg();
+});
+function renderMgConsent() { $('mgConsentTxt').textContent = fill(T().mgConsent, { n: me ? me.name : T().mgYourName }); }
+function renderMgPick() {
+  const t = T(); $('mgSel').hidden = !mgGame; $('mgSearchBox').hidden = !!mgGame;
+  if (mgGame) { $('mgSelName').textContent = mgGame.n; $('mgSelMeta').textContent = mgGame.gameId ? (mgGame.y ? '(' + mgGame.y + ') · ' : '') + 'BGG #' + mgGame.gameId : '(' + t.gNoBgg + ')'; return; }
+  const q = $('mgQ').value.trim();
+  let html = mgResults.map((r, i) => '<li role="option" id="mgOpt' + i + '" data-i="' + i + '" aria-selected="' + (i === mgActive) + '"><span>' + esc(r.n) + '</span><span class="yr">' + (r.y || '') + '</span></li>').join('');
+  if (q) html += '<li role="option" id="mgOpt' + mgResults.length + '" data-i="' + mgResults.length + '" aria-selected="' + (mgActive === mgResults.length) + '"><span class="meta">' + esc((mgResults.length ? '' : t.gNone + ' ') + fill(t.gUseName, { q })) + '</span></li>';
+  $('mgRes').innerHTML = html; $('mgQ').setAttribute('aria-expanded', String(!!q));
+}
+function mgPick(i) {
+  const q = $('mgQ').value.trim();
+  if (i < mgResults.length) { const r = mgResults[i]; mgGame = { n: r.n, gameId: r.id || null, y: r.y || null }; }
+  else if (q) mgGame = { n: q.slice(0, 120), gameId: null, y: null }; else return;
+  $('mgMsg').textContent = ''; renderMgPick(); $('mgNote').focus();
+}
+$('mgQ').addEventListener('input', () => { mgActive = 0; startLive($('mgQ').value, (r) => { mgResults = r; mgActive = r.length ? Math.max(0, Math.min(mgActive, r.length - 1)) : -1; renderMgPick(); }); });
+$('mgQ').addEventListener('keydown', (e) => {
+  const max = mgResults.length + ($('mgQ').value.trim() ? 1 : 0) - 1;
+  if (e.key === 'ArrowDown') { e.preventDefault(); mgActive = Math.min(max, mgActive + 1); renderMgPick(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); mgActive = Math.max(0, mgActive - 1); renderMgPick(); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (mgActive >= 0) mgPick(mgActive); }
+});
+$('mgRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) mgPick(Number(li.dataset.i)); });
+$('mgChange').onclick = () => { mgGame = null; renderMgPick(); $('mgQ').focus(); };
+function openMgAdd() {
+  mgGame = null; mgResults = []; mgActive = -1; $('mgQ').value = ''; $('mgNote').value = ''; $('mgConsent').checked = false;
+  $('mgMsg').textContent = ''; $('mgMsg').className = ''; $('mgSave').disabled = false;
+  if (me && me.member === false) { $('mgMsg').className = 'err'; $('mgMsg').textContent = T().mgMembersOnly; }
+  renderMgPick(); renderAuth(); $('mgDlg').showModal(); $('mgQ').focus();
+}
+$('mgAddBtn').onclick = openMgAdd;
+$('mgCancel').onclick = () => $('mgDlg').close();
+const mgErr = (e) => { const t = T(), c = e && e.code;
+  return c === 'members_only' ? t.mgMembersOnly : c === 'already_added' ? t.mgDup : c === 'too_many' ? t.mgTooMany : c === 'consent_missing' ? t.mgConsentErr : c === 'bad_dates' ? t.brErrDates
+    : c === 'already_requested' ? t.brErrDup : c === 'discord_off' || c === 'discord_error' ? t.brErrOff : c === 'owner_gone' ? t.brErrGone : codeErr(e); };
+$('mgForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('mgMsg'); msg.className = 'err';
+  if (!me) { msg.textContent = t.errLogin; return; }
+  if (me.member === false) { msg.textContent = t.mgMembersOnly; return; }
+  if (!mgGame) { msg.textContent = t.errPick; $('mgQ').focus(); return; }
+  if (!$('mgConsent').checked) { msg.textContent = t.mgConsentErr; $('mgConsent').focus(); return; }
+  $('mgSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    await api('POST', '/member-games', { gameId: mgGame.gameId, game: mgGame.n, year: mgGame.y, note: $('mgNote').value.trim().slice(0, 120), consent: true });
+    msg.textContent = t.mgAdded; loadMy(); refreshAll(); setTimeout(() => $('mgDlg').close(), 700);
+  } catch (x) { msg.className = 'err'; $('mgSave').disabled = false; msg.textContent = mgErr(x); }
+});
+function openBring(key) {
+  const g = memById(key); if (!g) return; const t = T(); brKey = key;
+  const others = g.owners.filter((o) => !isMineMg(o.id));
+  $('brT').textContent = fill(t.brTitle, { n: name(g) });
+  $('brOwner').innerHTML = others.map((o) => '<option value="' + esc(o.id) + '">' + esc(o.name) + '</option>').join('');
+  $('brOwnerWrap').hidden = others.length < 2;
+  $('brIntro').textContent = others.length ? fill(t.brIntro, { o: others.map((o) => o.name).join(' / ') }) : t.brOwn;
+  const td = todayIso(); ['brD0', 'brD1', 'brD2'].forEach((id) => { $(id).min = td; $(id).value = ''; });
+  $('brD0').value = nextEventDay();
+  $('brNote').value = ''; $('brMsg').textContent = ''; $('brMsg').className = ''; $('brSend').disabled = !others.length;
+  if (me && me.member === false) { $('brMsg').className = 'err'; $('brMsg').textContent = t.mgMembersOnly; }
+  renderAuth(); $('brDlg').showModal();
+}
+$('brCancel').onclick = () => $('brDlg').close();
+$('brForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('brMsg'); msg.className = 'err';
+  if (!me) { msg.textContent = t.errLogin; return; }
+  if (me.member === false) { msg.textContent = t.mgMembersOnly; return; }
+  const id = $('brOwner').value; if (!id) return;
+  const td = todayIso(), dates = [...new Set(['brD0', 'brD1', 'brD2'].map((x) => $(x).value).filter(Boolean))].sort();
+  if (!dates.length || dates.some((d) => d < td)) { msg.textContent = t.brErrDates; return; }
+  $('brSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try { await api('POST', '/member-games/' + encodeURIComponent(id) + '/request', { dates, note: $('brNote').value.trim().slice(0, 300) }); msg.textContent = t.brSent; setTimeout(() => { if ($('brDlg').open) $('brDlg').close(); }, 2500); }
+  catch (x) { msg.className = 'err'; $('brSend').disabled = false; msg.textContent = mgErr(x); if (x && x.code === 'owner_gone') refreshAll(); }
+});
+['mgDlg', 'brDlg'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target === $(id)) $(id).close(); }));
+
 /* ---------- Ansichten (Tabs) ---------- */
 const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : 'collection');
 function renderView() {
@@ -1900,9 +2092,9 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties) }; }
+  try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); authMsg = loginErr(e.code); } }
-  renderAuth(); renderPlays(); renderParties();
+  renderAuth(); renderPlays(); renderParties(); renderMg();
 }
 function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
 function authHtml() {
@@ -1921,6 +2113,7 @@ function renderAuth() {
   const edit = typeof pEditId !== 'undefined' && !!pEditId, ev = typeof evMode !== 'undefined' && evMode;
   $('pAuth').hidden = edit || ev; $('pCodeWrap').hidden = edit || ev || !!me;
   $('meLink').hidden = !me; if (me) $('meLink').textContent = fill(T().logoutN, { n: me.name });
+  $('mgAuth').hidden = !!me; $('brAuth').hidden = !!me; if (typeof renderMgConsent === 'function') renderMgConsent();
   if (typeof applyEvDates === 'function' && !$('pModal').hidden) applyEvDates();
 }
 function startLogin() {
@@ -2167,6 +2360,7 @@ watch('/plays', (rows) => {
   calcClubTime();
   dbState = 'ready'; renderPlays(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
+watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);
 watch('/config/gamemeta', (cfg) => {
   metaCfg = cfg && typeof cfg === 'object' ? cfg : {}; applyMeta(); renderGrid(); if (canEdit) renderLangAdmin();
 }, () => {}, 60000);
