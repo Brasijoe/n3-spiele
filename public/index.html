@@ -105,7 +105,7 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .grid-h .note { font-size: 13px; margin: 0; max-width: 70ch; }
 .lang-note { display: block; flex-basis: 100%; margin-top: 2px; }
 .lang-rows { max-height: 460px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-.lang-row { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(3, 40px) 150px 120px 140px 100px 140px; align-items: center; gap: 8px; min-width: max-content; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+.lang-row { display: grid; grid-template-columns: 300px repeat(3, 40px) 150px 120px 140px 100px 140px; align-items: center; gap: 8px; min-width: max-content; padding: 6px 12px; border-bottom: 1px solid var(--line); }
 .lang-row:last-child { border-bottom: 0; }
 .lang-row strong { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lang-row label { display: flex; justify-content: center; align-items: center; min-height: 32px; cursor: pointer; }
@@ -114,6 +114,10 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .lang-head { position: sticky; top: 0; z-index: 1; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted, var(--fg)); text-transform: uppercase; letter-spacing: .03em; }
 .lang-head span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lang-head span.c { text-align: center; }
+.lg-sort { all: unset; box-sizing: border-box; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; padding: 4px 0; }
+.lg-sort.c { text-align: center; }
+.lg-sort:hover, .lg-sort.on { color: var(--fg); }
+.lg-sort:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .played { font-size: 13px; font-weight: 600; color: var(--fg); }
 .exp-list { margin: 2px 0 0; padding-left: 2px; list-style: disc inside; font-weight: 500; }
 .exp-list li { margin: 1px 0; }
@@ -602,7 +606,7 @@ const TXT = {
     secMostly: 'Fast sprachneutrale Spiele', secMostlyNote: 'Nur wenig Text im Spiel: schnell gelernt oder mit einem kleinen Spickzettel gut spielbar (Einschätzung der BGG-Community).', secEmpty: 'Keine passenden Spiele.',
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
-    owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
+    owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', sortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
   en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
     prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
     search: 'Search games', searchPh: 'Name, e.g. Azul', sortBy: 'Sort by', reset: 'Reset filters', match: 'match your selection',
@@ -659,7 +663,7 @@ const TXT = {
     secMostly: 'Mostly language-neutral games', secMostlyNote: 'Only a little text during play: quickly learned or easy to play with a small crib sheet (rated by the BGG community).', secEmpty: 'No matching games.',
     tagNeutral: 'language-neutral', tagMostly: 'mostly language-neutral', tipNeutral: 'Language-neutral: no text needed during play', tipMostly: 'Mostly language-neutral: only a little text during play',
     admLang: 'Language, owner and inventory data', admLangNote: 'Language of our copy, language dependence, owner and since when the game is in the collection. Every change is saved right away. Without a language a game only shows up in the language filter if it is (mostly) language-neutral. Language dependence comes from BGG and can be overridden here.', admLangQ: 'Search game', admLangOnlyEmpty: 'Only games without a language', admLangErr: 'Saving didn’t work.', admLangOk: 'Saved: {n}',
-    owner: 'Owner', ownerUnknown: '?', addedOn: 'In the collection since', inv: 'Inventory number', zLabel: 'Condition', zNames: ['New', 'Very good', 'Good', 'Damaged', 'Needs repair', 'Unusable'], ldLabel: 'Language dependence', ldNames: ['language-neutral (no text)', 'mostly language-neutral (little text)', 'moderate text', 'lots of text', 'unplayable without the language'], ldUnknown: 'unknown', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'mostly neutral', 'moderate', 'lots of text', 'unplayable'], colGame: 'Game', colLd: 'Lang. dep.', colInv: 'Inv. no.', infoMore: 'Details', admExport: 'Export to Excel', admExportNote: 'All games with the columns of the inventory list, plus owner, date, language and BGG data.' },
+    owner: 'Owner', ownerUnknown: '?', addedOn: 'In the collection since', inv: 'Inventory number', zLabel: 'Condition', zNames: ['New', 'Very good', 'Good', 'Damaged', 'Needs repair', 'Unusable'], ldLabel: 'Language dependence', ldNames: ['language-neutral (no text)', 'mostly language-neutral (little text)', 'moderate text', 'lots of text', 'unplayable without the language'], ldUnknown: 'unknown', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'mostly neutral', 'moderate', 'lots of text', 'unplayable'], colGame: 'Game', sortBy: 'Sort by {c}', colLd: 'Lang. dep.', colInv: 'Inv. no.', infoMore: 'Details', admExport: 'Export to Excel', admExportNote: 'All games with the columns of the inventory list, plus owner, date, language and BGG data.' },
 };
 const EXPB = { 412735: 342444, 324767: 322656, 324766: 322656, 276044: 260934, 275923: 260934, 242993: 186751, 349606: 319910, 226162: 184287, 325: 13, 926: 13, 181336: 143884, 342274: 160477, 219326: 160477 };
 const normCode = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
@@ -1007,14 +1011,22 @@ $('plays').addEventListener('click', async (e) => {
 });
 
 // Verwaltung: Sprache, Sprachabhängigkeit, Besitzer und Aufnahmedatum je Spiel (inkl. Erweiterungen).
+let lgSort = { col: 'name', dir: 1 };
 function renderLangAdmin() {
   const box = $('lgList'); if (!canEdit || box.contains(document.activeElement)) return;
   const t = T(), q = $('lgQ').value.trim().toLowerCase(), onlyEmpty = $('lgEmpty').checked;
   const ldName = (v) => (v >= 0 ? t.ldShort[v] : t.ldUnknown);
   const list = all.filter((g) => (!q || g.nDe.toLowerCase().includes(q) || g.nEn.toLowerCase().includes(q)) && (!onlyEmpty || !g.langs.length))
     .sort((a, b) => name(a).localeCompare(name(b), S.lang));
-  const head = '<div class="lang-row lang-head" aria-hidden="true"><span>' + esc(t.colGame) + '</span>' + LANGS.map((l) => '<span class="c">' + l.toUpperCase() + '</span>').join('') +
-    '<span>' + esc(t.colLd) + '</span><span>' + esc(t.owner) + '</span><span>' + esc(t.addedOn) + '</span><span>' + esc(t.colInv) + '</span><span>' + esc(t.zLabel) + '</span></div>';
+  const sv = { de: (g) => (g.langs.includes('de') ? 0 : 1), en: (g) => (g.langs.includes('en') ? 0 : 1), fr: (g) => (g.langs.includes('fr') ? 0 : 1),
+    ld: (g) => (g.ld >= 0 ? g.ld : null), owner: (g) => (g.owner && g.owner !== '?' ? g.owner : null), added: (g) => g.added || null, inv: (g) => g.inv || null, z: (g) => g.z || null }[lgSort.col];
+  if (sv) list.sort((a, b) => { const x = sv(a), y = sv(b); if (x === y) return 0; if (x === null) return 1; if (y === null) return -1;
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), S.lang, { numeric: true })) * lgSort.dir; });
+  else if (lgSort.dir < 0) list.reverse();
+  const hc = (col, label, c) => '<button type="button" class="lg-sort' + (c ? ' c' : '') + (lgSort.col === col ? ' on' : '') + '" data-lgsort="' + col + '" aria-label="' + esc(fill(t.sortBy, { c: label })) + '">' +
+    esc(label) + '<span aria-hidden="true">' + (lgSort.col === col ? (lgSort.dir > 0 ? ' ▲' : ' ▼') : '') + '</span></button>';
+  const head = '<div class="lang-row lang-head">' + hc('name', t.colGame) + LANGS.map((l) => hc(l, l.toUpperCase(), true)).join('') +
+    hc('ld', t.colLd) + hc('owner', t.owner) + hc('added', t.addedOn) + hc('inv', t.colInv) + hc('z', t.zLabel) + '</div>';
   box.innerHTML = head + list.map((g) => '<div class="lang-row" data-lgkey="' + esc(g.key) + '"><strong title="' + esc(name(g)) + '">' + esc(name(g)) + '</strong>' +
     LANGS.map((l) => '<label title="' + l.toUpperCase() + '"><input type="checkbox" data-lg="' + l + '" aria-label="' + l.toUpperCase() + '"' + (g.langs.includes(l) ? ' checked' : '') + '></label>').join('') +
     '<select data-lgld aria-label="' + esc(t.ldLabel) + '" title="' + esc(t.ldLabel) + '"><option value="">' + esc(fill(t.ldBgg, { v: ldName(g.ldBgg) })) + '</option>' +
@@ -1026,6 +1038,11 @@ function renderLangAdmin() {
 }
 $('lgQ').addEventListener('input', () => renderLangAdmin());
 $('lgEmpty').addEventListener('change', () => renderLangAdmin());
+$('lgList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lgsort]'); if (!b) return;
+  const col = b.dataset.lgsort; lgSort = { col, dir: lgSort.col === col ? -lgSort.dir : 1 };
+  b.blur(); renderLangAdmin(); const nb = $('lgList').querySelector('[data-lgsort="' + col + '"]'); if (nb) nb.focus();
+});
 $('lgList').addEventListener('change', async (e) => {
   const row = e.target.closest('[data-lgkey]'); if (!row) return;
   const t = T(), key = row.dataset.lgkey, g = all.find((x) => x.key === key); if (!g) return;
