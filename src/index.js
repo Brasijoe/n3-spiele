@@ -1,7 +1,7 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
-import { memberGamesRoute } from './membergames.js';
+import { memberGamesRoute, backfillMemberGames } from './membergames.js';
 import { getBooking, cleanBooking, isMember, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
 
@@ -452,6 +452,7 @@ export default {
     ctx.waitUntil((async () => {
       await env.DB.prepare('DELETE FROM rate WHERE ts < ?1').bind(Date.now() - 864e5).run();
       try { await refreshGeeklist(env); await syncExtras(env); } catch (e) { console.log('geeklist refresh/sync failed', e.code || e.message); }
+      try { await ensureCols(env); await backfillMemberGames(env); } catch (e) { console.log('member games backfill failed', e.code || e.message); }
     })());
   },
 };

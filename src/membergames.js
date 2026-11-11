@@ -4,6 +4,7 @@
 // Annehmen legt automatisch eine Spielrunde an, in der beide schon stehen.
 import { discord, view, headline, channelIds, discordOn, fmtDate, wdName, who, say, reply, berlinToday } from './discord.js';
 import { fetchThings } from './games.js';
+import { fetchCollection } from './bgg.js';
 import { getBooking, isMember } from './booking.js';
 import { checkAccess } from './auth.js';
 
@@ -71,6 +72,42 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
     await env.DB.prepare('INSERT INTO member_games(id, discord_id, game_id, game, year, note, data, consent_at, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?8)')
       .bind(id, a.member.discord_id, gameId, game, int(b.year), str(b.note, 120), data ? JSON.stringify(data) : null, now).run();
     return json({ id });
+  }
+  // BGG-Sammlung lesen (Vorschau): der Nutzer wählt danach aus, was übernommen wird.
+  if (path === '/member-games/bgg' && m === 'GET') {
+    const a = await needMember(); if (a.res) return a.res;
+    const user = str(new URL(req.url).searchParams.get('user'), 60);
+    if (!/^[\w .-]{2,60}$/.test(user)) return fail(400, 'invalid');
+    if (!(await allow(env, 'bggcol:' + a.member.discord_id, 10, 3600))) return fail(429, 'rate_limited');
+    let items;
+    try { items = await fetchCollection(env, user); }
+    catch (e) { return fail(e.code === 'bgg_no_user' ? 404 : e.code === 'bgg_busy' ? 503 : 502, e.code || 'bgg_error'); }
+    const mine = (await env.DB.prepare('SELECT game_id FROM member_games WHERE discord_id = ?1 AND game_id IS NOT NULL').bind(a.member.discord_id).all()).results.map((r) => r.game_id);
+    return json({ items: items.slice(0, 500), have: mine });
+  }
+  // Ausgewählte Spiele aus der BGG-Sammlung übernehmen (mit Zustimmung wie beim Einzeleintrag).
+  if (path === '/member-games/import' && m === 'POST') {
+    const a = await needMember(); if (a.res) return a.res;
+    if (!(await allow(env, 'mgimp:' + a.member.discord_id, 10, 3600))) return fail(429, 'rate_limited');
+    const b = await body(req);
+    if (b.consent !== true) return fail(400, 'consent_missing');
+    const want = (Array.isArray(b.items) ? b.items : []).map((x) => ({ id: int(x && x.id), n: str(x && x.n, 120), y: int(x && x.y) })).filter((x) => x.id > 0 && x.n);
+    const have = new Set((await env.DB.prepare('SELECT game_id FROM member_games WHERE discord_id = ?1').bind(a.member.discord_id).all()).results.map((r) => r.game_id));
+    const room = MAX_GAMES - have.size;
+    const add = [...new Map(want.filter((x) => !have.has(x.id)).map((x) => [x.id, x])).values()].slice(0, Math.max(0, room));
+    if (!add.length) return json({ added: 0, skipped: want.length });
+    // Spieldaten in Blöcken zu 20 holen (höchstens 5 Blöcke, Rest ohne Daten; BGG antwortet manchmal nicht).
+    const data = new Map();
+    if (env.BGG_TOKEN) for (let i = 0; i < add.length && i < 100; i += 20) {
+      try {
+        const got = await Promise.race([fetchThings(env, add.slice(i, i + 20).map((x) => x.id), 2), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))]);
+        for (const t of got) { const { thumb, img, ...d } = t; data.set(t.id, d); }
+      } catch { break; }
+    }
+    const now = new Date().toISOString();
+    await env.DB.batch(add.map((x) => env.DB.prepare('INSERT INTO member_games(id, discord_id, game_id, game, year, note, data, consent_at, created_at) VALUES(?1,?2,?3,?4,?5,\'\',?6,?7,?7)')
+      .bind(newId(), a.member.discord_id, x.id, x.n, x.y, data.has(x.id) ? JSON.stringify(data.get(x.id)) : null, now)));
+    return json({ added: add.length, skipped: want.length - add.length });
   }
   if ((g = path.match(/^\/member-games\/([\w-]+)$/)) && m === 'DELETE') {
     const row = await env.DB.prepare('SELECT discord_id FROM member_games WHERE id = ?1').bind(g[1]).first();
@@ -229,4 +266,14 @@ export async function bringSubmit(i, env, ctx) {
     } });
   }
   return say('Unbekannte Aktion.');
+}
+
+// Nachts: Spieldaten für bis zu 20 Mitgliederspiele ohne Daten nachladen (z. B. nach einem großen BGG-Import).
+export async function backfillMemberGames(env) {
+  if (!env.BGG_TOKEN) return 0;
+  const { results } = await env.DB.prepare('SELECT DISTINCT game_id FROM member_games WHERE data IS NULL AND game_id IS NOT NULL LIMIT 20').all();
+  if (!results.length) return 0;
+  const got = await fetchThings(env, results.map((r) => r.game_id), 3);
+  for (const t of got) { const { thumb, img, ...d } = t; await env.DB.prepare('UPDATE member_games SET data = ?1 WHERE game_id = ?2 AND data IS NULL').bind(JSON.stringify(d), t.id).run(); }
+  return got.length;
 }
