@@ -920,8 +920,18 @@ function buildMemGames() {
     if (!(id && byId[id]) && r0.game) { g.nDe = r0.game; g.nEn = r0.game; }
     g.key = k; g.mem = true; g.owners = rs.map((r) => ({ id: r.id, name: r.owner, note: r.note || '' }));
     if (!g.y && r0.year) g.y = r0.year;
+    g.baseId = (r0.data && r0.data.base) || EXPB[id] || 0;
     return g;
   });
+  // Erweiterungen wie in der Sammlung unter dem Grundspiel zeigen, wenn ein Mitglied das Grundspiel eingetragen hat.
+  const byKey = new Map(memGames.map((g) => [g.key, g]));
+  memGames.forEach((g) => {
+    const b = g.baseId && byKey.get('m' + g.baseId); if (!b || b === g) return;
+    const own = (x) => x.owners.map((o) => o.name).sort().join(', ');
+    if (own(g) !== own(b)) { const sfx = ' (' + own(g) + ')'; g.nDe += sfx; g.nEn += sfx; }
+    b.expList.push(g); g.underBase = true;
+  });
+  memGames = memGames.filter((g) => !g.underBase);
 }
 const memById = (key) => memGames.find((g) => g.key === key);
 const top = (key) => { const c = {}; games.forEach((g) => g[key].forEach((k) => { c[k] = (c[k] || 0) + 1; })); return Object.keys(c).sort((a, b) => c[b] - c[a]).slice(0, 18).map((k) => ({ idx: +k, n: c[k] })); };
@@ -976,7 +986,7 @@ const expHtml = (g, cls) => {
 };
 document.addEventListener('click', (e) => {
   const b = e.target.closest('button[data-exps]'); if (!b) return;
-  const g = all.find((x) => x.key === b.dataset.exps); if (!g) return;
+  const g = all.find((x) => x.key === b.dataset.exps) || memGames.find((x) => x.key === b.dataset.exps); if (!g) return;
   $('expT').textContent = fill(T().expTitle, { n: name(g) });
   $('expL').innerHTML = expNames(g).map((x) => '<li>' + esc(x) + '</li>').join('');
   $('expDlg').showModal();
@@ -1199,7 +1209,7 @@ function memCard(g) {
     '<div class="cv-tl"><span class="src mem">' + esc(t.memTag) + '</span>' + lnIcon(g) + '</div></div><div class="body">' +
     '<h3>' + esc(n) + '</h3><span class="meta">' + esc([g.y || '', catNames(g).slice(0, 2).join(', ')].filter(Boolean).join(' · ')) + '</span>' +
     (pills ? '<div class="pills">' + pills + '</div>' : '') + (g.bestR.length ? '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' : '') +
-    '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(own) + '</span>' + (notes ? '<span class="meta">' + esc(notes) + '</span>' : '') +
+    expHtml(g, 'played') + '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(own) + '</span>' + (notes ? '<span class="meta">' + esc(notes) + '</span>' : '') +
     '<div class="actions">' + (g.owners.every((o) => isMine('memberGames', o.id)) ? '<button type="button" class="btn btn-primary" data-offer="' + esc(g.key) + '">' + esc(t.ptNew) + '</button>'
       : '<button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>') + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
 }
