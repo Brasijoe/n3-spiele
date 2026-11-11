@@ -40,6 +40,13 @@ export function parseThings(xml) {
         if (best + rec > not) recL.push({ n, plus });
       }
     }
+    // BGG-Umfrage „Language Dependence“: Stufe mit den meisten Stimmen, 0 = kein Text nötig … 4 = unspielbar in anderer Sprache, -1 = keine Stimmen.
+    let ld = -1, ldMax = 0;
+    const lp = /<poll\b[^>]*name="language_dependence"[\s\S]*?<\/poll>/.exec(b);
+    if (lp) for (const r of lp[0].matchAll(/<result\b[^>]*>/g)) {
+      const lv = num(attr(r[0], /\blevel="(\d+)"/)), nv = num(attr(r[0], /\bnumvotes="(\d+)"/));
+      if (lv >= 1 && lv <= 5 && nv > ldMax) { ldMax = nv; ld = lv - 1; }
+    }
     const ranks = [...b.matchAll(/<rank\b[^>]*\bname="([^"]+)"[^>]*\bvalue="([^"]*)"/g)];
     const rankV = ranks.find((x) => x[1] === 'boardgame');
     const types = ranks.filter((x) => SUB[x[1]] && /^\d+$/.test(x[2])).map((x) => SUB[x[1]]).join('');
@@ -54,7 +61,7 @@ export function parseThings(xml) {
       t1, t2: t2 === t1 ? 0 : t2, a: num(attr(b, /<minage\b[^>]*value="(\d+)"/)),
       r: Math.round(num(attr(b, /<average\b[^>]*value="([\d.]+)"/)) * 100) / 100, br: Math.round(num(attr(b, /<bayesaverage\b[^>]*value="([\d.]+)"/)) * 100) / 100,
       u: num(attr(b, /<usersrated\b[^>]*value="(\d+)"/)), w: Math.round(num(attr(b, /<averageweight\b[^>]*value="([\d.]+)"/)) * 100) / 100,
-      rank: rankV && /^\d+$/.test(rankV[2]) ? +rankV[2] : 0, best: ranges(bestL), rec: ranges(recL),
+      rank: rankV && /^\d+$/.test(rankV[2]) ? +rankV[2] : 0, best: ranges(bestL), rec: ranges(recL), ld,
       cats: links('boardgamecategory').map((x) => x.v), mechs: links('boardgamemechanic').map((x) => x.v),
       des: (links('boardgamedesigner')[0] || {}).v || '', exp: type === 'boardgameexpansion' ? 1 : 0,
       base: (links('boardgameexpansion').find((x) => x.inbound) || {}).id || 0, types, thumb: thumb ? thumb[1] : '', img: img ? img[1] : '',
