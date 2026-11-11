@@ -1139,13 +1139,14 @@ function renderFilters() {
     [t.gTime, chips('time', t.times.map((w, i) => [i, w]))],
     [t.gType, chips('types', ['S', 'T', 'F', 'P', 'A', 'K', 'W'].map((k) => [k, t.typeNames[k]]))],
     [t.gFeel, chips('feel', ['coop', 'party', 'deduct', 'camp', 'solo', 'duo'].map((k, i) => [k, t.feels[i]]))],
-    [t.gLang, chips('langs', LANGS.map((l) => [l, t.langNames[l]]).concat([['neutral', t.langNeutral]])) + '<span class="note lang-note">' + esc(t.langNote) + '</span>'],
+    // Sprachfilter nur für die Sammlung (bei Mitgliederspielen kennen wir die Sprache des Exemplars nicht).
+    ...(S.src === 'mem' ? [] : [[t.gLang, chips('langs', LANGS.map((l) => [l, t.langNames[l]]).concat([['neutral', t.langNeutral]])) + '<span class="note lang-note">' + esc(t.langNote) + '</span>']]),
   ];
   $('quick').innerHTML = groups.map(([l, c]) => '<div class="group" style="margin-bottom:10px"><span class="group-label">' + esc(l) + '</span>' + c + '</div>').join('');
   $('modes').innerHTML = ['box', 'rec', 'best'].map((v, i) => '<button type="button" class="chip" data-mode="' + v + '" aria-pressed="' + (S.pMode === v) + '">' + esc(t.modes[i]) + '</button>').join('');
   $('cats').innerHTML = chips('cats', topCats.map((c) => [c.idx, (de() ? D.catsDe : D.cats)[c.idx] + ' (' + c.n + ')']));
   $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
-  const nAct = ['langs', 'players', 'weight', 'time', 'types', 'feel', 'cats', 'mechs'].reduce((n, k) => n + S[k].length, 0) +
+  const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
     [S.pMode !== 'box', S.minRating > 0, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0].filter(Boolean).length;
   $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt;
   $('advBtn').hidden = !S.flt;
@@ -1290,7 +1291,7 @@ function renderGrid() {
   if (S.src === 'mem') list = list.filter((g) => !g.inClub).concat(list.filter((g) => g.inClub));
   // Sprachfilter: erst die Spiele in der gewählten Sprache, dann eigene Abschnitte für sprachneutrale und fast sprachneutrale Spiele.
   let secs = null;
-  if (S.langs.length) {
+  if (S.langs.length && S.src !== 'mem') {
     const sel = S.langs.filter((l) => LANGS.includes(l)), inLang = (g) => sel.some((l) => g.langs.includes(l));
     secs = [];
     if (sel.length) secs.push({ h: fill(t.secLang, { l: sel.map((l) => t.langNames[l]).join(' ' + t.or + ' ') }), list: list.filter(inLang) });
@@ -1688,7 +1689,7 @@ $('reset').onclick = () => {
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
 $('ownerSel').addEventListener('change', (e) => { S.owner = e.target.value; S.limit = PAGE; renderGrid(); });
-$('srcTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (!b || S.src === b.dataset.src) return; S.src = b.dataset.src; S.limit = PAGE; renderGrid(); });
+$('srcTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-src]'); if (!b || S.src === b.dataset.src) return; S.src = b.dataset.src; S.limit = PAGE; renderFilters(); renderGrid(); });
 $('grid').addEventListener('click', (e) => { const cv = !e.target.closest('.ln-ic') && e.target.closest('[data-cvinfo]'); if (cv) { cv.classList.toggle('show-info'); return; } });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-bring]'); if (b) openBring(b.dataset.bring); });
 // Eigenes Mitgliederspiel: direkt „Runde anbieten“ mit dem Spiel vorausgewählt.
