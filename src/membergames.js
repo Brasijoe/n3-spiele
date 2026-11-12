@@ -293,14 +293,15 @@ export async function bringSubmit(i, env, ctx) {
     }
     const u = await env.DB.prepare("UPDATE bring_requests SET status = 'declined', answer = ?1, declined = ?2 WHERE id = ?3 AND status = 'open'").bind(why, JSON.stringify(declined), id).run();
     if (!u.meta.changes) return say('Die Anfrage ist schon erledigt.');
-    const text = (multi ? `❌ Keiner der Besitzer (${ownersOf(r).map((o) => o.name).join(', ')}) kann **${r.game}** an den vorgeschlagenen Terminen mitbringen.` : `❌ **${r.owner_name}** kann **${r.game}** an den vorgeschlagenen Terminen leider nicht mitbringen.`) + (why ? `\n💬 „${why}“` : '') + '\nSchreibt euch am besten direkt, um etwas anderes auszumachen.';
+    // Wie beim Zurückziehen: Anfrage durchgestrichen und erledigt; nur die Direktnachricht-Knöpfe bleiben.
+    const text = `~~${r.req_name} hat gefragt, ob ${multi ? ownersOf(r).map((o) => o.name).join(' oder ') : r.owner_name} **${r.game}** mitbringt.~~ Abgelehnt.` + (multi ? ' Keiner der Besitzer kann an den Terminen.' : '') + (why ? `\n💬 „${why}“` : '') + '\nSchreibt euch gern direkt, um etwas anderes auszumachen.';
     // Bearbeitete Nachrichten benachrichtigen niemanden: deshalb eine kurze Antwort mit Erwähnung der anfragenden Person.
     if (r.discord_channel && r.discord_msg) ctx.waitUntil(discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
       content: multi ? `<@${r.req_discord}> Leider kann keiner der Besitzer **${r.game}** an deinen Terminen mitbringen` + (why ? ` (${me.name}: „${why}“)` : '.') + ` Schreib ${mentionAll(r)} gern direkt an.`
         : `<@${r.req_discord}> ${r.owner_name} hat deine Anfrage zu **${r.game}** abgelehnt` + (why ? `: „${why}“` : '.') + ` Schreib <@${r.owner_discord}> gern direkt an.`,
       message_reference: { message_id: r.discord_msg, fail_if_not_exists: false }, allowed_mentions: { users: [r.req_discord] },
     }).catch((e) => console.log('bring decline reply failed', e && e.message)));
-    return reply({ type: 7, data: { content: text, embeds: [gameEmbed(r, env)], components: dmLinks(r), allowed_mentions: { parse: [] } } });
+    return reply({ type: 7, data: { content: text, embeds: [], components: dmLinks(r), allowed_mentions: { parse: [] } } });
   }
 
   if (act === 'bringa') {
