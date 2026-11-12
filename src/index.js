@@ -450,6 +450,11 @@ export default {
     catch (e) { if (!e.status) console.log('server_error', req.method, new URL(req.url).pathname, e && (e.stack || e.message)); return fail(e.status || 500, e.status ? e.message : 'server_error'); }
   },
   async scheduled(event, env, ctx) {
+    // Häufiger Zeitplan: nur fehlende Spieldaten von Mitgliederspielen nachholen (kostet nichts, wenn alles da ist).
+    if (event.cron !== '17 3 * * *') {
+      ctx.waitUntil((async () => { try { await ensureCols(env); await backfillMemberGames(env, 2); } catch (e) { console.log('member games backfill failed', e.code || e.message); } })());
+      return;
+    }
     ctx.waitUntil((async () => {
       await env.DB.prepare('DELETE FROM rate WHERE ts < ?1').bind(Date.now() - 864e5).run();
       try { await refreshGeeklist(env); await syncExtras(env); } catch (e) { console.log('geeklist refresh/sync failed', e.code || e.message); }
