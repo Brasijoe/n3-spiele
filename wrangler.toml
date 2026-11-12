@@ -44,7 +44,7 @@ DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 enabled = true
 
 [triggers]
-crons = ["17 3 * * *"]
+crons = ["17 3 * * *", "*/20 * * * *"]
 
 # Secrets (nicht hier eintragen, sondern mit `wrangler secret put ...` oder im Cloudflare-Dashboard):
 #   BGG_TOKEN    Token der BGG-XML-API

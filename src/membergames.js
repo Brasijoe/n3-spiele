@@ -116,11 +116,13 @@ export async function memberGamesRoute(req, env, ctx, path, m, ip, h) {
       try {
         const got = await Promise.race([fetchThings(env, add.slice(i, i + 20).map((x) => x.id), 2), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))]);
         for (const t of got) { const { thumb, img, ...d } = t; data.set(t.id, d); }
-      } catch { break; }
+      } catch { /* Block ohne Daten: wird nachgeholt (gleich nach dem Import und per Zeitplan) */ }
     }
     const now = new Date().toISOString();
     await env.DB.batch(add.map((x) => env.DB.prepare('INSERT INTO member_games(id, discord_id, game_id, game, year, note, data, consent_at, created_at, src) VALUES(?1,?2,?3,?4,?5,\'\',?6,?7,?7,\'bgg\')')
       .bind(newId(), a.member.discord_id, x.id, x.n, x.y, data.has(x.id) ? JSON.stringify(data.get(x.id)) : null, now)));
+    // Fehlende Spieldaten (u. a. Erweiterung → Grundspiel) direkt im Hintergrund nachholen.
+    if (add.some((x) => !data.has(x.id))) ctx.waitUntil(backfillMemberGames(env).catch((e) => console.log('member games backfill failed', e.code || e.message)));
     return json({ added: add.length, skipped: want.length - add.length, removed });
   }
   if ((g = path.match(/^\/member-games\/([\w-]+)$/)) && m === 'DELETE') {
@@ -362,16 +364,21 @@ export async function pruneMemberGames(env) {
   return n;
 }
 
-export async function backfillMemberGames(env) {
+export async function backfillMemberGames(env, rounds = 5) {
   if (!env.BGG_TOKEN) return 0;
-  // Bis zu 5 Blöcke à 20 pro Lauf (große BGG-Importe sind so nach wenigen Nächten vollständig).
+  // Bis zu 5 Blöcke à 20 pro Lauf; läuft nach jedem Import und alle 20 Minuten, bis alle Spiele Daten haben.
+  // IDs, die BGG nicht (mehr) kennt, werden übersprungen, damit sie die übrigen nicht blockieren.
   let n = 0;
-  for (let round = 0; round < 5; round++) {
-    const { results } = await env.DB.prepare('SELECT DISTINCT game_id FROM member_games WHERE data IS NULL AND game_id IS NOT NULL LIMIT 20').all();
+  const skip = [];
+  for (let round = 0; round < rounds; round++) {
+    const ph = skip.map((_, j) => '?' + (j + 1)).join(',');
+    const { results } = await env.DB.prepare('SELECT DISTINCT game_id FROM member_games WHERE data IS NULL AND game_id IS NOT NULL' + (skip.length ? ' AND game_id NOT IN (' + ph + ')' : '') + ' LIMIT 20').bind(...skip).all();
     if (!results.length) break;
-    const got = await fetchThings(env, results.map((r) => r.game_id), 3);
-    if (!got.length) break;
-    await env.DB.batch(got.map((t) => { const { thumb, img, ...d } = t; return env.DB.prepare('UPDATE member_games SET data = ?1 WHERE game_id = ?2 AND data IS NULL').bind(JSON.stringify(d), t.id); }));
+    const ids = results.map((r) => r.game_id);
+    const got = await fetchThings(env, ids, 3);
+    const found = new Set(got.map((t) => t.id));
+    ids.filter((id) => !found.has(id)).forEach((id) => skip.push(id));
+    if (got.length) await env.DB.batch(got.map((t) => { const { thumb, img, ...d } = t; return env.DB.prepare('UPDATE member_games SET data = ?1 WHERE game_id = ?2 AND data IS NULL').bind(JSON.stringify(d), t.id); }));
     n += got.length;
   }
   return n;

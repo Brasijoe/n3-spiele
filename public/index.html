@@ -987,11 +987,19 @@ function buildMemGames() {
     // Steht das Spiel auch in der Clubsammlung? Dann ausgegraut und ans Ende der Liste.
     g.inClub = id ? !!byId[id] : clubNames.has(String(r0.game).trim().toLowerCase());
     if (!g.y && r0.year) g.y = r0.year;
-    g.baseId = (r0.data && r0.data.base) || EXPB[id] || 0;
+    g.baseId = (r0.data && r0.data.base) || EXPB[id] || 0; g.noData = !(r0.data && r0.data.id);
     return g;
   });
   // Erweiterungen wie in der Sammlung unter dem Grundspiel zeigen, wenn ein Mitglied das Grundspiel eingetragen hat.
   const byKey = new Map(memGames.map((g) => [g.key, g]));
+  // Noch ohne BGG-Daten (werden nachgeholt): Erweiterung am Namen erkennen, z. B. „Marvel Champions: The Card Game – Thor Hero Pack“.
+  const baseNames = memGames.filter((g) => g.id && !g.baseId && g.nDe).map((g) => [String(g.nDe).trim().toLowerCase(), g.id]).sort((a, b) => b[0].length - a[0].length);
+  memGames.forEach((g) => {
+    if (g.baseId || !g.id || !g.noData) return;
+    const n = String(g.nDe || '').trim().toLowerCase();
+    const hit = baseNames.find(([bn, id]) => id !== g.id && n.length > bn.length + 3 && n.startsWith(bn) && /^\s*[–—-]\s|^:\s/.test(n.slice(bn.length)));
+    if (hit) { g.baseId = hit[1]; g.exp = 1; }
+  });
   memGames.forEach((g) => {
     const b = g.baseId && byKey.get('m' + g.baseId); if (!b || b === g) return;
     const own = (x) => x.owners.map((o) => o.name).sort().join(', ');
