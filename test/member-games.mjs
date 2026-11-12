@@ -124,7 +124,7 @@ console.log('accept creates party with both members ok');
 r = await call('POST', `/member-games/${mg}/request`, fritz, { dates: [d2] }); assert.equal(r.status, 200); const rq2 = (await r.json()).id;
 x = await interact({ type: 3, ...as('555'), data: { custom_id: 'bringd:' + rq2 } }); assert.equal(x.type, 9);
 x = await interact({ type: 5, ...as('555'), data: { custom_id: 'bringd:' + rq2, components: [{ type: 1, components: [{ type: 4, custom_id: 'grund', value: 'Geht erst im Februar' }] }] } });
-assert.equal(x.type, 7); assert.match(x.data.content, /nicht mitbringen/); assert.deepEqual(x.data.components[0].components.map((b) => b.url), ['https://discord.com/users/555', 'https://discord.com/users/556']);
+assert.equal(x.type, 7); assert.match(x.data.content, /^~~.*~~ Abgelehnt\./); assert.equal(x.data.embeds.length, 0); assert.deepEqual(x.data.components[0].components.map((b) => b.url), ['https://discord.com/users/555', 'https://discord.com/users/556']);
 await wait();
 m = msgs.at(-1); assert.match(m.content, /^<@556> .*Februar/); assert.deepEqual(m.allowed_mentions, { users: ['556'] });
 console.log('decline with direct contact ok');
@@ -167,7 +167,7 @@ const ida = await login('559');
 r = await call('POST', `/member-games/${mg}/request`, ida, { dates: [plus(37)] }); const rq7 = (await r.json()).id;
 const dec = (u) => interact({ type: 5, ...as(u), data: { custom_id: 'bringd:' + rq7, components: [{ type: 1, components: [{ type: 4, custom_id: 'grund', value: '' }] }] } });
 x = await dec('555'); assert.equal(x.data.components[0].components.length, 3);
-x = await dec('558'); assert.match(x.data.content, /Keiner der Besitzer/); assert.equal(x.data.components[0].components.length, 3);
+x = await dec('558'); assert.match(x.data.content, /~~ Abgelehnt\. Keiner der Besitzer/); assert.equal(x.data.components[0].components.length, 3);
 await wait(); assert.match(msgs.at(-1).content, /^<@559> Leider kann keiner/);
 // Hans entfernt sein Exemplar: Doppel-Anfragen werden weiter erkannt, Zurückziehen geht
 r = await call('POST', `/member-games/${mg}/request`, ida, { dates: [plus(38)] }); const rq8 = (await r.json()).id;
