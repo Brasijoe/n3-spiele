@@ -29,9 +29,11 @@ DISCORD_ROLE_ID = ""
 # Mitgliederrolle: Mitglieder dürfen Runden an jedem Tag anbieten, alle anderen nur an Stammtisch-Tagen (mit Vorstellung im Hinweis).
 # Startwert; danach in der Verwaltung („Runden: Mitglieder und Stammtisch-Tage“) änderbar. Leer = keine Einschränkung. Testserver-Rolle:
 DISCORD_MEMBER_ROLE_ID = "1570156932440924232"
-# Link, der im Info-Fenster beim persönlichen Code erscheint (Einladungs- oder Kanallink; leer = kein Button).
+# Einladungslink: Discord-Symbol oben neben DE/EN, Info-Fenster beim persönlichen Code, „Mitspieler finden“ (leer = kein Button).
+# Angemeldete (= schon auf dem Server) bekommen stattdessen den Direktlink discord.com/channels/<DISCORD_GUILD_ID>/<erster DISCORD_CHANNEL_ID>.
 DISCORD_URL = "https://discord.gg/ax6H7v9UF"
-# --- VORGEMERKT für den Umzug auf den echten N3-Server (noch NICHT aktiv, Test läuft auf dem Testserver) ---
+# --- GO-LIVE: VORGEMERKT für den Umzug auf den echten N3-Server (noch NICHT aktiv, Test läuft auf dem Testserver) ---
+# Diese Werte oben ersetzen; damit zeigen auch der Discord-Link oben auf der Seite und alle Einladungsbuttons auf den N3-Server.
 # DISCORD_GUILD_ID   = "1168441429345972285"
 # DISCORD_CHANNEL_ID = "1172228534194946148"
 # DISCORD_URL        = "https://discord.com/invite/9BzjwUMW2T"

@@ -3,7 +3,7 @@ import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
-import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds } from './discord.js';
 
 const SALT = 'n3-club:';
 const enc = new TextEncoder();
@@ -437,7 +437,7 @@ async function route(req, env, ctx, url) {
     } catch (e) { return fail(502, e.code || 'bgg_error'); }
   }
 
-  if (path === '/config/public' && m === 'GET') { const r = json({ discordUrl: env.DISCORD_URL || '' }); r.headers.set('cache-control', 'public, max-age=300'); return r; }
+  if (path === '/config/public' && m === 'GET') { const r = json({ discordUrl: env.DISCORD_URL || '', discordGuild: env.DISCORD_GUILD_ID || '', discordChannel: channelIds(env)[0] || '' }); r.headers.set('cache-control', 'public, max-age=300'); return r; }
   if (path === '/games/extra' && m === 'GET') {
     const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
   }
