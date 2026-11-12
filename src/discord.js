@@ -3,7 +3,7 @@
 import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
-import { getBooking, isMember, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
+import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
 
 const enc = new TextEncoder();
 const hex = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
@@ -82,6 +82,7 @@ export function nextStammtischDate(rule, now = new Date()) {
 }
 const fmtDay = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
 // Antwort für Nicht-Mitglieder, die einen anderen Tag wollen.
+const joinMembersOnly = (rule) => `Diese Runde ist nicht an einem Stammtisch-Tag, da können nur Mitglieder (mit der Mitgliederrolle) mitspielen. Ohne Mitgliederrolle kannst du an Stammtisch-Tagen (${ruleText(rule)}) und bei Event-Runden mitspielen. Nächste Stammtisch-Termine: ${nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ')}`;
 const stammtischOnly = (rule) => `Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anbieten (${ruleText(rule)}). Nächste Termine: ${nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ')}\nFür andere Tage brauchst du einen Event-Code oder fragst ein Mitglied.`;
 // Erste Zeile der Discord-Nachricht; bei Runden mit Event-Code steht der Eventname dabei.
 export const headline = (r) => `**${r.host}** sucht Mitspielende${r.event_name ? ` am Event „${r.event_name}“` : ''}!`;
@@ -206,6 +207,8 @@ async function button(i, env) {
   const key = 'd' + w.id;
   if (act === 'join') {
     if (isOwner) return say('Du bist der Gastgeber und hast schon einen Platz.');
+    const rule = await getBooking(env);
+    if (!canJoin(rule, row, (i.member && i.member.roles) || [])) return say(joinMembersOnly(rule));
     const r = await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2))
       WHERE id = ?3 AND play_id IS NULL AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0 AND key != ?1) + 1 < seats`)
       .bind(key, JSON.stringify({ name: w.name, at: new Date().toISOString() }), id).run();

@@ -66,6 +66,11 @@ export function checkBookingDate(rule, roles, date) {
   return isStammtisch(date, rule) ? null : 'stammtisch_only';
 }
 
+// Wer darf sich bei einer Runde eintragen? An Stammtisch-Tagen und bei Event-Runden (mit Event-Code angelegt) alle,
+// an anderen Tagen nur Mitglieder. Ohne eingetragene Mitgliederrolle gilt keine Einschränkung.
+export const joinOpenToAll = (rule, row) => !rule.memberRole || !!row.event_id || isStammtisch(row.date, rule);
+export const canJoin = (rule, row, roles) => joinOpenToAll(rule, row) || isMember(rule, roles);
+
 const WD_DE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const NTH_DE = { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' };
 // Kurzer Text für Discord, z. B. „jeden Dienstag, am ersten Samstag im Monat“.

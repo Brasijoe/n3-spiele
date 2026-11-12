@@ -2,7 +2,7 @@ import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
-import { getBooking, cleanBooking, isMember, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
+import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday } from './discord.js';
 
 const SALT = 'n3-club:';
@@ -230,6 +230,16 @@ async function route(req, env, ctx, url) {
     if (!(await allow(env, 'join:' + ip, 30, 600))) return fail(429, 'rate_limited');
     const b = await body(req), key = str(b.key, 32), name = str(b.name, 40);
     if (!KEY_RE.test(key) || !name) return fail(400, 'invalid');
+    // Außerhalb der Stammtisch-Tage (und ohne Event) dürfen nur Mitglieder mitspielen: dafür anmelden (Discord oder /code).
+    await ensureCols(env);
+    const prow = await env.DB.prepare('SELECT date, event_id FROM parties WHERE id = ?1').bind(g[1]).first();
+    if (!prow) return fail(409, 'full_or_gone');
+    const rule = await getBooking(env);
+    if (!joinOpenToAll(rule, prow)) {
+      const u = await checkMember(req, env, ip);
+      if (u.err === 'rate_limited') return fail(429, u.err);
+      if (u.err || !canJoin(rule, prow, u.member.roles)) return fail(403, u.err ? 'join_login' : 'join_members_only');
+    }
     // Atomar: nur eintragen, wenn noch ein Platz frei ist (Gastgeber belegt einen Platz).
     const r = await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2))
       WHERE id = ?3 AND date >= ?4 AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0) + 1 < seats`)
