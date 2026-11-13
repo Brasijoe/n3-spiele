@@ -90,6 +90,7 @@ r = await call('POST', `/member-games/${mg}/request`, fritz, { dates: [d1] }); a
 let m = msgs.at(-1);
 assert.match(m.content, /^<@555> \*\*Fritz\*\* \(<@556>\) fragt, ob du \*\*CATAN\*\* mitbringen kannst/);
 assert.deepEqual(m.allowed_mentions, { users: ['555'] });
+assert.doesNotMatch(JSON.stringify(m.embeds), /Kann nicht/, 'new request: nobody declined yet');
 const btns = m.components[0].components; assert.deepEqual(btns.map((b) => b.custom_id), [`bringa:${rq}:0`, `bringa:${rq}:1`, `bringd:${rq}`, `bringx:${rq}`]);
 assert.ok(btns[0].label.includes(d1.slice(8, 10) + '.' + d1.slice(5, 7) + '.'));
 console.log('request posted to bot channel ok');
@@ -143,10 +144,11 @@ r = await call('POST', `/member-games/${mg}/request`, fritz, { dates: [d2] }); a
 m = msgs.at(-1);
 assert.match(m.content, /^<@555> <@558> \*\*Fritz\*\* \(<@556>\) fragt, ob jemand von euch \*\*CATAN\*\* mitbringen kann/); assert.match(m.content, /Wer zuerst einen Termin annimmt/);
 assert.deepEqual(m.allowed_mentions, { users: ['555', '558'] });
+assert.doesNotMatch(JSON.stringify(m.embeds), /Kann nicht/, 'multi-owner request: nobody declined yet');
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `bringa:${rq5}:0` } }); assert.match(x.data.content, /Nur <@555> <@558> können/);
 // Hans lehnt ab: Anfrage bleibt für Eva offen
 x = await interact({ type: 5, ...as('558'), data: { custom_id: 'bringd:' + rq5, components: [{ type: 1, components: [{ type: 4, custom_id: 'grund', value: 'Bin verreist' }] }] } });
-assert.equal(x.type, 7); assert.equal(x.data.components[0].components.length, 4); assert.doesNotMatch(x.data.content, /<@558>/); assert.match(JSON.stringify(x.data.embeds), /Kann nicht.*Hans/);
+assert.equal(x.type, 7); assert.equal(x.data.components[0].components.length, 4); assert.doesNotMatch(x.data.content, /<@558>/); assert.match(JSON.stringify(x.data.embeds), /Kann nicht.*Hans/); assert.doesNotMatch(JSON.stringify(x.data.embeds), /Kann nicht[^"]*Eva/);
 await wait(); m = msgs.at(-1); assert.match(m.content, /^<@556> Hans kann .*verreist.*Eva vom Server kann die Anfrage noch annehmen/);
 x = await interact({ type: 3, ...as('558'), data: { custom_id: `bringa:${rq5}:0` } }); assert.match(x.data.content, /schon abgelehnt/);
 // Eva nimmt an; danach ist die Anfrage geschlossen
