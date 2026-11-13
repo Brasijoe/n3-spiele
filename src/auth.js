@@ -19,8 +19,6 @@ export async function ensureAuth(env) {
   if (tablesOk) return;
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, discord_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at INTEGER NOT NULL, via TEXT)').run();
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS auth_handoff (nonce_hash TEXT PRIMARY KEY, token TEXT, error TEXT, created INTEGER NOT NULL)').run();
-  // Anmelden mit der Discord-App: die Seite zeigt einen kurzen Code, der Bot löst ihn mit /login ein.
-  await env.DB.prepare('CREATE TABLE IF NOT EXISTS login_codes (code TEXT PRIMARY KEY, nonce_hash TEXT NOT NULL, created INTEGER NOT NULL)').run();
   tablesOk = true;
 }
 
@@ -81,32 +79,6 @@ export async function memberOk(env, m) {
   await env.DB.prepare('UPDATE members SET checked_at = ?1, name = coalesce(nullif(?2, \'\'), name), roles = ?3 WHERE discord_id = ?4').bind(Date.now(), (a.name || '').slice(0, 40), roles, m.discord_id).run();
   if (a.name) m.name = a.name.slice(0, 40);
   m.roles = roles;
-  return null;
-}
-
-// Nach erfolgreicher Prüfung: Mitglied anlegen/aktualisieren (ohne /code gibt es keinen Code: Platzhalter-Hash).
-async function upsertMember(env, id, name, roles) {
-  await env.DB.prepare("INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at, roles) VALUES(?1, ?2, ?3, 0, ?4, ?5, ?6) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, checked_at = excluded.checked_at, roles = excluded.roles")
-    .bind(id, name, 'none:' + randHex(16), new Date().toISOString(), Date.now(), JSON.stringify(roles || [])).run();
-}
-
-// /login <code> im Bot-Kanal: Code einlösen, Sitzung anlegen und an die wartende Seite übergeben.
-// Gibt null (ok) oder einen Fehlercode zurück: bad_code | not_member | no_role | no_channel | blocked.
-const LOGIN_TTL = 600000;
-export const normLoginCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
-export async function redeemLoginCode(env, code, user) {
-  await ensureAuth(env);
-  const row = await env.DB.prepare('SELECT * FROM login_codes WHERE code = ?1 AND created > ?2').bind(normLoginCode(code), Date.now() - LOGIN_TTL).first();
-  if (!row) return 'bad_code';
-  await env.DB.prepare('DELETE FROM login_codes WHERE code = ?1').bind(row.code).run();
-  const a = await checkAccess(env, user.id);
-  const fail = async (err) => { await env.DB.prepare('INSERT INTO auth_handoff(nonce_hash, token, error, created) VALUES(?1, NULL, ?2, ?3) ON CONFLICT(nonce_hash) DO UPDATE SET token = NULL, error = excluded.error').bind(row.nonce_hash, err, Date.now()).run(); return err; };
-  if (!a.ok) return fail(a.err);
-  const old = await env.DB.prepare('SELECT blocked FROM members WHERE discord_id = ?1').bind(user.id).first();
-  if (old && old.blocked) return fail('blocked');
-  await upsertMember(env, user.id, String(a.name || user.name || 'Spieler').slice(0, 40), a.roles || user.roles);
-  const token = await newSession(env, user.id, 'app');
-  await env.DB.prepare('INSERT INTO auth_handoff(nonce_hash, token, error, created) VALUES(?1, ?2, NULL, ?3) ON CONFLICT(nonce_hash) DO UPDATE SET token = excluded.token, error = NULL').bind(row.nonce_hash, token, Date.now()).run();
   return null;
 }
 
@@ -197,22 +169,11 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
       const name = String(a.name || u.global_name || u.username || 'Spieler').slice(0, 40);
       const old = await env.DB.prepare('SELECT blocked FROM members WHERE discord_id = ?1').bind(u.id).first();
       if (old && old.blocked) return done('blocked');
-      await upsertMember(env, u.id, name, a.roles);
+      // Ohne /code gibt es keinen Code: Platzhalter-Hash, der zu keinem Code passt.
+      await env.DB.prepare("INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at, roles) VALUES(?1, ?2, ?3, 0, ?4, ?5, ?6) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, checked_at = excluded.checked_at, roles = excluded.roles")
+        .bind(u.id, name, 'none:' + randHex(16), new Date().toISOString(), Date.now(), JSON.stringify(a.roles || [])).run();
       return done(null, await newSession(env, u.id, 'discord'));
     } catch (e) { console.log('oauth failed', e && e.message); return done('failed'); }
-  }
-
-  // Anmelden mit der Discord-App: Seite schickt ihre Zufallszahl (nonce), bekommt einen kurzen Code für /login.
-  if (path === '/auth/appcode' && m === 'POST') {
-    if (!(await allow(env, 'appcode:' + ip, 60, 600))) return fail(429, 'rate_limited');
-    let b = {}; try { b = JSON.parse(await req.text() || '{}'); } catch { return fail(400, 'invalid'); }
-    const nonce = String(b.n || '');
-    if (!/^[0-9a-f]{32}$/.test(nonce)) return fail(400, 'invalid');
-    await env.DB.prepare('DELETE FROM login_codes WHERE created < ?1').bind(Date.now() - LOGIN_TTL).run();
-    const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const code = Array.from(crypto.getRandomValues(new Uint8Array(6)), (x) => A[x % A.length]).join('');
-    await env.DB.prepare('INSERT INTO login_codes(code, nonce_hash, created) VALUES(?1, ?2, ?3)').bind(code, await sha256(nonce), Date.now()).run();
-    return json({ code, ttl: LOGIN_TTL / 1000 });
   }
 
   // Die Seite fragt nach, ob die Anmeldung im Popup fertig ist (funktioniert auch im iFrame, ohne Cookies von Drittseiten).

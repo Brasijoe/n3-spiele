@@ -4,7 +4,6 @@ import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
 import { wantedButton, wantedSubmit } from './wanted.js';
-import { redeemLoginCode } from './auth.js';
 import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
 
 const enc = new TextEncoder();
@@ -317,7 +316,7 @@ export async function handleInteraction(req, env, ctx) {
   try {
     await ensureCols(env);
     if (i.type === 4) return await autocomplete(i, env, ctx);
-    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : i.data.name === 'login' ? await cmdLogin(i, env) : say('Unbekannter Befehl.');
+    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
     const cid = String((i.data && i.data.custom_id) || '');
     if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env);
     if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
@@ -328,9 +327,6 @@ export async function handleInteraction(req, env, ctx) {
 const GAME = { type: 3, name: 'spiel', description: 'Spielname (Vorschläge von BoardGameGeek)', required: true, autocomplete: true };
 export const COMMANDS = [
   { name: 'code', description: 'Persönlichen Code für die Webseite abholen (nur für dich sichtbar)' },
-  { name: 'login', description: 'Auf der Webseite anmelden: den dort angezeigten Code eingeben', options: [
-    { type: 3, name: 'code', description: 'Code von der Webseite (6 Zeichen)', required: true, max_length: 12 },
-  ] },
   { name: 'party', description: 'Spielrunde anlegen und Mitspielende suchen', options: [
     GAME,
     { type: 3, name: 'datum', description: 'Standard: nächster Stammtisch. Format 2026-11-17, 17.11., heute, morgen' },
@@ -445,16 +441,6 @@ export async function stillMember(env, m) {
   if (res.status === 404) { await env.DB.prepare('DELETE FROM members WHERE discord_id = ?1').bind(m.discord_id).run(); return false; }
   if (res.ok) await env.DB.prepare('UPDATE members SET checked_at = ?1 WHERE discord_id = ?2').bind(Date.now(), m.discord_id).run();
   return true;
-}
-
-async function cmdLogin(i, env) {
-  const w = who(i);
-  const err = await redeemLoginCode(env, opt(i, 'code'), { id: w.id, name: w.name, roles: (i.member && i.member.roles) || [] });
-  if (!err) return say('✅ Angemeldet! Die Webseite übernimmt die Anmeldung gleich von selbst.');
-  return say(err === 'bad_code' ? 'Diesen Code kenne ich nicht oder er ist abgelaufen (10 Minuten). Hol dir auf der Webseite einen neuen.'
-    : err === 'no_role' ? 'Dir fehlt die Brettspiel-Rolle, deshalb geht die Anmeldung nicht.'
-    : err === 'no_channel' ? 'Du kannst den Bot-Kanal nicht sehen, deshalb geht die Anmeldung nicht.'
-    : err === 'blocked' ? 'Dein Zugang ist gesperrt.' : 'Die Anmeldung hat nicht geklappt.');
 }
 
 async function cmdCode(i, env) {
