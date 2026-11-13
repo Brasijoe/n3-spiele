@@ -100,7 +100,7 @@ x = await submit({ datum: wedTxt, uhrzeit: '18:00', plaetze: '4' }, '556', w2.id
 // Hab ich ohne Runde
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wanth:${w2.id}` } }); assert.equal(x.type, 7); assert.match(x.data.content, /Fritz\*\* hat \*\*Gastspiel Y/);
 assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/557');
-await wait(); assert.match(msgs.at(-1).content, /^<@557> Fritz hat/);
+await wait(); assert.match(msgs.at(-1).content, /^<@557> Fritz \(<@556>\) hat/);
 console.log('found without round ok');
 
 // Zurückziehen: nur selbst (oder Verwaltung); Spam-Bremse 3 pro Tag
@@ -112,6 +112,26 @@ r = await call('POST', '/wanted', eva, { game: 'Noch eins' }); assert.equal(r.st
 r = await call('POST', '/wanted', eva, { game: 'Zu viel' }); assert.equal(r.status, 429);
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wantx:${w4.id}` } }); assert.match(x.data.content, /Nur wer gesucht hat/);
 console.log('withdraw + rate limit ok');
+
+// Antworten von der Webseite (nur angemeldet): Runde anlegen oder Termin später
+const ida = await login('559');
+r = await call('POST', '/wanted', hans, { game: 'Webspiel' }); const w5 = await r.json(); assert.equal(r.status, 200);
+r = await call('POST', `/wanted/${w5.id}/found`, null, {}); assert.equal(r.status, 403);
+r = await call('POST', `/wanted/${w5.id}/found`, hans, {}); assert.equal((await r.json()).error, 'own');
+r = await call('POST', `/wanted/${w5.id}/found`, gast, { round: { date: wed, time: '18:00', seats: 4 } }); assert.equal((await r.json()).error, 'stammtisch_only');
+r = await call('POST', `/wanted/${w5.id}/found`, fritz, { round: { date: wed, time: '25:00', seats: 4 } }); assert.equal((await r.json()).error, 'bad_time');
+r = await call('POST', `/wanted/${w5.id}/found`, fritz, { round: { date: wed, time: '18:15', seats: 3, note: '' } }); let j = await r.json(); assert.equal(r.status, 200, JSON.stringify(j)); assert.ok(j.partyId);
+await wait();
+let wp = (await (await fetch(W + '/parties')).json()).find((q) => q.id === j.partyId); assert.equal(wp.host, 'Fritz'); assert.deepEqual(Object.values(wp.attendees).map((a) => a.name), ['Hans']);
+assert.ok(msgs.some((q) => q.patch && /Fritz\*\* hat \*\*Webspiel\*\* \(gesucht von Hans\) und bringt es/.test(q.content)));
+assert.match(msgs.filter((q) => !q.patch).at(-1).content, /<@558>, Fritz hat \*\*Webspiel/);
+r = await call('POST', `/wanted/${w5.id}/found`, gast, {}); assert.equal((await r.json()).error, 'gone');
+r = await call('POST', '/wanted', ida, { game: 'Webspiel 2' }); const w6 = await r.json();
+r = await call('POST', `/wanted/${w6.id}/found`, gast, {}); assert.equal(r.status, 200);
+await wait();
+assert.ok(msgs.some((q) => q.patch && /Gast\*\* hat \*\*Webspiel 2/.test(q.content) && q.components[0].components.length === 2));
+assert.match(msgs.filter((q) => !q.patch).at(-1).content, /^<@559> Gast \(<@557>\) hat/);
+console.log('answer from web ok');
 
 // Ablauf nach 3 Monaten (nächtlicher Lauf)
 assert.ok(w4.expiresAt > new Date(Date.now() + 88 * 864e5).toISOString().slice(0, 10));

@@ -703,6 +703,19 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div class="acts"><button type="button" class="btn btn-quiet" id="wtCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="wtSend" data-t="wtSend"></button></div>
   </form>
 </dialog>
+<dialog class="info wide" id="whDlg" aria-labelledby="whT">
+  <h3 id="whT"></h3>
+  <form class="mg" id="whForm">
+    <p class="meta" id="whTxt" style="margin:0"></p>
+    <div id="whRoundBox">
+      <div class="br-dates"><label class="field"><span data-t="date"></span><input type="date" id="whDate" required></label><label class="field"><span data-t="ptTime"></span><input type="time" id="whTime" value="18:00" required></label><label class="field"><span data-t="ptSeats"></span><input type="number" id="whSeats" min="2" max="30" value="4" required></label></div>
+      <label class="field"><span id="whNoteLbl" data-t="note"></span><textarea id="whNote" maxlength="500" rows="2"></textarea></label>
+    </div>
+    <div class="auth-box" id="whAuth" data-authbox></div>
+    <span id="whMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="whCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="whSend"></button></div>
+  </form>
+</dialog>
 <dialog class="info wide" id="myDlg" aria-labelledby="myT">
   <h3 id="myT"></h3>
   <label class="field"><span data-t="search"></span><input type="search" id="myQ" autocomplete="off"></label>
@@ -719,7 +732,11 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { wtTitle: 'Hat jemand …?', wtNew: 'Spiel suchen', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet mit „Hab ich“ und kann gleich eine Runde anlegen. Offene Suchen stehen hier {m} Monate.',
+  de: { whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich (Termin später)', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
+    whRoundTxt: 'Die Runde wird sofort angelegt und im Bot-Kanal angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Bot-Kanal auf Discord Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
+    whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Mitspielen',
+    whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unten bei den geplanten Runden.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
+    wtTitle: 'Hat jemand …?', wtNew: 'Spiel suchen', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
     wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Will ich auch', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
     wtDlgT: 'Hat jemand dieses Spiel?', wtGame: 'Welches Spiel suchst du?', wtNote: 'Nachricht (optional, z. B. wann es dir passt)', wtSend: 'Im Discord fragen',
     wtInClub: 'Das Spiel ist in der Club-Sammlung. Biete einfach eine Runde damit an.', wtInMem: '{o} hat das Spiel (Mitglieder besitzen). Frag direkt, ob es mitgebracht wird.', wtAskBring: 'Mitbringen anfragen', wtOffer: 'Runde anbieten',
@@ -814,7 +831,11 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { wtTitle: 'Does anyone have …?', wtNew: 'Look for a game', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers with “Hab ich” and can set up a game right away. Open requests stay here for {m} months.',
+  en: { whRound: 'I have it: set up a game', whLater: 'I have it (date later)', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
+    whRoundTxt: 'The game is created right away and announced in the bot channel. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the bot channel on Discord that you have the game. You then arrange a date directly with each other.',
+    whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'Join',
+    whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it below under planned games.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
+    wtTitle: 'Does anyone have …?', wtNew: 'Look for a game', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
     wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'Me too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
     wtDlgT: 'Does anyone have this game?', wtGame: 'Which game are you looking for?', wtNote: 'Message (optional, e.g. when you are free)', wtSend: 'Ask on Discord',
     wtInClub: 'This game is in the club collection. Just offer a game with it.', wtInMem: '{o} owns this game (member games). Ask directly whether it can be brought.', wtAskBring: 'Request to bring', wtOffer: 'Offer a game',
@@ -2349,10 +2370,13 @@ function wantedFor(gameId, n) { const lc = String(n || '').trim().toLowerCase();
 function wtCard(w) {
   const t = T(), own = isMine('wanted', w.id), joined = isMine('wantedJoined', w.id);
   const th = thumbHtml({ guest: true, gameId: w.gameId }, null, w.game);
+  // Wie in Discord: Hab ich (mit/ohne Runde), Will ich auch, Zurückziehen. Antworten geht nur mit Discord-Anmeldung.
   let actions = '';
-  if (w.url) actions += '<a class="btn btn-primary" href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(t.wtDiscord) + '</a>';
-  if (!own) actions += '<button type="button" class="btn ' + (joined ? 'btn-quiet' : 'btn-outline') + '" data-wtint="' + esc(w.id) + '" data-on="' + (joined ? '0' : '1') + '">' + esc(joined ? t.wtLeave : t.wtJoin) + '</button>';
+  if (!own) actions += '<button type="button" class="btn btn-primary" data-wh="round" data-id="' + esc(w.id) + '">' + esc(t.whRound) + '</button>' +
+    '<button type="button" class="btn btn-outline" data-wh="later" data-id="' + esc(w.id) + '">' + esc(t.whLater) + '</button>' +
+    (joined ? '<button type="button" class="btn btn-quiet" data-wtint="' + esc(w.id) + '" data-on="0">' + esc(t.wtLeave) + '</button>' : '<button type="button" class="btn btn-outline" data-wh="interest" data-id="' + esc(w.id) + '">' + esc(t.wtJoin) + '</button>');
   if (own || canEdit) actions += '<button type="button" class="btn ' + (pendingWtDel === w.id ? 'btn-primary' : 'btn-quiet') + '" data-wtdel="' + esc(w.id) + '">' + esc(pendingWtDel === w.id ? t.delConfirm : t.wtDel) + '</button>';
+  if (w.url) actions += '<a class="btn btn-quiet" href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(t.wtSeeDc) + '</a>';
   return '<article class="party"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.wtBy, { n: w.by })) + '</span><h3>' + esc(w.game) + (w.year ? ' <span class="meta">(' + w.year + ')</span>' : '') + '</h3><span class="meta">' + esc(dmy(String(w.createdAt).slice(0, 10)) + ' · ' + fill(t.wtUntil, { d: dmy(w.expiresAt) })) + '</span></div></div>' +
     '<div class="body">' + (w.note ? '<span class="meta">' + esc(w.note) + '</span>' : '') +
     (w.interested.length ? '<div class="who">' + w.interested.map((n) => '<span class="pill">' + esc(n) + '</span>').join('') + '</div>' : '') +
@@ -2362,11 +2386,13 @@ function renderWanted() {
   const t = T(); if (!$('wtList')) return;
   $('wtIntro').textContent = fill(t.wtIntro, { m: WT_MONTHS });
   $('wtList').innerHTML = wanted.length ? wanted.map(wtCard).join('') : '<p class="st-empty">' + esc(t.wtNone) + '</p>';
+  if ($('whDlg').open && whId) renderWh();
 }
 $('wtList').addEventListener('click', async (e) => {
   const t = T(); let b;
+  if ((b = e.target.closest('[data-wh]'))) { openWh(b.dataset.id, b.dataset.wh); return; }
   if ((b = e.target.closest('[data-wtint]'))) {
-    if (!me) { openWanted(); $('wtMsg').className = 'err'; $('wtMsg').textContent = t.errLogin; return; }
+    if (!me) { openWh(b.dataset.wtint, 'interest'); return; }
     b.disabled = true;
     try { await api('POST', '/wanted/' + encodeURIComponent(b.dataset.wtint) + '/interest', { on: b.dataset.on === '1' }); } catch (x) {}
     refreshAll(); return;
@@ -2436,6 +2462,42 @@ $('wtForm').addEventListener('submit', async (e) => {
   }
 });
 
+/* „Hab ich“ / „Will ich auch“ von der Webseite: ein Dialog, drei Arten. */
+var whId = null, whMode = 'round';
+function renderWh() {
+  const t = T(), w = wanted.find((x) => x.id === whId); if (!w) return;
+  $('whT').textContent = fill(whMode === 'round' ? t.whRoundT : whMode === 'later' ? t.whLaterT : t.whInterestT, { n: w.game });
+  $('whTxt').textContent = (me ? '' : t.whLogin + ' ') + fill(whMode === 'round' ? t.whRoundTxt : whMode === 'later' ? t.whLaterTxt : t.whInterestTxt, { r: w.by });
+  $('whRoundBox').hidden = whMode !== 'round'; $('whDate').required = whMode === 'round';
+  const intro = whMode === 'round' && me && me.member === false;
+  $('whNoteLbl').textContent = intro ? t.noteIntro : t.note; $('whNote').required = intro;
+  $('whSend').textContent = whMode === 'round' ? t.whSendRound : whMode === 'later' ? t.whSendLater : t.whSendInterest;
+}
+function openWh(id, mode) {
+  whId = id; whMode = mode; $('whMsg').textContent = ''; $('whMsg').className = ''; $('whSend').disabled = false;
+  $('whDate').min = todayIso(); $('whDate').value = nextEventDay(); $('whTime').value = '18:00'; $('whSeats').value = 4; $('whNote').value = '';
+  renderWh(); renderAuth(); $('whDlg').showModal();
+}
+$('whCancel').onclick = () => $('whDlg').close();
+$('whDlg').addEventListener('click', (e) => { if (e.target === $('whDlg')) $('whDlg').close(); });
+$('whForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('whMsg'), w = wanted.find((x) => x.id === whId); msg.className = 'err';
+  if (!w) { msg.textContent = t.whErrGone; return; }
+  if (!me) { msg.textContent = t.whLogin; return; }
+  $('whSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    if (whMode === 'interest') await api('POST', '/wanted/' + encodeURIComponent(w.id) + '/interest', { on: true });
+    else await api('POST', '/wanted/' + encodeURIComponent(w.id) + '/found', whMode === 'round' ? { round: { date: $('whDate').value, time: $('whTime').value, seats: Number($('whSeats').value), note: $('whNote').value.trim().slice(0, 500) } } : {});
+    msg.textContent = whMode === 'round' ? t.whRoundDone : whMode === 'later' ? fill(t.whDone, { r: w.by }) : t.wtYouIn + ' ✓';
+    if (whMode !== 'interest') wanted = wanted.filter((x) => x.id !== w.id);
+    refreshAll(); renderWanted(); setTimeout(() => { if ($('whDlg').open) $('whDlg').close(); }, 1800);
+  } catch (x) {
+    msg.className = 'err'; $('whSend').disabled = false; const c = x && x.code;
+    msg.textContent = c === 'gone' ? t.whErrGone : c === 'own' || c === 'own_request' ? t.wtErrOwn : c === 'stammtisch_only' ? fill(t.errStammtisch, { r: ruleTxt() }) : c === 'intro_missing' ? fill(t.errIntro, { n: introMin() })
+      : c === 'req_stammtisch_only' ? fill(t.whErrReq, { r: w.by, x: ruleTxt() }) : c === 'past' || c === 'bad_date' ? t.brErrDates : codeErr(x);
+    if (c === 'gone') refreshAll();
+  }
+});
 /* ---------- Ansichten (Tabs) ---------- */
 const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : 'collection');
 function renderView() {
