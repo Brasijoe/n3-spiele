@@ -140,8 +140,8 @@ export function wantedMessage(r, env) {
     embeds: [gameEmbed(r, env, { fields, footer: { text: `„Hab ich“: Du kannst gleich eine Runde anlegen, musst aber nicht. Die Suche steht bis ${fmtDate(r.expires_at)} auch auf der Webseite unter „Spiel suchen“.` } })],
     components: [{ type: 1, components: [
       { type: 2, style: 3, label: 'Hab ich: Runde anlegen', emoji: { name: '🎲' }, custom_id: 'wantr:' + r.id },
-      { type: 2, style: 3, label: 'Hab ich (Termin später)', custom_id: 'wanth:' + r.id },
-      { type: 2, style: 1, label: 'Will auch mitspielen', emoji: { name: '🙋' }, custom_id: 'wanti:' + r.id },
+      { type: 2, style: 3, label: 'Hab ich', custom_id: 'wanth:' + r.id },
+      { type: 2, style: 1, label: 'Ich will auch mitspielen', emoji: { name: '🙋' }, custom_id: 'wanti:' + r.id },
       { type: 2, style: 2, label: 'Zurückziehen', custom_id: 'wantx:' + r.id },
     ] }],
     allowed_mentions: { parse: [] },
