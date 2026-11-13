@@ -434,14 +434,6 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <h2 id="admH" style="font-size:26px" data-t="admin"></h2>
       <span class="note" data-t="adminNote"></span>
     </div>
-    <div class="adm-block" hidden>
-      <h3 data-t="admCode"></h3>
-      <form id="codeForm" class="row">
-        <label class="field code"><span data-t="admNewCode"></span><input type="text" id="newCode" inputmode="numeric" maxlength="4" autocomplete="off"></label>
-        <button type="submit" class="btn btn-primary" data-t="admSaveCode"></button>
-        <span id="codeMsg" role="status"></span>
-      </form>
-    </div>
     <div class="adm-block">
       <h3 data-t="admHl"></h3>
       <p class="note" data-t="admHlNote" style="margin:0"></p>
@@ -742,8 +734,8 @@ const TXT = {
     years: 'Jahre', min: 'Min', players: 'Spieler', pl: 'Sp.', bestWith: 'Am besten mit', exp1: '+ Erweiterung: ', expN: '+ Erweiterungen: ', expMore: '+ {n} weitere …', expTitle: 'Erweiterungen: {n}', of: 'von', games: 'Spielen',
     more: 'Weitere Spiele anzeigen ({n})', recPct: 'Empfohlen von mind. {p} % der BGG-Stimmen', minRating: 'BGG-Bewertung mindestens: {v}', weightRange: 'Komplexität (BGG-Gewicht) {a} – {b}',
     maxTime: 'Spieldauer höchstens: {v}', win: 'Sieg: ', jump: 'Zu {n} springen', current: '{n}, aktuelles Highlight', onBgg: '{n} auf BoardGameGeek öffnen', cover: 'Cover von {n}', playedN: '{n}× im Club gespielt',
-    admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.', admCode: 'Vereinscode ändern', admNewCode: 'Neuer 4-stelliger Code', admSaveCode: 'Code speichern',
-    codeSaved: 'Neuer Code ist aktiv.', codeErr: 'Speichern hat nicht geklappt.', admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
+    admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.',
+    admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
     admAdd: 'Spiel hinzufügen', admAddBtn: 'Hinzufügen', admSaveHl: 'Highlights speichern', admResetHl: 'Auf Top 15 zurücksetzen', hlSaved: 'Highlights gespeichert.', hlReset: 'Zurückgesetzt auf Top 15.', hlErr: 'Speichern hat nicht geklappt.',
     descDe: 'Beschreibung (Deutsch)', descEn: 'Beschreibung (Englisch)', up: 'Nach oben', down: 'Nach unten', remove: 'Entfernen', admPlays: 'Partien verwalten', admPlaysQ: 'Partien durchsuchen (Spiel, Gewinner, Name)', admNoMatch: 'Keine Treffer.', admEdit: 'Bearbeiten', admSave: 'Speichern', admBy: 'Eingetragen von', admEditErr: 'Bitte gültiges Datum und 1–99 Spieler angeben.', admNoPlays: 'Noch keine Partien eingetragen.',
     del: 'Löschen', delConfirm: 'Wirklich löschen?', unsaved: 'Ungespeicherte Änderungen',
@@ -831,8 +823,8 @@ const TXT = {
     years: 'years', min: 'min', players: 'players', pl: 'pl.', bestWith: 'Best with', exp1: '+ Expansion: ', expN: '+ Expansions: ', expMore: '+ {n} more …', expTitle: 'Expansions: {n}', of: 'of', games: 'games',
     more: 'Show more games ({n})', recPct: 'Recommended by at least {p} % of BGG votes', minRating: 'Minimum BGG rating: {v}', weightRange: 'Complexity (BGG weight) {a} – {b}',
     maxTime: 'Maximum play time: {v}', win: 'Winner: ', jump: 'Jump to {n}', current: '{n}, current highlight', onBgg: 'Open {n} on BoardGameGeek', cover: 'Cover of {n}', playedN: 'Played {n}× at the club',
-    admin: 'Administration', adminNote: 'Only visible to people with edit access.', admCode: 'Change club code', admNewCode: 'New 4-digit code', admSaveCode: 'Save code',
-    codeSaved: 'The new code is active.', codeErr: 'Saving didn’t work.', admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
+    admin: 'Administration', adminNote: 'Only visible to people with edit access.',
+    admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
     admAdd: 'Add a game', admAddBtn: 'Add', admSaveHl: 'Save highlights', admResetHl: 'Reset to top 15', hlSaved: 'Highlights saved.', hlReset: 'Reset to top 15.', hlErr: 'Saving didn’t work.',
     descDe: 'Description (German)', descEn: 'Description (English)', up: 'Move up', down: 'Move down', remove: 'Remove', admPlays: 'Manage plays', admPlaysQ: 'Search plays (game, winner, name)', admNoMatch: 'No matches.', admEdit: 'Edit', admSave: 'Save', admBy: 'Logged by', admEditErr: 'Please enter a valid date and 1–99 players.', admNoPlays: 'No plays logged yet.',
     del: 'Delete', delConfirm: 'Really delete?', unsaved: 'Unsaved changes',
@@ -1578,14 +1570,6 @@ $('hlReset').onclick = async () => {
   try { await api('DELETE', '/config/highlights'); hlCfg = null; applyHl(); hlDraft = null; hlDirty = false; $('hlMsg').className = 'ok'; $('hlMsg').textContent = t.hlReset; S.slide = 0; renderSlider(); renderAdmin(); }
   catch (err) { $('hlMsg').className = 'err'; $('hlMsg').textContent = t.hlErr; }
 };
-$('codeForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const t = T(), msg = $('codeMsg'), code = $('newCode').value.replace(/\D/g, '');
-  if (code.length !== 4) { msg.className = 'err'; msg.textContent = t.errLen; return; }
-  try { await api('PUT', '/config/club', { code }); $('newCode').value = ''; msg.className = 'ok'; msg.textContent = t.codeSaved; }
-  catch (err) { msg.className = 'err'; msg.textContent = t.codeErr; }
-});
-$('newCode').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
 var playEdit = null;
 $('admPlays').addEventListener('click', (e) => {
   const o = e.target.closest('[data-pedit-open]'); if (o) { playEdit = o.dataset.peditOpen; pendingDel = null; $('admPlays').innerHTML = ''; renderAdmin(); return; }

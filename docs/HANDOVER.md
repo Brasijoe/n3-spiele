@@ -71,7 +71,6 @@ Key design choices worth keeping:
 | `X-Member-Code` | Personal code from `/code` (legacy, swapped for a session automatically). |
 | `X-Log-Key` | QR club key (plays only). |
 | `X-Event-Code` | Event code (rounds on event days). |
-| `X-Club-Code` | Old 4-digit club code, still in code but superseded by personal login. |
 
 ---
 
@@ -83,7 +82,7 @@ Key design choices worth keeping:
 |---|---|---|
 | `plays` | Logged plays | `game_id` (BGG id or null), `game`, `guest` (1 = not a collection game), `date`, `players`, `winner`, `note`, `duration`, `first_play`, `logged_by` (name for QR plays), `via` (`web`/`discord`/`qr`/…), `by_discord` (owner for edit rights). |
 | `parties` | Rounds ("find players") | `attendees` is a JSON object keyed per person so concurrent joins merge. `host_discord` = owner. `discord_channel`/`discord_msg` = mirrored message. `event_id`/`event_name` for event rounds. `bring_id` links to a bring request. `play_id` once logged. |
-| `config` | Key/value JSON | Keys: `highlights`, `gamemeta` (per-game language, owner, date, inventory overrides), `owners` (admin-only full-name directory), `booking` (club-night rule + member role), `log_key` (QR key, plaintext so the poster can be reprinted), `geeklist` (last fetch), `club_code_hash` (legacy). |
+| `config` | Key/value JSON | Keys: `highlights`, `gamemeta` (per-game language, owner, date, inventory overrides), `owners` (admin-only full-name directory), `booking` (club-night rule + member role), `log_key` (QR key, plaintext so the poster can be reprinted), `geeklist` (last fetch). An old install may still have an unused `club_code_hash` row from the removed 4-digit club code. |
 | `rate` | Rate limiting | Key = purpose + IP + time window; purged daily. |
 | `members` | Discord users known to the site | `discord_id`, `name`, `code_hash` (personal code, hashed), `blocked`, `checked_at`, `roles` (JSON), `bgg_user`. |
 | `sessions` | Web sessions | Token stored only as hash, 180 days. |
