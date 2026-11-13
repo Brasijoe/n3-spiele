@@ -24,6 +24,9 @@ button, input, select { font-family: inherit; font-size: inherit; }
 .topbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .dc-link { margin-right: 6px; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; border-radius: 8px; color: #5865f2; }
 .dc-link:hover, .dc-link:focus-visible { background: rgba(88,101,242,.15); }
+.dc-link.login { background: #5865f2; color: #fff; gap: 8px; padding: 0 12px; font-weight: 700; font-size: 14px; text-decoration: none; }
+.dc-link.login:hover, .dc-link.login:focus-visible { background: #4752c4; }
+@media (max-width: 520px) { .dc-link.login { padding: 0 10px; font-size: 13px; } }
 .lang { display: flex; border: 1px solid #5a5a5a; border-radius: 8px; overflow: hidden; }
 .lang button { min-width: 48px; min-height: 40px; border: 0; background: transparent; color: var(--band-fg); font-weight: 700; cursor: pointer; }
 .lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
@@ -326,7 +329,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .qr-url { word-break: break-all; font-weight: 600; }
 .foot-admin .btn { min-height: 36px; font-size: 13px; }
 .auth-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 14px; color: var(--fg); }
-.auth-box .btn-discord { background: #5865f2; color: #fff; border: 0; min-height: 40px; text-transform: none; letter-spacing: 0; }
+.auth-box .btn-discord, #joinLink { background: #5865f2; color: #fff; border: 0; min-height: 40px; text-transform: none; letter-spacing: 0; }
 .auth-box .or { flex: 1 1 100%; font-size: 13px; color: var(--text); }
 .auth-box .linkbtn, .linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--club); text-decoration: underline; cursor: pointer; }
 .play .own { display: flex; gap: 6px; }
@@ -347,7 +350,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
         <a href="#statistik" data-view="stats" data-t="tabStats"></a>
       </nav>
       <div style="display:flex;align-items:center;gap:8px">
-      <a class="dc-link" id="dcLink" href="#" target="_blank" rel="noopener" hidden title="N3 Discord" aria-label="N3 Discord"><svg class="dc-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+      <a class="dc-link" id="dcLink" href="#" target="_blank" rel="noopener" hidden title="N3 Discord" aria-label="N3 Discord"><svg class="dc-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg><span class="dc-lbl" id="dcLbl" hidden></span></a>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d6d6d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
       <div class="lang" role="group" id="langGroup">
         <button type="button" data-lang="de" aria-label="Deutsch">DE</button>
@@ -727,6 +730,12 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <div class="mg-list" id="mgMine" style="max-height:60vh;overflow:auto"></div>
   <div class="acts"><button type="button" class="btn btn-quiet" id="myClose" data-t="ciClose"></button></div>
 </dialog>
+<dialog class="info" id="joinDlg" aria-labelledby="joinT">
+  <h3 id="joinT" data-t="joinT"></h3>
+  <p class="meta" data-t="joinTxt"></p>
+  <p style="margin:4px 0 12px"><a class="btn btn-discord" id="joinLink" href="#" target="_blank" rel="noopener"></a></p>
+  <div class="acts"><button type="button" class="btn btn-quiet" id="joinClose" data-t="ciClose"></button><button type="button" class="btn btn-outline" data-login data-t="joinRetry"></button></div>
+</dialog>
 <dialog class="info" id="expDlg" aria-labelledby="expT">
   <h3 id="expT"></h3>
   <ul class="exp-list" id="expL"></ul>
@@ -737,7 +746,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich (Termin später)', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
+  de: { dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich (Termin später)', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Bot-Kanal angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Bot-Kanal auf Discord Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Mitspielen',
     whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
@@ -836,7 +845,7 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it (date later)', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
+  en: { dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it (date later)', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the bot channel. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the bot channel on Discord that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'Join',
     whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
@@ -2545,7 +2554,7 @@ function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!ses
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
   try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []) }; }
-  catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); authMsg = loginErr(e.code); } }
+  catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); loginFailed(e.code); } }
   renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted();
 }
 function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
@@ -2557,16 +2566,32 @@ function authHtml() {
     (loginTimer ? '<span class="note">' + esc(t.loginWait) + '</span>' : '') + (authMsg ? '<span class="err">' + esc(authMsg) + '</span>' : '') +
     '<span class="or">' + esc(t.loginOr) + '</span>';
 }
-// Discord-Symbol oben: Angemeldete sind schon auf dem Server und springen direkt in den Kanal, alle anderen bekommen die Einladung.
+// Discord-Symbol oben: Angemeldete springen direkt in den Kanal, alle anderen melden sich damit an.
+// Wer noch nicht auf dem Server ist, bekommt beim Anmelden einen Hinweis mit dem Einladungslink (joinDlg).
 var dcCfg = null;
 function setDcLink() {
-  const c = dcCfg, a = $('dcLink'); if (!c || !a) return;
-  const direct = me && c.discordGuild ? 'https://discord.com/channels/' + c.discordGuild + (c.discordChannel ? '/' + c.discordChannel : '') : '';
-  const href = direct || c.discordUrl || '';
-  a.hidden = !href; if (href) a.href = href;
-  const l = direct ? (de() ? 'Zum N3-Discord (neuer Tab)' : 'Open the N3 Discord (new tab)') : (de() ? 'Dem N3-Discord beitreten (neuer Tab)' : 'Join the N3 Discord (new tab)');
+  const c = dcCfg, a = $('dcLink'); if (!a) return;
+  const t = T(), direct = me && c && c.discordGuild ? 'https://discord.com/channels/' + c.discordGuild + (c.discordChannel ? '/' + c.discordChannel : '') : '';
+  a.hidden = !!me && !direct; a.classList.toggle('login', !me);
+  $('dcLbl').hidden = !!me; $('dcLbl').textContent = t.dcLogin;
+  if (me) { a.href = direct; a.target = '_blank'; } else { a.href = '#'; a.removeAttribute('target'); }
+  const l = me ? (de() ? 'Zum N3-Discord (neuer Tab)' : 'Open the N3 Discord (new tab)') : t.dcLoginT;
   a.title = l; a.setAttribute('aria-label', l);
+  const inv = (c && c.discordUrl) || ''; $('joinLink').hidden = !inv; if (inv) $('joinLink').href = inv; $('joinLink').innerHTML = DC_ICON + esc(t.joinBtn);
 }
+// Discord-Links: auf dem Handy öffnet das System die App selbst (https-Link). Am Computer erst die Discord-App versuchen
+// (Hilfsseite dc.html in neuem Tab: discord://…, sonst nach kurzer Zeit discord.com im Browser).
+const DC_RE = /^https:\/\/(?:discord\.com\/(?:channels|invite)\/|discord\.gg\/)/;
+const mobileUA = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href]'); if (!a || !DC_RE.test(a.href) || mobileUA() || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  e.preventDefault(); window.open('/dc.html?u=' + encodeURIComponent(a.href), '_blank', 'noopener');
+}, true);
+$('dcLink').addEventListener('click', (e) => { if (!me) { e.preventDefault(); startLogin(); } });
+$('joinClose').onclick = () => $('joinDlg').close();
+$('joinDlg').addEventListener('click', (e) => { if (e.target === $('joinDlg')) $('joinDlg').close(); if (e.target.closest('[data-login]')) $('joinDlg').close(); });
+// Anmeldung abgelehnt, weil die Person nicht auf dem Server ist: Hinweis mit Einladungslink zeigen.
+function loginFailed(code) { authMsg = loginErr(code); if (code === 'not_member') { setDcLink(); if (!$('joinDlg').open) $('joinDlg').showModal(); } }
 function renderAuth() {
   setDcLink();
   const html = authHtml();
@@ -2593,7 +2618,7 @@ function pollLogin(n) {
   loginTimer = setInterval(async () => {
     if (++tries > 200) { stop(); return; }
     try { const r = await api('GET', '/auth/poll?n=' + n); if (r && r.token) { stop(); setSession(r.token); loadMy(); } }
-    catch (e) { if (e && e.status !== 429) { authMsg = loginErr(e.code); stop(); } }
+    catch (e) { if (e && e.status !== 429) { stop(); loginFailed(e.code); renderAuth(); } }
   }, 1500);
   renderAuth();
 }

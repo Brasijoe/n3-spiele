@@ -148,7 +148,9 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
     const done = async (err, token) => {
       if (ck) await env.DB.prepare('INSERT INTO auth_handoff(nonce_hash, token, error, created) VALUES(?1, ?2, ?3, ?4) ON CONFLICT(nonce_hash) DO UPDATE SET token = excluded.token, error = excluded.error')
         .bind(await sha256(ck[2]), token || null, err || null, Date.now()).run();
-      const r = page(env, url, err ? (ERR_TXT[err] || ERR_TXT.failed) : 'Angemeldet ✓ Dieses Fenster schließt sich gleich, sonst bitte schließen.', !err);
+      // Nicht auf dem Server: Einladungslink gleich mit anzeigen.
+      const inv = err === 'not_member' && /^https:\/\/discord\.(gg|com)\//.test(env.DISCORD_URL || '') ? ` <a href="${env.DISCORD_URL}" target="_blank" rel="noopener">Zum Discord-Server</a>` : '';
+      const r = page(env, url, err ? (ERR_TXT[err] || ERR_TXT.failed) + inv : 'Angemeldet ✓ Dieses Fenster schließt sich gleich, sonst bitte schließen.', !err);
       r.headers.set('set-cookie', clear);
       return r;
     };
