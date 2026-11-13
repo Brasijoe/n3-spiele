@@ -1,7 +1,7 @@
-// „Hat jemand …?“: Ein Spiel, das weder in der Club-Sammlung noch bei den Mitgliederspielen steht, im Bot-Kanal suchen.
+// „Hat jemand …?“: Ein Spiel, das weder in der Club-Sammlung noch bei den Mitgliederspielen steht, im Such-Kanal (DISCORD_WANTED_CHANNEL_ID, z. B. #spiele-gesucht) suchen.
 // Wer es hat, antwortet in Discord mit „Hab ich“ (optional gleich mit einer Runde). Andere können „Will auch mitspielen“ drücken.
 // Offene Suchen stehen auf der Webseite im Tab „Mitspieler-/Spielesuche“, Unterseite „Hat jemand …?“ (#suche), und laufen nach 3 Monaten ohne Zusage ab.
-import { discord, channelIds, discordOn, fmtDate, wdName, who, say, reply, berlinToday, parseDate, nextStammtischDate, headline, view } from './discord.js';
+import { discord, channelIds, wantedChannel, discordOn, fmtDate, wdName, who, say, reply, berlinToday, parseDate, nextStammtischDate, headline, view } from './discord.js';
 import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
 import { listMemberGames } from './membergames.js';
 import { inClub } from './games.js';
@@ -65,7 +65,7 @@ export async function wantedRoute(req, env, ctx, path, m, ip, h) {
     const row = { id: newId(), req_discord: u.member.discord_id, req_name: u.member.name, req_member: isMember(rule, u.member.roles) ? 1 : 0, game, game_id: gameId, year: int(b.year), note: str(b.note, 300), interested: '[]', created_at: new Date().toISOString(), expires_at: addMonths(today, WANT_MONTHS) };
     await env.DB.prepare('INSERT INTO wanted(id, req_discord, req_name, req_member, game, game_id, year, note, interested, created_at, expires_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)')
       .bind(row.id, row.req_discord, row.req_name, row.req_member, row.game, row.game_id, row.year, row.note, row.interested, row.created_at, row.expires_at).run();
-    const ch = channelIds(env)[0];
+    const ch = wantedChannel(env);
     try {
       const msg = await discord(env, 'POST', `/channels/${ch}/messages`, wantedMessage(row, env));
       await env.DB.prepare('UPDATE wanted SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(ch, msg.id, row.id).run();
@@ -244,7 +244,8 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
     const u = await env.DB.prepare("UPDATE wanted SET status = 'found', finder_discord = ?1, finder_name = ?2, closed_at = ?3 WHERE id = ?4 AND status = 'open'").bind(finder.id, finder.name, now, r.id).run();
     if (!u.meta.changes) return { err: 'gone' };
   }
-  const ch = r.discord_channel || channelIds(env)[0];
+  // Suche lebt im Such-Kanal, die daraus entstandene Runde wird im Runden-Kanal angekündigt.
+  const ch = r.discord_channel || wantedChannel(env), pch = channelIds(env)[0] || ch;
   const v = round
     ? { content: `✅ **${finder.name}** hat **${r.game}** (gesucht von ${r.req_name}) und bringt es am ${wdName(date)}, ${fmtDate(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${[r.req_name, ...inn.map((x) => x.name)].join(', ')} ${inn.length ? 'sind' : 'ist'} schon dabei.`,
       embeds: [gameEmbed(r, env)], components: [], allowed_mentions: { parse: [] } }
@@ -257,8 +258,8 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
       const party = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(pid).first();
       const pinged = [r.req_discord, ...inn.map((x) => x.id), ...out.map((x) => x.id)];
       const extra = out.length ? `\n${out.map((x) => `<@${x.id}>`).join(' ')} ihr wolltet auch mitspielen: tragt euch mit „Ich bin dabei“ ein, solange Platz ist.` : '';
-      const msg = await discord(env, 'POST', `/channels/${ch}/messages`, { ...view(party, env), content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${finder.name} hat **${r.game}** und bringt es mit – ihr seid schon dabei.` + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
-      await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(ch, msg.id, pid).run();
+      const msg = await discord(env, 'POST', `/channels/${pch}/messages`, { ...view(party, env), content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${finder.name} hat **${r.game}** und bringt es mit – ihr seid schon dabei.` + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
+      await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(pch, msg.id, pid).run();
     } else if (r.discord_msg) {
       await discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
         content: `<@${r.req_discord}>${ints.length ? ' ' + ints.map((x) => `<@${x.id}>`).join(' ') : ''} ${finder.name} (<@${finder.id}>) hat **${r.game}**! Macht direkt einen Termin aus, eine Runde kann ${finder.name} jederzeit mit \`/party\` oder auf der Webseite anlegen.`,

@@ -145,7 +145,7 @@ The bot runs in the same Worker (HTTP interactions, no extra server). Endpoint: 
 - Rounds created on the website are posted in the first bot channel (rate-limited), with the event name for event rounds.
 - Bring requests for member games are posted there too, with *Annehmen/Ablehnen/Zurückziehen* (accept/decline/withdraw) buttons.
 
-Settings in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (only this server), `DISCORD_CHANNEL_ID` (comma list; the bot only reacts there, the first one is the target for posts from the website), `DISCORD_ROLE_ID` (optional role required for web login), `DISCORD_MEMBER_ROLE_ID` (start value of the member role), `DISCORD_URL` (invite link). Secret: `DISCORD_BOT_TOKEN`.
+Settings in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (only this server), `DISCORD_WANTED_CHANNEL_ID` (channel for "Hat jemand …?" posts, test: #spiele-gesucht; empty = first `DISCORD_CHANNEL_ID`; rounds created from a found game still go to the first `DISCORD_CHANNEL_ID`), `DISCORD_CHANNEL_ID` (comma list; the bot only reacts there, the first one is the target for posts from the website), `DISCORD_ROLE_ID` (optional role required for web login), `DISCORD_MEMBER_ROLE_ID` (start value of the member role), `DISCORD_URL` (invite link). Secret: `DISCORD_BOT_TOKEN`.
 
 In the Developer Portal under *General Information*, set the URL above as **Interactions Endpoint URL**. After every change to `COMMANDS` in `src/discord.js`, click "Discord-Befehle registrieren" in the admin view (or `POST /api/admin/discord/register` with header `X-Admin-Token`).
 
@@ -253,7 +253,7 @@ D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` 
 
 ## 15. Go-live on the real N3 Discord server
 
-Only when Johannes says so. In `wrangler.toml`, replace the test values with the prepared ones in the "GO-LIVE" comment block (`DISCORD_GUILD_ID`, `DISCORD_CHANNEL_ID`, `DISCORD_URL`, `DISCORD_MEMBER_ROLE_ID`) and set `DISCORD_ROLE_ID` to the board game role. Then invite the bot to the N3 server, click "Discord-Befehle registrieren", and check the member role in the admin view (a saved value there overrides `wrangler.toml`).
+Only when Johannes says so. In `wrangler.toml`, replace the test values with the prepared ones in the "GO-LIVE" comment block (`DISCORD_GUILD_ID`, `DISCORD_CHANNEL_ID`, `DISCORD_WANTED_CHANNEL_ID`, `DISCORD_URL`, `DISCORD_MEMBER_ROLE_ID`) and set `DISCORD_ROLE_ID` to the board game role. Then invite the bot to the N3 server, click "Discord-Befehle registrieren", and check the member role in the admin view (a saved value there overrides `wrangler.toml`).
 
 ## 16. Open ideas
 

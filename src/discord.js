@@ -309,7 +309,7 @@ export async function handleInteraction(req, env, ctx) {
   if (i.type === 1) return reply({ type: 1 });
   if (env.DISCORD_GUILD_ID && i.guild_id !== env.DISCORD_GUILD_ID) return say('Dieser Bot ist für diesen Server nicht freigeschaltet.');
   // Optional: nur ein Kanal. Buttons an alten Nachrichten gelten ebenfalls nur dort.
-  const chans = channelIds(env);
+  const chans = botChannels(env);
   if (chans.length && !chans.includes(i.channel_id)) {
     return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur in ${chans.map((c) => `<#${c}>`).join(', ')}.`);
   }
@@ -362,6 +362,10 @@ export async function discord(env, method, path, body) {
 }
 // DISCORD_CHANNEL_ID: eine oder mehrere Kanal-IDs, durch Komma getrennt. Der erste Kanal ist das Ziel für Runden von der Webseite.
 export const channelIds = (env) => String(env.DISCORD_CHANNEL_ID || '').split(',').map((x) => x.trim()).filter(Boolean);
+// DISCORD_WANTED_CHANNEL_ID: eigener Kanal für „Hat jemand …?“ (leer = erster DISCORD_CHANNEL_ID).
+export const wantedChannel = (env) => String(env.DISCORD_WANTED_CHANNEL_ID || '').trim() || channelIds(env)[0];
+// Alle Kanäle, in denen der Bot reagiert: Runden-Kanäle plus der Such-Kanal.
+export const botChannels = (env) => { const c = channelIds(env), w = String(env.DISCORD_WANTED_CHANNEL_ID || '').trim(); return w && !c.includes(w) ? c.concat(w) : c; };
 export const discordOn = (env) => !!(env.DISCORD_BOT_TOKEN && channelIds(env).length);
 
 // Spalten für die Verknüpfung mit der Discord-Nachricht (einmal pro Worker-Instanz prüfen).

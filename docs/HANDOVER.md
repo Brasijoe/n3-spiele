@@ -144,6 +144,7 @@ Optional custom domain: *Worker → Settings → Domains & Routes* (the domain's
 | `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY` | From the Discord Developer Portal (public values). |
 | `DISCORD_GUILD_ID` | Your server id. Only this server may use the bot and log in. |
 | `DISCORD_CHANNEL_ID` | Bot channel id(s), comma separated. The first one receives rounds created on the web and bring requests. Login requires that the user can see the first one. |
+| `DISCORD_WANTED_CHANNEL_ID` | Optional separate channel for "Does anyone have …?" posts (e.g. `#games-wanted`). Empty = first `DISCORD_CHANNEL_ID`. The bot also reacts there. |
 | `DISCORD_ROLE_ID` | Optional: role required for web login (empty = no role check). |
 | `DISCORD_MEMBER_ROLE_ID` | Start value for the "member" role (booking rules, member games). The admin view setting overrides it once saved. Empty = no member restrictions. |
 | `DISCORD_URL` | Invite link for the Discord icon and "join our Discord" buttons. |
