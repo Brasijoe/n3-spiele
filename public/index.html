@@ -25,8 +25,6 @@ button, input, select { font-family: inherit; font-size: inherit; }
 .dc-link { margin-right: 6px; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; border-radius: 8px; color: #5865f2; }
 .dc-link:hover, .dc-link:focus-visible { background: rgba(88,101,242,.15); }
 .dc-link.login { background: #5865f2; color: #fff; gap: 0; padding: 0 9px; font-weight: 700; font-size: 14px; text-decoration: none; }
-.lg-code { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-.lg-code code { font: 700 22px/1.2 ui-monospace, monospace; background: var(--surface-2); padding: 8px 12px; border-radius: 6px; letter-spacing: 1px; }
 .dc-link.login .dc-lbl { max-width: 0; overflow: hidden; white-space: nowrap; transition: max-width .2s, margin .2s; }
 .dc-link.login:hover .dc-lbl, .dc-link.login:focus-visible .dc-lbl { max-width: 220px; margin-left: 8px; }
 @media (prefers-reduced-motion: reduce) { .dc-link.login .dc-lbl { transition: none; } }
@@ -334,7 +332,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .qr-url { word-break: break-all; font-weight: 600; }
 .foot-admin .btn { min-height: 36px; font-size: 13px; }
 .auth-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 14px; color: var(--fg); }
-.auth-box .btn-discord, #joinLink, #lgBrowser { background: #5865f2; color: #fff; border: 0; min-height: 40px; text-transform: none; letter-spacing: 0; }
+.auth-box .btn-discord, #joinLink { background: #5865f2; color: #fff; border: 0; min-height: 40px; text-transform: none; letter-spacing: 0; }
 .auth-box .or { flex: 1 1 100%; font-size: 13px; color: var(--text); }
 .auth-box .linkbtn, .linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--club); text-decoration: underline; cursor: pointer; }
 .play .own { display: flex; gap: 6px; }
@@ -735,20 +733,6 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   <div class="mg-list" id="mgMine" style="max-height:60vh;overflow:auto"></div>
   <div class="acts"><button type="button" class="btn btn-quiet" id="myClose" data-t="ciClose"></button></div>
 </dialog>
-<dialog class="info" id="loginDlg" aria-labelledby="loginT">
-  <h3 id="loginT" data-t="dcLoginT"></h3>
-  <p class="meta" data-t="lgBrowserTxt" style="margin:0 0 8px"></p>
-  <p style="margin:0 0 14px"><button type="button" class="btn btn-discord" id="lgBrowser"></button></p>
-  <p class="meta" data-t="lgAppTxt" style="margin:0 0 8px"></p>
-  <p style="margin:0" id="lgAppStart"><button type="button" class="btn btn-outline" id="lgAppBtn" data-t="lgAppBtn"></button></p>
-  <div id="lgAppBox" hidden>
-    <div class="lg-code"><code id="lgCmd"></code><button type="button" class="btn btn-quiet" id="lgCopy" data-t="lgCopy"></button></div>
-    <p class="meta" id="lgAppNote" style="margin:6px 0 10px"></p>
-    <a class="btn btn-outline" id="lgOpenDc" href="#" target="_blank" rel="noopener" data-t="lgOpenDc"></a>
-  </div>
-  <span id="lgMsg" role="alert"></span>
-  <div class="acts"><button type="button" class="btn btn-quiet" id="lgClose" data-t="ciClose"></button></div>
-</dialog>
 <dialog class="info" id="joinDlg" aria-labelledby="joinT">
   <h3 id="joinT" data-t="joinT"></h3>
   <p class="meta" data-t="joinTxt"></p>
@@ -765,7 +749,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { lgBrowserTxt: 'Im Browser: du meldest dich auf der Discord-Webseite an (einmalig, danach reicht ein Klick).', lgAppTxt: 'Mit der Discord-App (ohne Anmeldung im Browser): du bekommst einen Code und gibst ihn im Bot-Kanal ein.', lgAppBtn: 'Code für die Discord-App', lgCopy: 'Kopieren', lgCopied: 'Kopiert ✓', lgAppNote: 'Gib das im Bot-Kanal in Discord ein (gilt 10 Minuten). Diese Seite meldet dich danach von selbst an.', lgOpenDc: 'Discord öffnen', lgBrowserBtn: 'Im Browser anmelden', lgDone: 'Angemeldet ✓', loginApp: 'oder mit der Discord-App', dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
+  de: { dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Bot-Kanal angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Bot-Kanal auf Discord Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
     whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
@@ -864,7 +848,7 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { lgBrowserTxt: 'In the browser: you sign in on the Discord website (once, after that one click is enough).', lgAppTxt: 'With the Discord app (no browser sign-in): you get a code and enter it in the bot channel.', lgAppBtn: 'Code for the Discord app', lgCopy: 'Copy', lgCopied: 'Copied ✓', lgAppNote: 'Enter this in the bot channel on Discord (valid for 10 minutes). This page then signs you in by itself.', lgOpenDc: 'Open Discord', lgBrowserBtn: 'Sign in in the browser', lgDone: 'Signed in ✓', loginApp: 'or with the Discord app', dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
+  en: { dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the bot channel. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the bot channel on Discord that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
     whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
@@ -2531,33 +2515,6 @@ $('whForm').addEventListener('submit', async (e) => {
     if (c === 'gone') refreshAll();
   }
 });
-/* Anmelden: im Browser (OAuth-Popup) oder mit der Discord-App (Code, den man im Bot-Kanal mit /login eingibt). */
-function openLoginDlg(app) {
-  const t = T(); $('lgBrowser').innerHTML = DC_ICON + esc(t.lgBrowserBtn); $('lgMsg').textContent = ''; $('lgMsg').className = '';
-  $('lgAppStart').hidden = false; $('lgAppBox').hidden = true;
-  if (!$('loginDlg').open) $('loginDlg').showModal();
-  if (app) startAppLogin();
-}
-async function startAppLogin() {
-  const t = T(), n = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, '0')).join('');
-  $('lgAppBtn').disabled = true;
-  try {
-    const r = await api('POST', '/auth/appcode', { n });
-    lsSet('n3-login-nonce', n); authMsg = '';
-    $('lgCmd').textContent = '/login ' + r.code; $('lgAppNote').textContent = t.lgAppNote; $('lgCopy').textContent = t.lgCopy;
-    const c = dcCfg, ch = c && c.discordGuild ? 'https://discord.com/channels/' + c.discordGuild + (c.discordChannel ? '/' + c.discordChannel : '') : (c && c.discordUrl) || '';
-    $('lgOpenDc').hidden = !ch; if (ch) $('lgOpenDc').href = ch;
-    $('lgAppStart').hidden = true; $('lgAppBox').hidden = false;
-    pollLogin(n);
-  } catch (e) { $('lgMsg').className = 'err'; $('lgMsg').textContent = e && e.code === 'rate_limited' ? t.errRate : t.errSave; }
-  $('lgAppBtn').disabled = false;
-}
-$('lgAppBtn').onclick = startAppLogin;
-$('lgBrowser').onclick = () => { $('loginDlg').close(); startLogin(); };
-$('lgClose').onclick = () => $('loginDlg').close();
-$('loginDlg').addEventListener('click', (e) => { if (e.target === $('loginDlg')) $('loginDlg').close(); });
-$('lgCopy').onclick = async () => { try { await navigator.clipboard.writeText($('lgCmd').textContent); $('lgCopy').textContent = T().lgCopied; } catch (x) {} };
-document.addEventListener('click', (e) => { if (e.target.closest('[data-loginapp]')) { e.preventDefault(); openLoginDlg(true); } });
 /* ---------- Ansichten (Tabs) ---------- */
 const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : 'collection');
 function renderView() {
@@ -2608,7 +2565,6 @@ function authHtml() {
   const t = T();
   if (me) return '<span>' + esc(fill(t.loggedAs, { n: me.name })) + '</span><button type="button" class="linkbtn" data-logout>' + esc(t.logout) + '</button>';
   return '<button type="button" class="btn btn-discord" data-login>' + DC_ICON + esc(t.loginDiscord) + '</button>' +
-    '<button type="button" class="linkbtn" data-loginapp>' + esc(t.loginApp) + '</button>' +
     '<button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button>' +
     (loginTimer ? '<span class="note">' + esc(t.loginWait) + '</span>' : '') + (authMsg ? '<span class="err">' + esc(authMsg) + '</span>' : '') +
     '<span class="or">' + esc(t.loginOr) + '</span>';
@@ -2634,7 +2590,7 @@ document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href]'); if (!a || !DC_RE.test(a.href) || mobileUA() || e.ctrlKey || e.metaKey || e.shiftKey) return;
   e.preventDefault(); window.open('/dc.html?u=' + encodeURIComponent(a.href), '_blank', 'noopener');
 }, true);
-$('dcLink').addEventListener('click', (e) => { if (!me) { e.preventDefault(); openLoginDlg(false); } });
+$('dcLink').addEventListener('click', (e) => { if (!me) { e.preventDefault(); startLogin(); } });
 $('joinClose').onclick = () => $('joinDlg').close();
 $('joinDlg').addEventListener('click', (e) => { if (e.target === $('joinDlg')) $('joinDlg').close(); if (e.target.closest('[data-login]')) $('joinDlg').close(); });
 // Anmeldung abgelehnt, weil die Person nicht auf dem Server ist: Hinweis mit Einladungslink zeigen.
@@ -2663,9 +2619,9 @@ function pollLogin(n) {
   clearInterval(loginTimer); let tries = 0;
   const stop = () => { clearInterval(loginTimer); loginTimer = null; lsSet('n3-login-nonce', ''); renderAuth(); };
   loginTimer = setInterval(async () => {
-    if (++tries > 420) { stop(); return; }
-    try { const r = await api('GET', '/auth/poll?n=' + n); if (r && r.token) { stop(); setSession(r.token); loadMy(); if ($('loginDlg').open) $('loginDlg').close(); } }
-    catch (e) { if (e && e.status !== 429) { stop(); if ($('loginDlg').open) $('loginDlg').close(); loginFailed(e.code); renderAuth(); } }
+    if (++tries > 200) { stop(); return; }
+    try { const r = await api('GET', '/auth/poll?n=' + n); if (r && r.token) { stop(); setSession(r.token); loadMy(); } }
+    catch (e) { if (e && e.status !== 429) { stop(); loginFailed(e.code); renderAuth(); } }
   }, 1500);
   renderAuth();
 }
