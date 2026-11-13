@@ -1,6 +1,6 @@
 // „Hat jemand …?“: Ein Spiel, das weder in der Club-Sammlung noch bei den Mitgliederspielen steht, im Bot-Kanal suchen.
 // Wer es hat, antwortet in Discord mit „Hab ich“ (optional gleich mit einer Runde). Andere können „Will auch mitspielen“ drücken.
-// Offene Suchen stehen auf der Webseite unter „Mitspieler finden“ und laufen nach 3 Monaten ohne Zusage ab.
+// Offene Suchen stehen auf der Webseite unter „Spiel suchen“ und laufen nach 3 Monaten ohne Zusage ab.
 import { discord, channelIds, discordOn, fmtDate, wdName, who, say, reply, berlinToday, parseDate, nextStammtischDate, headline, view } from './discord.js';
 import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
 import { listMemberGames } from './membergames.js';
@@ -137,7 +137,7 @@ export function wantedMessage(r, env) {
   if (ints.length) fields.push({ name: `🙋 Wollen auch mitspielen (${ints.length})`, value: ints.map((x) => x.name).join(', ').slice(0, 1000) });
   return {
     content: `**${r.req_name}** (<@${r.req_discord}>) sucht **${r.game}**. Das Spiel ist weder in der Club-Sammlung noch bei den Mitgliederspielen. Hat jemand von euch es und mag es mitbringen und mitspielen?`,
-    embeds: [gameEmbed(r, env, { fields, footer: { text: `„Hab ich“: Du kannst gleich eine Runde anlegen, musst aber nicht. Die Suche steht bis ${fmtDate(r.expires_at)} auch auf der Webseite unter „Mitspieler finden“.` } })],
+    embeds: [gameEmbed(r, env, { fields, footer: { text: `„Hab ich“: Du kannst gleich eine Runde anlegen, musst aber nicht. Die Suche steht bis ${fmtDate(r.expires_at)} auch auf der Webseite unter „Spiel suchen“.` } })],
     components: [{ type: 1, components: [
       { type: 2, style: 3, label: 'Hab ich: Runde anlegen', emoji: { name: '🎲' }, custom_id: 'wantr:' + r.id },
       { type: 2, style: 3, label: 'Hab ich (Termin später)', custom_id: 'wanth:' + r.id },

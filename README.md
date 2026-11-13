@@ -37,7 +37,7 @@ UI labels in quotes below are the German texts shown on the page (the admin view
 - **Event codes:** let anyone offer rounds on event days without Discord (see section 9).
 - **Logging via QR code:** for people without Discord (see section 9).
 - **Member-owned games ("Mitglieder besitzen"):** a second tab next to the collection where members list their own games and others can ask them to bring one (see section 9).
-- **"Does anyone have …?" ("Hat jemand …?"):** on the "Mitspieler finden" tab, signed-in users look for a game that is neither in the collection nor owned by a member; the bot asks in the bot channel (see section 9).
+- **"Does anyone have …?" ("Hat jemand …?"):** on its own tab "Spiel suchen" (right of "Mitspieler finden", `#suche`), signed-in users look for a game that is neither in the collection nor owned by a member; the bot asks in the bot channel (see section 9).
 - **Discord link:** a Discord icon next to the language switch. Signed-in users get a direct link to the bot channel, everyone else the invite link (`DISCORD_URL`).
 - **Languages:** German and English (`?lang=de|en`, switch in the header). Discord bot texts are German only.
 
@@ -189,7 +189,7 @@ Link at the bottom right of the page, login with the admin password.
 
 ### "Does anyone have …?" ("Hat jemand …?")
 
-- On "Mitspieler finden", "Spiel suchen" opens a BGG search. If the game is in the club collection, the dialog offers "Runde anbieten"; if a member owns it, it offers the bring request; if someone already looks for it, it offers "Will ich auch" (me too). Otherwise "Im Discord fragen" posts in the first bot channel (server checks the same, `in_club` / `in_members` / `already_wanted`).
+- On the "Spiel suchen" tab, "Neue Suche" opens a BGG search. If the game is in the club collection, the dialog offers "Runde anbieten"; if a member owns it, it offers the bring request; if someone already looks for it, it offers "Will ich auch" (me too). Otherwise "Im Discord fragen" posts in the first bot channel (server checks the same, `in_club` / `in_members` / `already_wanted`).
 - Bot buttons: **"Hab ich: Runde anlegen"** (date, time, seats, note; creates a round with the requester and everyone who pressed "Will auch mitspielen" as far as seats and day rules allow), **"Hab ich (Termin später)"** (closes the request and offers direct-message buttons), **"Will auch mitspielen"** (toggle, also on the web), **"Zurückziehen"** (requester only; admins can withdraw on the web).
 - The same four actions are on each card on the web page ("Hab ich: Runde anlegen" opens a dialog with date, time, seats and note). Answering on the web requires being signed in (Discord login or `/code`), unlike joining a round. Web answers update the Discord post and announce the round there, just like the buttons (`POST /api/wanted/:id/found` with optional `round`, `POST /api/wanted/:id/interest`).
 - Day rules as for `/party`: a host without the member role needs a Stammtisch day and a short intro; if the requester has no member role, only Stammtisch days work. Interested non-members are not added on other days but are mentioned.
