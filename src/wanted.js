@@ -5,7 +5,7 @@ import { discord, openPartyThread, channelIds, wantedChannel, discordOn, fmtDate
 import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
 import { listMemberGames } from './membergames.js';
 import { inClub } from './games.js';
-const DAY_MAX_MEMBER = 10, DAY_MAX_GUEST = 3; // Suchen pro Person in 24 Stunden
+const DAY_MAX_MEMBER = 10; // Suchen pro Person in 24 Stunden (nur Mitglieder dürfen suchen)
 
 const enc = new TextEncoder();
 const sha256 = async (s) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s))), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -55,14 +55,16 @@ export async function wantedRoute(req, env, ctx, path, m, ip, h) {
   if (path === '/wanted' && m === 'POST') {
     const u = await login(); if (u.res) return u.res;
     if (!discordOn(env)) return fail(503, 'discord_off');
+    // Suchen anlegen dürfen nur Mitglieder (Mitgliederrolle). Antworten („Hab ich“, „Will auch mitspielen“) bleibt allen offen.
+    const rule = await getBooking(env);
+    if (!isMember(rule, u.member.roles)) return fail(403, 'members_only');
     const b = await body(req);
     const game = str(b.game, 120), gameId = int(b.gameId);
     if (!game || (gameId != null && !(gameId > 0))) return fail(400, 'invalid');
     const av = await available(env, gameId, game); if (av) return fail(409, av);
     const dup = await sameGame(env, gameId, game); if (dup) return json({ error: 'already_wanted', id: dup.id }, 409);
-    // Spam-Bremse: Suchen der letzten 24 Stunden (auch zurückgezogene) zählen; Mitglieder 10, sonst 3. Dazu 50 pro Tag insgesamt.
-    const today = berlinToday(), rule = await getBooking(env);
-    const max = isMember(rule, u.member.roles) ? DAY_MAX_MEMBER : DAY_MAX_GUEST;
+    // Spam-Bremse: Suchen der letzten 24 Stunden (auch zurückgezogene) zählen; höchstens 10 pro Person, 50 pro Tag insgesamt.
+    const today = berlinToday(), max = DAY_MAX_MEMBER;
     const used = (await env.DB.prepare('SELECT COUNT(*) AS n FROM wanted WHERE req_discord = ?1 AND created_at > ?2').bind(u.member.discord_id, new Date(Date.now() - 864e5).toISOString()).first()).n;
     if (used >= max) return json({ error: 'day_limit', used, max }, 429);
     if (!(await allow(env, 'want-all', 50, 86400))) return fail(429, 'rate_limited');

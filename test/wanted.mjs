@@ -94,13 +94,13 @@ x = await interact({ type: 3, ...as('558'), data: { custom_id: `wanth:${w1.id}` 
 assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
 console.log('found with round ok');
 
-// Nicht-Mitglied sucht: Runde nur an Stammtisch-Tagen
-r = await call('POST', '/wanted', gast, { game: 'Gastspiel Y' }); const w2 = await r.json(); assert.equal(r.status, 200);
-x = await submit({ datum: wedTxt, uhrzeit: '18:00', plaetze: '4' }, '556', w2.id); assert.match(x.data.content, /keine Mitgliederrolle/);
+// Suchen anlegen nur für Mitglieder
+r = await call('POST', '/wanted', gast, { game: 'Gastspiel Y' }); assert.equal(r.status, 403); assert.equal((await r.json()).error, 'members_only');
+r = await call('POST', '/wanted', hans, { game: 'Gastspiel Y' }); const w2 = await r.json(); assert.equal(r.status, 200);
 // Hab ich ohne Runde
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wanth:${w2.id}` } }); assert.equal(x.type, 7); assert.match(x.data.content, /Fritz\*\* hat \*\*Gastspiel Y/);
-assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/557');
-await wait(); assert.equal(msgs.at(-1).ch, 'CH2'); assert.match(msgs.at(-1).content, /^<@557> Fritz \(<@556>\) hat/);
+assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/558');
+await wait(); assert.equal(msgs.at(-1).ch, 'CH2'); assert.match(msgs.at(-1).content, /^<@558> Fritz \(<@556>\) hat/);
 console.log('found without round ok');
 
 // Zurückziehen: nur selbst (oder Verwaltung)
@@ -112,8 +112,6 @@ await wait(); assert.match(msgs.filter((q) => q.patch).at(-1).content, /Zurückg
 r = await call('POST', '/wanted', eva, { game: 'Noch eins' }); assert.equal(r.status, 200); const w4 = await r.json();
 for (let k = 4; k <= 10; k++) { r = await call('POST', '/wanted', eva, { game: 'Mitgliedersuche ' + k }); assert.equal(r.status, 200, 'eva ' + k); }
 r = await call('POST', '/wanted', eva, { game: 'Zu viel' }); assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: 'day_limit', used: 10, max: 10 });
-for (const g of ['Gast 2', 'Gast 3']) { r = await call('POST', '/wanted', gast, { game: g }); assert.equal(r.status, 200, g); }
-r = await call('POST', '/wanted', gast, { game: 'Gast 4' }); assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: 'day_limit', used: 3, max: 3 });
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wantx:${w4.id}` } }); assert.match(x.data.content, /Nur wer gesucht hat/);
 console.log('withdraw + rate limit ok');
 
