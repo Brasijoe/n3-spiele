@@ -39,6 +39,7 @@ UI labels in quotes below are the German texts shown on the page (the admin view
 - **Member-owned games ("Mitglieder besitzen"):** a second tab next to the collection where members list their own games and others can ask them to bring one (see section 9).
 - **"Does anyone have …?" ("Hat jemand …?"):** on its own tab "Spiel suchen" (right of "Mitspieler finden", `#suche`), signed-in users look for a game that is neither in the collection nor owned by a member; the bot asks in the bot channel (see section 9).
 - **Discord button:** next to the language switch. Signed out it is the Discord icon as a sign-in button ("Mit Discord anmelden" slides out on hover); signed in it is the Discord icon with a direct link to the bot channel. Login checks that the person is on the server (`DISCORD_GUILD_ID`, test server until go-live); if not, a dialog explains they must join first and shows the invite link (`DISCORD_URL`), also on the login popup.
+- **Sign in with the Discord app:** the sign-in dialog (header icon, or "oder mit der Discord-App" next to every sign-in button) offers the browser login (OAuth) or a 6-character code. Typing `/login <code>` in the bot channel signs the page in (it polls like the OAuth popup, also inside the iFrame). Codes are valid 10 minutes and single-use (table `login_codes`). The same server/role/channel checks apply.
 - **Discord links open the app:** on phones the OS opens `https://discord.com/...` links in the app if installed. On computers, links to discord.com/discord.gg go through `public/dc.html` in a new tab, which tries `discord://` first and falls back to the web after ~1.6 s.
 - **Languages:** German and English (`?lang=de|en`, switch in the header). Discord bot texts are German only.
 
@@ -239,6 +240,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 | `test/booking.mjs` | Stammtisch-day rule, intro note |
 | `test/join-rules.mjs` | who may join which round |
 | `test/member-games.mjs` | member games, BGG import, bring requests |
+| `test/app-login.mjs` | sign in with the Discord app (`/login` code) |
 | `test/wanted.mjs` | "Hat jemand …?" requests (same setup as `test/member-games.mjs`) |
 | `test/qr-log.cjs` | logging via QR key |
 | `test/member-code.mjs` | `/code` personal codes |
