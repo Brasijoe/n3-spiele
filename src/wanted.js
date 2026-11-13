@@ -49,7 +49,7 @@ export async function wantedRoute(req, env, ctx, path, m, ip, h) {
 
   if (path === '/wanted' && m === 'GET') {
     const { results } = await env.DB.prepare("SELECT * FROM wanted WHERE status = 'open' AND expires_at >= ?1 ORDER BY created_at DESC LIMIT 200").bind(berlinToday()).all();
-    const r = json(results.map((x) => wantedOut(env, x))); r.headers.set('cache-control', 'public, max-age=30'); return r;
+    return json(results.map((x) => wantedOut(env, x))); // nicht cachen: nach „Hab ich“ soll die Karte sofort verschwinden
   }
   if (path === '/wanted' && m === 'POST') {
     const u = await login(); if (u.res) return u.res;
@@ -89,6 +89,18 @@ export async function wantedRoute(req, env, ctx, path, m, ip, h) {
     if (res === 'changed') return fail(409, 'changed');
     if (r.discord_msg) ctx.waitUntil(refreshMessage(env, g[1]).catch((e) => console.log('wanted sync failed', e && e.message)));
     return json({ ok: true });
+  }
+  // „Hab ich“ von der Webseite (nur mit Discord-Anmeldung): ohne round = Termin später, mit round = Runde gleich anlegen.
+  if ((g = path.match(/^\/wanted\/([\w-]+)\/found$/)) && m === 'POST') {
+    const u = await login(); if (u.res) return u.res;
+    if (!(await allow(env, 'wfound:' + u.member.discord_id, 20, 3600))) return fail(429, 'rate_limited');
+    const b = await body(req);
+    const r = await env.DB.prepare('SELECT * FROM wanted WHERE id = ?1').bind(g[1]).first();
+    if (!r) return fail(404, 'not_found');
+    const rd = b.round && typeof b.round === 'object' ? { date: str(b.round.date, 10), time: b.round.time, seats: b.round.seats, note: b.round.note } : null;
+    const res = await markFound(env, ctx, r, { id: u.member.discord_id, name: u.member.name, member: isMember(await getBooking(env), u.member.roles) }, rd, false);
+    if (res.err) return json({ error: res.err, rule: res.rule, next: res.next }, res.err === 'gone' ? 409 : 400);
+    return json({ ok: true, partyId: res.partyId });
   }
   if ((g = path.match(/^\/wanted\/([\w-]+)$/)) && m === 'DELETE') {
     const r = await env.DB.prepare('SELECT * FROM wanted WHERE id = ?1').bind(g[1]).first();
@@ -166,17 +178,9 @@ export async function wantedButton(i, env, ctx) {
   }
   if (w.id === r.req_discord) return say('Das ist deine eigene Suche. Zurückziehen kannst du sie mit „Zurückziehen“.');
   if (act === 'wanth') {
-    const u = await env.DB.prepare("UPDATE wanted SET status = 'found', finder_discord = ?1, finder_name = ?2, closed_at = ?3 WHERE id = ?4 AND status = 'open'").bind(w.id, w.name, new Date().toISOString(), id).run();
-    if (!u.meta.changes) return say('Zu spät: die Suche ist schon erledigt.');
-    const ints = interestOf(r);
-    if (r.discord_msg) ctx.waitUntil(discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
-      content: `<@${r.req_discord}>${ints.length ? ' ' + ints.map((x) => `<@${x.id}>`).join(' ') : ''} ${w.name} hat **${r.game}**! Macht direkt einen Termin aus, eine Runde kann ${w.name} jederzeit mit \`/party\` oder auf der Webseite anlegen.`,
-      message_reference: { message_id: r.discord_msg, fail_if_not_exists: false }, allowed_mentions: { users: [r.req_discord, ...ints.map((x) => x.id)].slice(0, 100) },
-    }).catch((e) => console.log('wanted found reply failed', e && e.message)));
-    return reply({ type: 7, data: {
-      content: `✅ **${w.name}** hat **${r.game}** (gesucht von ${r.req_name}). Schreibt euch, um einen Termin auszumachen.` + (ints.length ? ` Auch mitspielen wollen: ${ints.map((x) => x.name).join(', ')}.` : '') + '\nTipp: Trag das Spiel auf der Webseite unter „Mitglieder besitzen“ ein, dann findet man es beim nächsten Mal direkt.',
-      embeds: [gameEmbed(r, env)], components: dmLinks([{ id: r.req_discord, name: r.req_name }, ...ints]), allowed_mentions: { parse: [] },
-    } });
+    const res = await markFound(env, ctx, r, { id: w.id, name: w.name, member: isMember(await getBooking(env), (i.member && i.member.roles) || []) }, null, true);
+    if (res.err) return say(errText(res, r));
+    return reply({ type: 7, data: res.view });
   }
   if (act === 'wantr') {
     const rule = await getBooking(env), d = nextStammtischDate(rule);
@@ -191,54 +195,92 @@ export async function wantedButton(i, env, ctx) {
   return say('Unbekannte Aktion.');
 }
 
+const ERR = {
+  gone: () => 'Zu spät: die Suche ist schon erledigt.',
+  own: () => 'Das ist deine eigene Suche.',
+  bad_date: () => 'Datum nicht verstanden. Beispiele: 2026-11-17, 17.11.',
+  past: () => 'Das Datum liegt in der Vergangenheit.',
+  bad_time: () => 'Uhrzeit bitte als HH:MM, z. B. 18:00.',
+  bad_seats: () => 'Plätze: 2 bis 30 (inkl. dir).',
+  stammtisch_only: (x) => `Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anlegen (${x.rule}). Nächste Termine: ${x.next}.`,
+  intro_missing: () => INTRO_HELP,
+  req_stammtisch_only: (x, r) => `${r.req_name} hat keine Mitgliederrolle und kann deshalb nur an Stammtisch-Tagen mitspielen (${x.rule}). Nächste Termine: ${x.next}.`,
+};
+const errText = (res, r) => (ERR[res.err] || (() => 'Da ist etwas schiefgelaufen.'))(res, r);
+
+// „Hab ich“ – aus Discord oder von der Webseite. finder = { id, name, member }; round = null (Termin später) oder { date, time, seats, note }.
+// Gibt { err, rule?, next? } oder { view } zurück (view = neuer Inhalt der Discord-Nachricht zur Suche). fromDiscord: die Nachricht ersetzt Discord selbst (Antwort type 7).
+export async function markFound(env, ctx, r, finder, round, fromDiscord = false) {
+  if (r.status !== 'open') return { err: 'gone' };
+  if (finder.id === r.req_discord) return { err: 'own' };
+  const ints = interestOf(r).filter((x) => x.id !== finder.id), now = new Date().toISOString();
+  let pid = null, inn = [], out = ints, date, time, seats;
+  if (round) {
+    date = /^\d{4}-\d{2}-\d{2}$/.test(round.date) ? round.date : parseDate(round.date); if (!date) return { err: 'bad_date' };
+    if (date < berlinToday()) return { err: 'past' };
+    time = str(round.time, 5); if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return { err: 'bad_time' };
+    seats = Number(round.seats); if (!(seats >= 2 && seats <= 30)) return { err: 'bad_seats' };
+    const hint = str(round.note, 500);
+    const rule = await getBooking(env), info = { rule: ruleText(rule), next: nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ') };
+    // Gleiche Regeln wie bei /party: ohne Mitgliederrolle nur Stammtisch-Tage und mit kurzer Vorstellung.
+    if (!finder.member) {
+      if (!isStammtisch(date, rule)) return { err: 'stammtisch_only', ...info };
+      if (!introOk(hint)) return { err: 'intro_missing' };
+    }
+    // Die suchende Person muss mitspielen dürfen: ohne Mitgliederrolle nur an Stammtisch-Tagen.
+    const prow = { date, event_id: null };
+    if (!canJoin(rule, prow, r.req_member ? [rule.memberRole] : [])) return { err: 'req_stammtisch_only', ...info };
+    pid = newId();
+    const u = await env.DB.prepare("UPDATE wanted SET status = 'found', finder_discord = ?1, finder_name = ?2, party_id = ?3, closed_at = ?4 WHERE id = ?5 AND status = 'open'").bind(finder.id, finder.name, pid, now, r.id).run();
+    if (!u.meta.changes) return { err: 'gone' };
+    // Suchende Person plus alle, die „Will auch mitspielen“ gedrückt haben (soweit Platz ist und sie an dem Tag dürfen).
+    const att = { ['d' + r.req_discord]: { name: r.req_name, at: now } };
+    inn = []; out = [];
+    for (const x of ints) { if (Object.keys(att).length + 1 < seats && canJoin(rule, prow, x.m ? [rule.memberRole] : [])) { att['d' + x.id] = { name: x.name, at: now }; inn.push(x); } else out.push(x); }
+    const note = hint || `${finder.name} bringt das Spiel mit (gesucht von ${r.req_name}).`;
+    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,1,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)')
+      .bind(pid, r.game_id, r.game, r.year, date, time, seats, finder.name, await sha256('discord:' + finder.id), note, JSON.stringify(att), now, finder.id).run();
+  } else {
+    const u = await env.DB.prepare("UPDATE wanted SET status = 'found', finder_discord = ?1, finder_name = ?2, closed_at = ?3 WHERE id = ?4 AND status = 'open'").bind(finder.id, finder.name, now, r.id).run();
+    if (!u.meta.changes) return { err: 'gone' };
+  }
+  const ch = r.discord_channel || channelIds(env)[0];
+  const v = round
+    ? { content: `✅ **${finder.name}** hat **${r.game}** (gesucht von ${r.req_name}) und bringt es am ${wdName(date)}, ${fmtDate(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${[r.req_name, ...inn.map((x) => x.name)].join(', ')} ${inn.length ? 'sind' : 'ist'} schon dabei.`,
+      embeds: [gameEmbed(r, env)], components: [], allowed_mentions: { parse: [] } }
+    : { content: `✅ **${finder.name}** hat **${r.game}** (gesucht von ${r.req_name}). Schreibt euch, um einen Termin auszumachen.` + (ints.length ? ` Auch mitspielen wollen: ${ints.map((x) => x.name).join(', ')}.` : '') + '\nTipp: Trag das Spiel auf der Webseite unter „Mitglieder besitzen“ ein, dann findet man es beim nächsten Mal direkt.',
+      embeds: [gameEmbed(r, env)], components: dmLinks([{ id: finder.id, name: finder.name }, { id: r.req_discord, name: r.req_name }, ...ints].filter((p) => fromDiscord ? p.id !== finder.id : true)), allowed_mentions: { parse: [] } };
+  if (env.DISCORD_BOT_TOKEN && ch) ctx.waitUntil((async () => {
+    // Von der Webseite: die Nachricht zur Suche selbst aktualisieren (aus Discord macht das die Antwort auf den Knopf).
+    if (!fromDiscord && r.discord_msg) await discord(env, 'PATCH', `/channels/${r.discord_channel}/messages/${r.discord_msg}`, v).catch((e) => console.log('wanted found patch failed', e && e.message));
+    if (round) {
+      const party = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(pid).first();
+      const pinged = [r.req_discord, ...inn.map((x) => x.id), ...out.map((x) => x.id)];
+      const extra = out.length ? `\n${out.map((x) => `<@${x.id}>`).join(' ')} ihr wolltet auch mitspielen: tragt euch mit „Ich bin dabei“ ein, solange Platz ist.` : '';
+      const msg = await discord(env, 'POST', `/channels/${ch}/messages`, { ...view(party, env), content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${finder.name} hat **${r.game}** und bringt es mit – ihr seid schon dabei.` + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
+      await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(ch, msg.id, pid).run();
+    } else if (r.discord_msg) {
+      await discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
+        content: `<@${r.req_discord}>${ints.length ? ' ' + ints.map((x) => `<@${x.id}>`).join(' ') : ''} ${finder.name} (<@${finder.id}>) hat **${r.game}**! Macht direkt einen Termin aus, eine Runde kann ${finder.name} jederzeit mit \`/party\` oder auf der Webseite anlegen.`,
+        message_reference: { message_id: r.discord_msg, fail_if_not_exists: false }, allowed_mentions: { users: [r.req_discord, ...ints.map((x) => x.id)].slice(0, 100) },
+      });
+    }
+  })().catch((e) => console.log('wanted found announce failed', e && e.message)));
+  return { view: v, partyId: pid };
+}
+
 export async function wantedSubmit(i, env, ctx) {
   const [, id] = String(i.data.custom_id).split(':');
   await ensureWanted(env);
   const w = who(i), r = await env.DB.prepare('SELECT * FROM wanted WHERE id = ?1').bind(id).first();
   if (!r) return say('Diese Suche gibt es nicht mehr.');
   if (r.status !== 'open') return say(closedTxt(r));
-  if (w.id === r.req_discord) return say('Das ist deine eigene Suche.');
   const f = {};
   for (const row of i.data.components || []) for (const c of row.components || []) f[c.custom_id] = c.value;
-  const again = ' Klick noch einmal auf „Hab ich: Runde anlegen“.';
-  const date = parseDate(f.datum); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17, 17.11.' + again);
-  if (date < berlinToday()) return say('Das Datum liegt in der Vergangenheit.' + again);
-  const time = str(f.uhrzeit, 5); if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.' + again);
-  const seats = Number(f.plaetze); if (!(seats >= 2 && seats <= 30)) return say('Plätze: 2 bis 30 (inkl. dir).' + again);
-  const hint = str(f.hinweis, 500);
-  const rule = await getBooking(env), next = nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ');
-  // Gleiche Regeln wie bei /party: ohne Mitgliederrolle nur Stammtisch-Tage und mit kurzer Vorstellung.
-  if (!isMember(rule, (i.member && i.member.roles) || [])) {
-    if (!isStammtisch(date, rule)) return say(`Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anlegen (${ruleText(rule)}). Nächste Termine: ${next}.` + again);
-    if (!introOk(hint)) return say(INTRO_HELP + again);
-  }
-  // Die suchende Person muss mitspielen dürfen: ohne Mitgliederrolle nur an Stammtisch-Tagen.
-  const prow = { date, event_id: null };
-  if (!canJoin(rule, prow, r.req_member ? [rule.memberRole] : [])) return say(`${r.req_name} hat keine Mitgliederrolle und kann deshalb nur an Stammtisch-Tagen mitspielen (${ruleText(rule)}). Nächste Termine: ${next}.` + again);
-  const pid = newId();
-  const u = await env.DB.prepare("UPDATE wanted SET status = 'found', finder_discord = ?1, finder_name = ?2, party_id = ?3, closed_at = ?4 WHERE id = ?5 AND status = 'open'").bind(w.id, w.name, pid, new Date().toISOString(), id).run();
-  if (!u.meta.changes) return say('Zu spät: die Suche ist schon erledigt.');
-  // Suchende Person plus alle, die „Will auch mitspielen“ gedrückt haben (soweit Platz ist und sie an dem Tag dürfen).
-  const ints = interestOf(r).filter((x) => x.id !== w.id), now = new Date().toISOString();
-  const att = { ['d' + r.req_discord]: { name: r.req_name, at: now } };
-  const inn = [], out = [];
-  for (const x of ints) { if (Object.keys(att).length + 1 < seats && canJoin(rule, prow, x.m ? [rule.memberRole] : [])) { att['d' + x.id] = { name: x.name, at: now }; inn.push(x); } else out.push(x); }
-  const note = hint || `${w.name} bringt das Spiel mit (gesucht von ${r.req_name}).`;
-  await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,1,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)')
-    .bind(pid, r.game_id, r.game, r.year, date, time, seats, w.name, await sha256('discord:' + w.id), note, JSON.stringify(att), now, w.id).run();
-  const ch = r.discord_channel || i.channel_id || channelIds(env)[0];
-  const pinged = [r.req_discord, ...inn.map((x) => x.id), ...out.map((x) => x.id)];
-  ctx.waitUntil((async () => {
-    const party = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(pid).first();
-    const v = view(party, env);
-    const extra = out.length ? `\n${out.map((x) => `<@${x.id}>`).join(' ')} ihr wolltet auch mitspielen: tragt euch mit „Ich bin dabei“ ein, solange Platz ist.` : '';
-    const msg = await discord(env, 'POST', `/channels/${ch}/messages`, { ...v, content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${w.name} hat **${r.game}** und bringt es mit – ihr seid schon dabei.` + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
-    await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(ch, msg.id, pid).run();
-  })().catch((e) => console.log('wanted party announce failed', e && e.message)));
-  return reply({ type: 7, data: {
-    content: `✅ **${w.name}** hat **${r.game}** (gesucht von ${r.req_name}) und bringt es am ${wdName(date)}, ${fmtDate(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${[r.req_name, ...inn.map((x) => x.name)].join(', ')} ${inn.length ? 'sind' : 'ist'} schon dabei.`,
-    embeds: [gameEmbed(r, env)], components: [], allowed_mentions: { parse: [] },
-  } });
+  const member = isMember(await getBooking(env), (i.member && i.member.roles) || []);
+  const res = await markFound(env, ctx, r, { id: w.id, name: w.name, member }, { date: str(f.datum, 20), time: f.uhrzeit, seats: f.plaetze, note: f.hinweis }, true);
+  if (res.err) return say(errText(res, r) + (['gone', 'own'].includes(res.err) ? '' : ' Klick noch einmal auf „Hab ich: Runde anlegen“.'));
+  return reply({ type: 7, data: res.view });
 }
 
 // Nächtlich: Suchen ohne Zusage nach 3 Monaten beenden (höchstens 25 pro Lauf, die Nachricht wird durchgestrichen).
