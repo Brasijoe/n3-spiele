@@ -5,7 +5,6 @@ import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membe
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds } from './discord.js';
 
-const SALT = 'n3-club:';
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const fail = (status, code) => json({ error: code }, status);
@@ -40,16 +39,6 @@ async function isAdmin(req, env, ip) {
   if (safeEq(await sha256(t), await sha256(env.ADMIN_TOKEN))) return true;
   await allow(env, 'admfail:' + ip, 20, 600);
   return false;
-}
-
-// Gibt null zurück, wenn der Vereinscode stimmt, sonst einen Fehlercode.
-async function checkClubCode(req, env, ip) {
-  const code = (req.headers.get('x-club-code') || '').replace(/\D/g, '');
-  if (code.length !== 4) return 'code_format';
-  if (!(await allow(env, 'code:' + ip, 15, 600))) return 'rate_limited';
-  const row = await env.DB.prepare("SELECT value FROM config WHERE key = 'club_code_hash'").first();
-  if (!row) return 'code_not_set';
-  return safeEq(await sha256(SALT + code), row.value) ? null : 'bad_code';
 }
 
 // Angemeldet (Sitzung aus Discord-Login oder /code) oder persönlicher Code. Gibt { member } oder { err } zurück.
@@ -359,13 +348,6 @@ async function route(req, env, ctx, url) {
     }
     const rule = await getBooking(env);
     return json({ ...rule, next: nextStammtische(berlinToday(), rule, 8) });
-  }
-  if (path === '/config/club' && m === 'PUT') {
-    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
-    const code = String((await body(req)).code || '').replace(/\D/g, '');
-    if (code.length !== 4) return fail(400, 'invalid');
-    await env.DB.prepare("INSERT INTO config(key, value) VALUES('club_code_hash', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(await sha256(SALT + code)).run();
-    return json({ ok: true });
   }
 
   if (path === '/discord/interactions' && m === 'POST') return handleInteraction(req, env, ctx);
