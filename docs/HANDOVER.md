@@ -278,7 +278,7 @@ Note: BGG answers 202 (queued) or 429 (busy) sometimes; `fetchRetry` retries. Cl
 
 - **D1 Time Travel**: Cloudflare keeps point-in-time restore for D1 (30 days on paid plans, 7 days on free, check current limits). `npx wrangler d1 time-travel restore <db> --timestamp=...`.
 - **Manual export**: `npx wrangler d1 export <db> --remote --output backup.sql`.
-- **Nightly backup**: a nightly automatic backup is being built for N3 in a separate piece of work (2026-11-13); check the repo for it before building your own.
+- **Nightly backup**: the Worker dumps the whole D1 database as SQL into a private R2 bucket every night (`src/backup.js`, binding `BACKUP`, newest 30 kept) and the admin view can download a copy; create the bucket before the first deploy. Restore with `npx wrangler d1 execute <db> --remote --file=<backup>.sql`. Details in the README section "Backup".
 - **Logs**: `npx wrangler tail` or the Worker's Observability tab (enabled in `wrangler.toml`).
 - **Token rotation**: `wrangler secret put`. Rotate the QR key in the admin view if the poster link leaks; delete an event code to stop it.
 - **Limits** (all in `src/index.js`/`src/membergames.js`): admin wrong-password 20/10 min/IP; writes (plays, rounds) 40/10 min/IP; joins 30/10 min/IP; QR plays 40/h/IP and 150/day total; event rounds 60/day per event; wrong keys/codes 15-20/10 min/IP; BGG search 60/min/IP; covers 120/min/IP; bring requests 5/day/person and 30/day in total; member games max 1000 per member; import body 400 KB.

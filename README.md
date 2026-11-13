@@ -197,9 +197,33 @@ Link at the bottom right of the page, login with the admin password.
 ## 11. Operations
 
 - **Cron jobs** (`wrangler.toml`): `17 3 * * *` nightly (rate table cleanup, GeekList read and import, member game pruning and backfill) and `*/20 * * * *` (member game backfill only). The code checks the exact nightly cron string.
-- **Backup:** `npx wrangler d1 export n3-spiele --remote --output backup.sql`. D1 Time Travel can also restore the database to a point in time (`npx wrangler d1 time-travel restore n3-spiele --timestamp=…`). Never put backup files in this public repo; they contain private data.
+- **Backup:** nightly to a private R2 bucket, plus download in the admin view; see "Backup" below. Never put backup files in this public repo; they contain private data.
 - **Swap tokens:** `npx wrangler secret put BGG_TOKEN` (or `ADMIN_TOKEN`, `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_SECRET`), no new deployment needed.
 - **Logs:** `npx wrangler tail`, or Cloudflare dashboard → Workers → n3-spiele → Observability.
+
+### Backup
+
+**What happens:** Every night at 03:17 UTC (before the GeekList sync) the Worker writes the whole D1 database as a SQL file into the private R2 bucket `n3-spiele-backup` (`d1/<date>T<time>Z.sql`). The newest 30 backups are kept, older ones are deleted by the Worker. All tables are included except the data of `rate` and `auth_handoff` (short-lived counters and login handoffs; their structure is included). Code: `src/backup.js`.
+
+**One-time setup (before the first deploy of this version):** Cloudflare dashboard → *R2 Object Storage* → *Create bucket* → name `n3-spiele-backup`, location automatic, do **not** enable public access. Alternatively `npx wrangler r2 bucket create n3-spiele-backup`. R2 must be enabled once on the account (free up to 10 GB; the backups are a few MB). If the bucket is missing, the deploy fails.
+
+**Admin view, block "Datensicherung" (backup):**
+- "Aktuellen Stand herunterladen" (download current state): creates a SQL file right away and downloads it, independent of R2. Do this now and then and keep the file outside Cloudflare (e.g. OneDrive).
+- "Jetzt in R2 sichern" (back up to R2 now): stores a backup in the bucket immediately (e.g. before bigger changes).
+- List of the backups in the bucket; a click downloads the file.
+
+The files contain private data (full names from the owner directory, Discord IDs, sessions, code hashes). Do not share them and **never put them into the public GitHub repo**.
+
+**Restore:**
+1. Get a backup: download it in the admin view, or in the dashboard under R2 → `n3-spiele-backup` → `d1/`.
+2. In the repo folder: `npx wrangler d1 execute n3-spiele --remote --file=n3-spiele-….sql`
+   The file drops every backed-up table (`DROP TABLE`) and recreates it with the saved content. Everything entered after the backup is lost.
+3. Try it first locally: `npx wrangler d1 execute n3-spiele --local --file=….sql` and look at it with `npx wrangler dev`.
+
+**Smaller mishaps (last 30 days):** D1 *Time Travel* resets the database to any minute, without a file:
+`npx wrangler d1 time-travel info n3-spiele` (current state) and `npx wrangler d1 time-travel restore n3-spiele --timestamp=2026-11-13T10:00:00Z`. This also overwrites everything after that point.
+
+**Check that it runs:** Workers → n3-spiele → Observability, search for `backup ok` or `backup failed`, or check the date of the newest backup in the admin view.
 
 ## 12. Security and privacy
 

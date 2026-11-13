@@ -3,6 +3,7 @@ import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
+import { dumpDb, backupToR2, listBackups, validKey, sqlDownload } from './backup.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds } from './discord.js';
 
 const enc = new TextEncoder();
@@ -419,6 +420,28 @@ async function route(req, env, ctx, url) {
     } catch (e) { return fail(502, e.code || 'bgg_error'); }
   }
 
+  // Datensicherung (nur Verwaltung): Liste der nächtlichen Sicherungen, frischer Download, Sicherung jetzt anlegen.
+  if (path === '/admin/backups' && (m === 'GET' || m === 'POST')) {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    if (m === 'POST') {
+      try { return json({ ok: true, ...(await backupToR2(env)) }); }
+      catch (e) { console.log('backup failed', e.code || e.message); return fail(e.code === 'no_bucket' ? 503 : 500, e.code || 'backup_error'); }
+    }
+    return json({ bucket: !!env.BACKUP, items: await listBackups(env) });
+  }
+  if (path === '/admin/backup/now' && m === 'GET') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    const { sql } = await dumpDb(env);
+    return sqlDownload(sql, 'n3-spiele-' + new Date().toISOString().slice(0, 16).replace(/:/g, '-') + '.sql');
+  }
+  if (path === '/admin/backup/file' && m === 'GET') {
+    if (!(await isAdmin(req, env, ip))) return fail(403, 'forbidden');
+    const key = url.searchParams.get('key');
+    if (!env.BACKUP || !validKey(key)) return fail(404, 'not_found');
+    const obj = await env.BACKUP.get(key);
+    return obj ? sqlDownload(obj.body, 'n3-spiele-' + key.slice(3)) : fail(404, 'not_found');
+  }
+
   if (path === '/config/public' && m === 'GET') { const r = json({ discordUrl: env.DISCORD_URL || '', discordGuild: env.DISCORD_GUILD_ID || '', discordChannel: channelIds(env)[0] || '' }); r.headers.set('cache-control', 'public, max-age=300'); return r; }
   if (path === '/games/extra' && m === 'GET') {
     const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
@@ -448,6 +471,8 @@ export default {
       return;
     }
     ctx.waitUntil((async () => {
+      // Zuerst sichern, bevor die nächtlichen Abgleiche etwas ändern.
+      try { const b = await backupToR2(env); console.log('backup ok', b.key, b.size, 'removed', b.removed); } catch (e) { console.log('backup failed', e.code || e.message); }
       await env.DB.prepare('DELETE FROM rate WHERE ts < ?1').bind(Date.now() - 864e5).run();
       try { await refreshGeeklist(env); await syncExtras(env); } catch (e) { console.log('geeklist refresh/sync failed', e.code || e.message); }
       try { await ensureCols(env); const n = await pruneMemberGames(env); if (n) console.log('member games removed', n); } catch (e) { console.log('member games prune failed', e.code || e.message); }

@@ -14,6 +14,13 @@ binding = "DB"
 database_name = "n3-spiele"
 database_id = "7ee93ce3-f3db-49cc-9edc-e6d67cd3b731"
 
+# Datensicherung: privater R2-Bucket, nachts eine SQL-Sicherung der Datenbank (die letzten 30 bleiben).
+# Bucket vor dem ersten Deploy einmal anlegen: Cloudflare-Dashboard → R2 → „Create bucket“ → Name n3-spiele-backup
+# (oder `npx wrangler r2 bucket create n3-spiele-backup`). Nicht öffentlich schalten.
+[[r2_buckets]]
+binding = "BACKUP"
+bucket_name = "n3-spiele-backup"
+
 [vars]
 GEEKLIST_ID = "387061"
 # Öffentliche Adresse der Seite (für Cover-Vorschaubilder in Discord-Nachrichten).
@@ -40,7 +47,7 @@ DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 # DISCORD_MEMBER_ROLE_ID = "1168456754305179718"   (Mitgliederrolle auf dem N3-Server; ggf. auch in der Verwaltung ändern)
 # Danach in der Verwaltung „Discord-Befehle registrieren“ klicken und den Bot auf den N3-Server einladen.
 
-# Täglich 03:17 UTC: GeekList von BGG lesen und für die Verwaltung zwischenspeichern.
+# Täglich 03:17 UTC: Datenbank in R2 sichern, dann GeekList von BGG lesen und für die Verwaltung zwischenspeichern.
 # Logs im Cloudflare-Dashboard (Workers → n3-spiele → Observability) aufbewahren.
 [observability]
 enabled = true
