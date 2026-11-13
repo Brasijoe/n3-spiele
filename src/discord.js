@@ -3,6 +3,7 @@
 import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
+import { wantedButton, wantedSubmit } from './wanted.js';
 import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
 
 const enc = new TextEncoder();
@@ -317,8 +318,8 @@ export async function handleInteraction(req, env, ctx) {
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
     const cid = String((i.data && i.data.custom_id) || '');
-    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : await button(i, env);
-    if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : await editSubmit(i, env);
+    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env);
+    if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
   return say('Nicht unterstützt.');
 }

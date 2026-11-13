@@ -522,6 +522,11 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <p class="meta" data-t="ptIntro" style="margin:0"></p>
     <div class="pt-how" id="ptHow"></div>
   </section>
+  <section class="panel st-panel" id="wtPanel" aria-labelledby="wtH">
+    <div class="pt-head"><h2 id="wtH" data-t="wtTitle"></h2><button type="button" class="btn btn-outline" id="wtNew" data-t="wtNew"></button></div>
+    <p class="meta" id="wtIntro" style="margin:0"></p>
+    <div class="parties" id="wtList"></div>
+  </section>
   <p class="meta" id="ptState" style="margin:0"></p>
   <h2 class="sec-h" style="font-size:24px" data-t="ptUpcoming"></h2>
   <div class="parties" id="ptUpcoming"></div>
@@ -683,6 +688,21 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div class="acts"><button type="button" class="btn btn-quiet" id="brCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="brSend" data-t="brSend"></button></div>
   </form>
 </dialog>
+<dialog class="info wide" id="wtDlg" aria-labelledby="wtT">
+  <h3 id="wtT" data-t="wtDlgT"></h3>
+  <form class="mg" id="wtForm">
+    <div class="gsel" id="wtSel" hidden><span><strong id="wtSelName"></strong> <span class="meta" id="wtSelMeta"></span></span><button type="button" class="btn btn-quiet" id="wtChange" data-t="change"></button></div>
+    <div id="wtSearchBox" class="gpick">
+      <label class="field"><span data-t="wtGame"></span><input type="search" id="wtQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="wtRes"></label>
+      <ul class="gres" id="wtRes" role="listbox"></ul>
+    </div>
+    <div id="wtHit" hidden><p class="meta" id="wtHitTxt" style="margin:0 0 8px"></p><button type="button" class="btn btn-primary" id="wtHitBtn"></button></div>
+    <label class="field" id="wtNoteWrap"><span data-t="wtNote"></span><textarea id="wtNote" maxlength="300" rows="2"></textarea></label>
+    <div class="auth-box" id="wtAuth" data-authbox></div>
+    <span id="wtMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="wtCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="wtSend" data-t="wtSend"></button></div>
+  </form>
+</dialog>
 <dialog class="info wide" id="myDlg" aria-labelledby="myT">
   <h3 id="myT"></h3>
   <label class="field"><span data-t="search"></span><input type="search" id="myQ" autocomplete="off"></label>
@@ -699,7 +719,13 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { title: 'Unsere Spielesammlung', intro: 'Über 180 Brett- und Kartenspiele warten jeden Dienstag ab 18 Uhr auf euch. Stöbert, filtert und sucht euch schon vorab euer nächstes Abenteuer aus.',
+  de: { wtTitle: 'Hat jemand …?', wtNew: 'Spiel suchen', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet mit „Hab ich“ und kann gleich eine Runde anlegen. Offene Suchen stehen hier {m} Monate.',
+    wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Will ich auch', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
+    wtDlgT: 'Hat jemand dieses Spiel?', wtGame: 'Welches Spiel suchst du?', wtNote: 'Nachricht (optional, z. B. wann es dir passt)', wtSend: 'Im Discord fragen',
+    wtInClub: 'Das Spiel ist in der Club-Sammlung. Biete einfach eine Runde damit an.', wtInMem: '{o} hat das Spiel (Mitglieder besitzen). Frag direkt, ob es mitgebracht wird.', wtAskBring: 'Mitbringen anfragen', wtOffer: 'Runde anbieten',
+    wtDup: 'Dieses Spiel sucht schon jemand. Drück „Will ich auch“, dann bist du bei einer Runde gleich dabei.', wtSent: 'Gefragt ✓ Die Antwort kommt im Bot-Kanal auf Discord.', wtErrOwn: 'Das ist deine eigene Suche.',
+    wtNoteFound: '{o} bringt das Spiel mit (gesucht von {r}).',
+    title: 'Unsere Spielesammlung', intro: 'Über 180 Brett- und Kartenspiele warten jeden Dienstag ab 18 Uhr auf euch. Stöbert, filtert und sucht euch schon vorab euer nächstes Abenteuer aus.',
     prev: 'Vorheriges Spiel', next: 'Nächstes Spiel', viewBgg: 'Auf BGG ansehen', logPlay: 'Partie eintragen',
     search: 'Spiel suchen', searchPh: 'Name, z. B. Azul', sortBy: 'Sortieren nach', reset: 'Filter zurücksetzen', match: 'passen zu deiner Auswahl',
     fltOpen: 'Filter anzeigen', fltClose: 'Filter ausblenden', advOpen: 'Erweiterte Filter', advClose: 'Erweiterte Filter schließen', pModeLabel: 'Spielerzahl gilt …',
@@ -788,7 +814,13 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
+  en: { wtTitle: 'Does anyone have …?', wtNew: 'Look for a game', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers with “Hab ich” and can set up a game right away. Open requests stay here for {m} months.',
+    wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'Me too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
+    wtDlgT: 'Does anyone have this game?', wtGame: 'Which game are you looking for?', wtNote: 'Message (optional, e.g. when you are free)', wtSend: 'Ask on Discord',
+    wtInClub: 'This game is in the club collection. Just offer a game with it.', wtInMem: '{o} owns this game (member games). Ask directly whether it can be brought.', wtAskBring: 'Request to bring', wtOffer: 'Offer a game',
+    wtDup: 'Someone is already looking for this game. Press “Me too” and you will be added when a game is set up.', wtSent: 'Asked ✓ The answer will come in the bot channel on Discord.', wtErrOwn: 'This is your own request.',
+    wtNoteFound: '{o} is bringing the game (wanted by {r}).',
+    title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
     prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
     search: 'Search games', searchPh: 'Name, e.g. Azul', sortBy: 'Sort by', reset: 'Reset filters', match: 'match your selection',
     fltOpen: 'Show filters', fltClose: 'Hide filters', advOpen: 'Advanced filters', advClose: 'Close advanced filters', pModeLabel: 'Player count based on …',
@@ -1897,7 +1929,9 @@ function partyCard(x, past) {
 // Vom Bot angelegte Mitbring-Runden speichern den Hinweis auf Deutsch; auf Englisch übersetzt anzeigen.
 function partyNote(n) {
   const m = !de() && /^(.+) bringt das Spiel mit \(auf Wunsch von (.+)\)\.$/.exec(String(n));
-  return m ? fill(T().ptBringNote, { o: m[1], r: m[2] }) : n;
+  if (m) return fill(T().ptBringNote, { o: m[1], r: m[2] });
+  const w = !de() && /^(.+) bringt das Spiel mit \(gesucht von (.+)\)\.$/.exec(String(n));
+  return w ? fill(T().wtNoteFound, { o: w[1], r: w[2] }) : n;
 }
 // Runde außerhalb der Stammtisch-Tage und ohne Event: nur Mitglieder dürfen mitspielen (Server prüft das auch).
 const membersOnlyJoin = (p) => !!(bk && bk.memberRule) && !p.event && !isStm(String(p.date));
@@ -2305,7 +2339,102 @@ $('bgForm').addEventListener('submit', async (e) => {
     sel.forEach((x) => bgHave.add(x.id)); bgGone = bgGone.filter((x) => !rem.includes(x.id)); renderBgList(); loadMy(); refreshAll();
   } catch (x) { msg.className = 'err'; msg.textContent = mgErr(x); renderBgCount(); }
 });
-['mgDlg', 'brDlg', 'bgDlg'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target === $(id)) $(id).close(); }));
+['mgDlg', 'brDlg', 'bgDlg', 'wtDlg'].forEach((id) => $(id).addEventListener('click', (e) => { if (e.target === $(id)) $(id).close(); }));
+
+/* ---------- „Hat jemand …?“: Spiel im Bot-Kanal suchen (nicht in der Sammlung, nicht bei Mitgliedern) ---------- */
+var wanted = [], wtGame = null, wtResults = [], wtActive = -1, pendingWtDel = null, wtHitAct = null;
+const WT_MONTHS = 3;
+function memFor(gameId, n) { const lc = String(n || '').trim().toLowerCase(); return memGames.find((g) => (gameId ? g.key === 'm' + gameId : g.key === 'm:' + lc)); }
+function wantedFor(gameId, n) { const lc = String(n || '').trim().toLowerCase(); return wanted.find((w) => (gameId ? Number(w.gameId) === Number(gameId) : !w.gameId && String(w.game).toLowerCase() === lc)); }
+function wtCard(w) {
+  const t = T(), own = isMine('wanted', w.id), joined = isMine('wantedJoined', w.id);
+  const th = thumbHtml({ guest: true, gameId: w.gameId }, null, w.game);
+  let actions = '';
+  if (w.url) actions += '<a class="btn btn-primary" href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(t.wtDiscord) + '</a>';
+  if (!own) actions += '<button type="button" class="btn ' + (joined ? 'btn-quiet' : 'btn-outline') + '" data-wtint="' + esc(w.id) + '" data-on="' + (joined ? '0' : '1') + '">' + esc(joined ? t.wtLeave : t.wtJoin) + '</button>';
+  if (own || canEdit) actions += '<button type="button" class="btn ' + (pendingWtDel === w.id ? 'btn-primary' : 'btn-quiet') + '" data-wtdel="' + esc(w.id) + '">' + esc(pendingWtDel === w.id ? t.delConfirm : t.wtDel) + '</button>';
+  return '<article class="party"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.wtBy, { n: w.by })) + '</span><h3>' + esc(w.game) + (w.year ? ' <span class="meta">(' + w.year + ')</span>' : '') + '</h3><span class="meta">' + esc(dmy(String(w.createdAt).slice(0, 10)) + ' · ' + fill(t.wtUntil, { d: dmy(w.expiresAt) })) + '</span></div></div>' +
+    '<div class="body">' + (w.note ? '<span class="meta">' + esc(w.note) + '</span>' : '') +
+    (w.interested.length ? '<div class="who">' + w.interested.map((n) => '<span class="pill">' + esc(n) + '</span>').join('') + '</div>' : '') +
+    (joined ? '<span class="meta">' + esc(t.wtYouIn) + '</span>' : '') + '<div class="actions">' + actions + '</div></div></article>';
+}
+function renderWanted() {
+  const t = T(); if (!$('wtList')) return;
+  $('wtIntro').textContent = fill(t.wtIntro, { m: WT_MONTHS });
+  $('wtList').innerHTML = wanted.length ? wanted.map(wtCard).join('') : '<p class="st-empty">' + esc(t.wtNone) + '</p>';
+}
+$('wtList').addEventListener('click', async (e) => {
+  const t = T(); let b;
+  if ((b = e.target.closest('[data-wtint]'))) {
+    if (!me) { openWanted(); $('wtMsg').className = 'err'; $('wtMsg').textContent = t.errLogin; return; }
+    b.disabled = true;
+    try { await api('POST', '/wanted/' + encodeURIComponent(b.dataset.wtint) + '/interest', { on: b.dataset.on === '1' }); } catch (x) {}
+    refreshAll(); return;
+  }
+  if ((b = e.target.closest('[data-wtdel]'))) {
+    const id = b.dataset.wtdel; if (pendingWtDel !== id) { pendingWtDel = id; renderWanted(); return; }
+    pendingWtDel = null; try { await api('DELETE', '/wanted/' + encodeURIComponent(id)); wanted = wanted.filter((w) => w.id !== id); } catch (x) {} renderWanted(); refreshAll();
+  }
+});
+function renderWtPick() {
+  const t = T(); $('wtSel').hidden = !wtGame; $('wtSearchBox').hidden = !!wtGame;
+  wtHitAct = null; $('wtHit').hidden = true; $('wtNoteWrap').hidden = false; $('wtSend').hidden = false;
+  if (wtGame) {
+    $('wtSelName').textContent = wtGame.n; $('wtSelMeta').textContent = wtGame.gameId ? (wtGame.y ? '(' + wtGame.y + ') · ' : '') + 'BGG #' + wtGame.gameId : '(' + t.gNoBgg + ')';
+    // Schon vorhanden? Dann statt Discord-Frage direkt zum passenden Weg.
+    const club = wtGame.gameId ? byId[wtGame.gameId] : null, mg = club ? null : memFor(wtGame.gameId, wtGame.n), dup = club || mg ? null : wantedFor(wtGame.gameId, wtGame.n);
+    if (club) { $('wtHitTxt').textContent = t.wtInClub; $('wtHitBtn').textContent = t.wtOffer; wtHitAct = () => { $('wtDlg').close(); openParty(); pGame = { n: name(club), gameId: club.id, guest: false, y: club.y }; renderPPick(); }; }
+    else if (mg) { $('wtHitTxt').textContent = fill(t.wtInMem, { o: mg.owners.map((o) => o.name).join(', ') }); $('wtHitBtn').textContent = t.wtAskBring; wtHitAct = () => { $('wtDlg').close(); openBring(mg.key); }; }
+    else if (dup) { $('wtHitTxt').textContent = dup && isMine('wanted', dup.id) ? t.wtErrOwn : t.wtDup; $('wtHitBtn').textContent = t.wtJoin; wtHitAct = isMine('wanted', dup.id) || isMine('wantedJoined', dup.id) ? null : async () => {
+      if (!me) { $('wtMsg').className = 'err'; $('wtMsg').textContent = t.errLogin; return; }
+      try { await api('POST', '/wanted/' + encodeURIComponent(dup.id) + '/interest', { on: true }); $('wtDlg').close(); refreshAll(); } catch (x) { $('wtMsg').className = 'err'; $('wtMsg').textContent = codeErr(x); } }; }
+    if (club || mg || dup) { $('wtHit').hidden = false; $('wtHitBtn').hidden = !wtHitAct; $('wtNoteWrap').hidden = true; $('wtSend').hidden = true; }
+    return;
+  }
+  const q = $('wtQ').value.trim();
+  let html = wtResults.map((r, i) => '<li role="option" id="wtOpt' + i + '" data-i="' + i + '" aria-selected="' + (i === wtActive) + '"><span>' + esc(r.n) + (r.inColl ? ' <span class="src club">' + esc(t.clubTag) + '</span>' : memFor(r.id, r.n) ? ' <span class="src mem">' + esc(t.memTag) + '</span>' : '') + '</span><span class="yr">' + (r.y || '') + '</span></li>').join('');
+  if (q) html += '<li role="option" id="wtOpt' + wtResults.length + '" data-i="' + wtResults.length + '" aria-selected="' + (wtActive === wtResults.length) + '"><span class="meta">' + esc((wtResults.length ? '' : t.gNone + ' ') + fill(t.gUseName, { q })) + '</span></li>';
+  $('wtRes').innerHTML = html; $('wtQ').setAttribute('aria-expanded', String(!!q));
+}
+function wtPick(i) {
+  const q = $('wtQ').value.trim();
+  if (i < wtResults.length) { const r = wtResults[i]; wtGame = { n: r.n, gameId: r.id || null, y: r.y || null }; }
+  else if (q) wtGame = { n: q.slice(0, 120), gameId: null, y: null }; else return;
+  $('wtMsg').textContent = ''; renderWtPick(); if (!$('wtNoteWrap').hidden) $('wtNote').focus();
+}
+$('wtQ').addEventListener('input', () => { wtActive = 0; startLive($('wtQ').value, (r) => { wtResults = r; wtActive = r.length ? Math.max(0, Math.min(wtActive, r.length - 1)) : -1; renderWtPick(); }); });
+$('wtQ').addEventListener('keydown', (e) => {
+  const max = wtResults.length + ($('wtQ').value.trim() ? 1 : 0) - 1;
+  if (e.key === 'ArrowDown') { e.preventDefault(); wtActive = Math.min(max, wtActive + 1); renderWtPick(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); wtActive = Math.max(0, wtActive - 1); renderWtPick(); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (wtActive >= 0) wtPick(wtActive); }
+});
+$('wtRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) wtPick(Number(li.dataset.i)); });
+$('wtChange').onclick = () => { wtGame = null; renderWtPick(); $('wtQ').focus(); };
+$('wtHitBtn').onclick = () => { if (wtHitAct) wtHitAct(); };
+function openWanted() {
+  wtGame = null; wtResults = []; wtActive = -1; $('wtQ').value = ''; $('wtNote').value = '';
+  $('wtMsg').textContent = ''; $('wtMsg').className = ''; $('wtSend').disabled = false;
+  renderWtPick(); renderAuth(); $('wtDlg').showModal(); $('wtQ').focus();
+}
+$('wtNew').onclick = openWanted;
+$('wtCancel').onclick = () => $('wtDlg').close();
+$('wtForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('wtMsg'); msg.className = 'err';
+  if (!me) { msg.textContent = t.errLogin; return; }
+  if (!wtGame) { msg.textContent = t.errPick; $('wtQ').focus(); return; }
+  if (wtHitAct || !$('wtHit').hidden) return;
+  $('wtSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    const r = await api('POST', '/wanted', { game: wtGame.n, gameId: wtGame.gameId, year: wtGame.y, note: $('wtNote').value.trim().slice(0, 300) });
+    wanted = [r].concat(wanted.filter((w) => w.id !== r.id)); if (myIds) { myIds.wanted = myIds.wanted || new Set(); myIds.wanted.add(r.id); } renderWanted();
+    msg.textContent = t.wtSent; setTimeout(() => { if ($('wtDlg').open) $('wtDlg').close(); }, 2500); refreshAll();
+  } catch (x) {
+    msg.className = 'err'; $('wtSend').disabled = false; const c = x && x.code;
+    msg.textContent = c === 'in_club' ? t.wtInClub : c === 'in_members' ? fill(t.wtInMem, { o: '…' }) : c === 'already_wanted' ? t.wtDup : c === 'discord_off' || c === 'discord_error' ? t.brErrOff : codeErr(x);
+    if (c === 'already_wanted' || c === 'in_members') refreshAll();
+  }
+});
 
 /* ---------- Ansichten (Tabs) ---------- */
 const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : 'collection');
@@ -2348,9 +2477,9 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []) }; }
+  try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); authMsg = loginErr(e.code); } }
-  renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid();
+  renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted();
 }
 function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
 function authHtml() {
@@ -2627,6 +2756,7 @@ watch('/plays', (rows) => {
   calcClubTime();
   dbState = 'ready'; renderPlays(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
+watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
 watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);
 watch('/config/gamemeta', (cfg) => {
   metaCfg = cfg && typeof cfg === 'object' ? cfg : {}; applyMeta(); renderGrid(); if (canEdit) renderLangAdmin();

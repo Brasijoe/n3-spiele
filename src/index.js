@@ -2,6 +2,7 @@ import { bggSearch, refreshGeeklist } from './bgg.js';
 import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
+import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds } from './discord.js';
 
@@ -113,6 +114,7 @@ async function route(req, env, ctx, url) {
 
   const ar = await authRoute(req, env, url, path, m, ip, allow); if (ar) return ar;
   if (path.startsWith('/member-games')) { await ensureCols(env); return memberGamesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin, checkEvent }); }
+  if (path.startsWith('/wanted')) { await ensureCols(env); return wantedRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin }); }
   if (path === '/my' && m === 'GET') {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
     if (!req.headers.has('x-session')) return json({ plays: [], parties: [] });
@@ -123,7 +125,8 @@ async function route(req, env, ctx, url) {
     const member = isMember(await getBooking(env), u.member.roles);
     const p3 = await env.DB.prepare('SELECT id, src FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
     const bggUser = p3.results.some((r) => r.src === 'bgg') ? ((await env.DB.prepare('SELECT bgg_user FROM members WHERE discord_id = ?1').bind(u.member.discord_id).first().catch(() => null)) || {}).bgg_user || '' : '';
-    return json({ name: u.member.name, member, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
+    const wd = await myWanted(env, u.member.discord_id);
+    return json({ name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();
@@ -452,6 +455,7 @@ export default {
       try { await refreshGeeklist(env); await syncExtras(env); } catch (e) { console.log('geeklist refresh/sync failed', e.code || e.message); }
       try { await ensureCols(env); const n = await pruneMemberGames(env); if (n) console.log('member games removed', n); } catch (e) { console.log('member games prune failed', e.code || e.message); }
       try { await backfillMemberGames(env); } catch (e) { console.log('member games backfill failed', e.code || e.message); }
+      try { const n = await expireWanted(env); if (n) console.log('wanted expired', n); } catch (e) { console.log('wanted expire failed', e.code || e.message); }
     })());
   },
 };

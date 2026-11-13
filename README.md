@@ -37,6 +37,7 @@ UI labels in quotes below are the German texts shown on the page (the admin view
 - **Event codes:** let anyone offer rounds on event days without Discord (see section 9).
 - **Logging via QR code:** for people without Discord (see section 9).
 - **Member-owned games ("Mitglieder besitzen"):** a second tab next to the collection where members list their own games and others can ask them to bring one (see section 9).
+- **"Does anyone have …?" ("Hat jemand …?"):** on the "Mitspieler finden" tab, signed-in users look for a game that is neither in the collection nor owned by a member; the bot asks in the bot channel (see section 9).
 - **Discord link:** a Discord icon next to the language switch. Signed-in users get a direct link to the bot channel, everyone else the invite link (`DISCORD_URL`).
 - **Languages:** German and English (`?lang=de|en`, switch in the header). Discord bot texts are German only.
 
@@ -51,6 +52,7 @@ src/auth.js        "Mit Discord anmelden" (OAuth), sessions, access check via th
 src/discord.js     Discord bot (/party, /log, /code, buttons, modals), round message sync, DB migrations (ensureCols)
 src/booking.js     Stammtisch-day rule, member check, intro rule
 src/membergames.js member-owned games, BGG collection import, bring requests
+src/wanted.js     "Hat jemand …?" game requests in the bot channel
 src/games.js       GeekList games missing from the page (extra_games), cover proxy
 src/bgg.js         BGG XML API: search, GeekList, collection (token only here)
 schema.sql         base tables (the Worker adds the rest itself)
@@ -185,6 +187,13 @@ Link at the bottom right of the page, login with the admin password.
 - The nightly job removes games of owners who left the server or lost the member role (and cancels their open requests). Missing BGG details are backfilled every 20 minutes.
 - Test: `test/member-games.mjs` (instructions at the top of the file).
 
+### "Does anyone have …?" ("Hat jemand …?")
+
+- On "Mitspieler finden", "Spiel suchen" opens a BGG search. If the game is in the club collection, the dialog offers "Runde anbieten"; if a member owns it, it offers the bring request; if someone already looks for it, it offers "Will ich auch" (me too). Otherwise "Im Discord fragen" posts in the first bot channel (server checks the same, `in_club` / `in_members` / `already_wanted`).
+- Bot buttons: **"Hab ich: Runde anlegen"** (date, time, seats, note; creates a round with the requester and everyone who pressed "Will auch mitspielen" as far as seats and day rules allow), **"Hab ich (Termin später)"** (closes the request and offers direct-message buttons), **"Will auch mitspielen"** (toggle, also on the web), **"Zurückziehen"** (requester only; admins can withdraw on the web).
+- Day rules as for `/party`: a host without the member role needs a Stammtisch day and a short intro; if the requester has no member role, only Stammtisch days work. Interested non-members are not added on other days but are mentioned.
+- Open requests are listed on the web page for 3 months, then the nightly run marks them expired and strikes through the Discord message. Limits: 3 requests per day per person, 20 per day in total, max 20 interested per request.
+
 ## 10. BoardGameGeek
 
 - **Token:** BGG XML API application token from https://boardgamegeek.com/applications, stored only as the secret `BGG_TOKEN`. If a token was ever posted in a chat, regenerate it.
@@ -227,6 +236,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 | `test/booking.mjs` | Stammtisch-day rule, intro note |
 | `test/join-rules.mjs` | who may join which round |
 | `test/member-games.mjs` | member games, BGG import, bring requests |
+| `test/wanted.mjs` | "Hat jemand …?" requests (same setup as `test/member-games.mjs`) |
 | `test/qr-log.cjs` | logging via QR key |
 | `test/member-code.mjs` | `/code` personal codes |
 | `test/discord-e2e.mjs`, `test/discord-sync.mjs` | bot commands and message sync |
@@ -236,7 +246,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 
 ## 14. Data model
 
-D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` = web/discord/qr), `parties` (rounds; `attendees` JSON, `host_discord`, Discord message ids, `event_id`/`event_name`, `bring_id`, `play_id` once logged), `config` (`highlights`, `gamemeta`, `owners`, `booking`, `log_key`, `geeklist`), `rate`, `members`, `sessions`, `auth_handoff`, `events`, `member_games`, `bring_requests`, `extra_games`. Details and the shape of the built-in game data are in [`docs/HANDOVER.md`](docs/HANDOVER.md) section 3.
+D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` = web/discord/qr), `parties` (rounds; `attendees` JSON, `host_discord`, Discord message ids, `event_id`/`event_name`, `bring_id`, `play_id` once logged), `config` (`highlights`, `gamemeta`, `owners`, `booking`, `log_key`, `geeklist`), `rate`, `members`, `sessions`, `auth_handoff`, `events`, `member_games`, `bring_requests`, `wanted` ("Hat jemand …?"; `interested` JSON, `status` open/found/withdrawn/expired, `expires_at`), `extra_games`. Details and the shape of the built-in game data are in [`docs/HANDOVER.md`](docs/HANDOVER.md) section 3.
 
 ## 15. Go-live on the real N3 Discord server
 
