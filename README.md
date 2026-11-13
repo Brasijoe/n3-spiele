@@ -211,6 +211,7 @@ Link at the bottom right of the page, login with the admin password.
 - **Backup:** `npx wrangler d1 export n3-spiele --remote --output backup.sql`. D1 Time Travel can also restore the database to a point in time (`npx wrangler d1 time-travel restore n3-spiele --timestamp=…`). Never put backup files in this public repo; they contain private data.
 - **Swap tokens:** `npx wrangler secret put BGG_TOKEN` (or `ADMIN_TOKEN`, `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_SECRET`), no new deployment needed.
 - **Logs:** `npx wrangler tail`, or Cloudflare dashboard → Workers → n3-spiele → Observability.
+- **Failed deploy:** if a Cloudflare build fails with an API error (e.g. `code: 10013` or "internal error") the code is fine; check cloudflarestatus.com and use "Retry build" later. During such outages newer pushes may not start a build at all; the next push to `main` or `npx wrangler deploy` from a local clone deploys the latest version.
 
 ## 12. Security and privacy
 
