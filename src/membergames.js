@@ -205,7 +205,8 @@ export const ownersOf = (r) => { try { const o = JSON.parse(r.owners || 'null');
 const declinedOf = (r) => { try { return JSON.parse(r.declined || '[]'); } catch { return []; } };
 const stillAsked = (r) => { const no = declinedOf(r); return ownersOf(r).filter((o) => !no.includes(o.id)); };
 export function requestMessage(r, env) {
-  const dates = JSON.parse(r.dates), all = ownersOf(r), asked = stillAsked(r), no = all.filter((o) => !asked.includes(o));
+  // Abgelehnt = Besitzer-ID in declined (Vergleich über die ID; ownersOf liefert bei jedem Aufruf neue Objekte).
+  const dates = JSON.parse(r.dates), all = ownersOf(r), asked = stillAsked(r), noIds = declinedOf(r), no = all.filter((o) => noIds.includes(o.id));
   const fields = [{ name: '📅 Vorgeschlagene Termine', value: dates.map(dayTxt).join('\n') }];
   if (r.note) fields.push({ name: '💬 Nachricht', value: r.note.slice(0, 300) });
   if (no.length) fields.push({ name: '🚫 Kann nicht', value: no.map((o) => o.name).join(', ').slice(0, 300) });
