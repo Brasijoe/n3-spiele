@@ -4,15 +4,15 @@
 :root {
   --bg: #e5e5e5; --surface: #ffffff; --surface-2: #f4f4f4; --cover: #efefef; --fg: #1b1b1b; --text: #3a3a3a; --muted: #5c5c5c;
   --line: #d9d9d9; --line-strong: #a8a8a8; --band: #262626; --band-fg: #ffffff; --band-muted: #d6d6d6;
-  --accent: #f09b19; --accent-2: #f0b418; --on-accent: #1b1b1b; --error: #a1260d; --slide-bg: #1f1f1f; --club: #2c6aa0; --guest: #c67c00; --guest-soft: #fdecd0; --guest-ink: #7a4a00; --mem: #7b5cc4; --mem-soft: #ece6fa; --mem-ink: #46307f;
+  --accent: #f09b19; --accent-2: #f0b418; --on-accent: #1b1b1b; --error: #a1260d; --slide-bg: #1f1f1f; --club: #2c6aa0; --guest: #c67c00; --guest-soft: #fdecd0; --guest-ink: #7a4a00; --mem: #7b5cc4; --mem-soft: #ece6fa; --mem-ink: #46307f; --on-mem: #ffffff;
   --font-display: "Rubik", "Segoe UI", system-ui, sans-serif; --font-body: "Karla", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #141414; --surface: #1f1f1f; --surface-2: #262626; --cover: #2a2a2a; --fg: #f2f2f2; --text: #d9d9d9; --muted: #a8a8a8;
-  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --mem: #9b80e0; --mem-soft: #2c2440; --mem-ink: #d7cbf7; --guest-ink: #f5c77a; color-scheme: dark } }
+  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --mem: #9b80e0; --mem-soft: #2c2440; --mem-ink: #d7cbf7; --on-mem: #1b1b1b; --guest-ink: #f5c77a; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #141414; --surface: #1f1f1f; --surface-2: #262626; --cover: #2a2a2a; --fg: #f2f2f2; --text: #d9d9d9; --muted: #a8a8a8;
-  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --mem: #9b80e0; --mem-soft: #2c2440; --mem-ink: #d7cbf7; --guest-ink: #f5c77a; color-scheme: dark }
+  --line: #333333; --line-strong: #5a5a5a; --band: #0d0d0d; --band-fg: #ffffff; --band-muted: #c9c9c9; --error: #ff8a70; --slide-bg: #0d0d0d; --club: #4a86c0; --guest: #c47d0c; --guest-soft: #3a2a10; --mem: #9b80e0; --mem-soft: #2c2440; --mem-ink: #d7cbf7; --on-mem: #1b1b1b; --guest-ink: #f5c77a; color-scheme: dark }
 body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
 h1, h2, h3 { font-family: var(--font-display); color: var(--fg); text-wrap: balance; margin: 0; }
 a { color: inherit; }
@@ -302,6 +302,24 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .field textarea { min-height: 76px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font: inherit; font-weight: 400; font-size: 15px; resize: vertical; }
 .pt-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
 .parties { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.subtabs { display: flex; gap: 4px 8px; flex-wrap: wrap; border-bottom: 2px solid var(--line); }
+.subtabs a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px; font-weight: 700; color: var(--muted); text-decoration: none; border-bottom: 4px solid transparent; margin-bottom: -2px; }
+.subtabs a:hover { color: var(--fg); }
+.subtabs a[aria-current="page"] { color: var(--fg); }
+.subtabs a.o[aria-current="page"] { border-color: var(--accent); } .subtabs a.p[aria-current="page"] { border-color: var(--mem); }
+.cnt { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
+.cnt:empty { display: none; }
+.cnt.o { background: var(--accent); color: var(--on-accent); } .cnt.p { background: var(--mem); color: var(--on-mem); }
+.sub-page { display: flex; flex-direction: column; gap: 20px; }
+.sub-page[hidden] { display: none; }
+.sub-page > .sec-h { font-size: 24px; margin: 8px 0 0; }
+.acc-o { border-top: 4px solid var(--accent); } .acc-p { border-top: 4px solid var(--mem); }
+.parties.rounds .party { box-shadow: inset 4px 0 0 var(--accent); }
+.parties.wants .party { box-shadow: inset 4px 0 0 var(--mem); }
+.btn-mem, .parties.wants .btn-primary { background: var(--mem); border-color: var(--mem); color: var(--on-mem); }
+.src.wt { background: var(--mem-soft); color: var(--mem-ink); }
+.src.wt::before { background: var(--mem); }
+@media (max-width: 520px) { .subtabs a { padding: 8px 10px; font-size: 15px; } }
 .party { background: var(--surface); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
 .party .top { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; padding: 16px; }
 .party .th { width: 72px; height: 72px; border-radius: 6px; background: var(--cover); object-fit: contain; display: flex; align-items: center; justify-content: center; font: 700 26px var(--font-display); color: var(--muted); }
@@ -315,6 +333,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .who .pill.host { font-weight: 700; }
 .party .actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
 .party .actions .btn { flex: 1 1 auto; min-height: 40px; font-size: 13px; padding: 0 12px; }
+.party .actions .btn-primary:first-child { flex-basis: 100%; }
 .join { display: flex; gap: 8px; flex-wrap: wrap; }
 .join input { flex: 1 1 140px; height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font-size: 15px; }
 .party.past { opacity: .92; }
@@ -349,7 +368,6 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <nav class="tabs" id="tabs" aria-label="Bereiche">
         <a href="#" data-view="collection" data-t="tabCollection"></a>
         <a href="#partys" data-view="parties" data-t="tabParties"></a>
-        <a href="#suche" data-view="wanted" data-t="tabWanted"></a>
         <a href="#statistik" data-view="stats" data-t="tabStats"></a>
       </nav>
       <div style="display:flex;align-items:center;gap:8px">
@@ -525,24 +543,31 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 </main>
 
 <main class="wrap" id="viewParties" hidden>
-  <section class="panel st-panel">
-    <div class="pt-head"><h2 data-t="ptTitle"></h2><button type="button" class="btn btn-primary" id="ptNew" data-t="ptNew"></button></div>
-    <p class="meta" data-t="ptIntro" style="margin:0"></p>
-    <div class="pt-how" id="ptHow"></div>
-  </section>
-  <p class="meta" id="ptState" style="margin:0"></p>
-  <h2 class="sec-h" style="font-size:24px" data-t="ptUpcoming"></h2>
-  <div class="parties" id="ptUpcoming"></div>
-  <h2 class="sec-h" style="font-size:24px" id="ptPastH" data-t="ptPast"></h2>
-  <div class="parties" id="ptPast"></div>
-</main>
-
-<main class="wrap" id="viewWanted" hidden>
-  <section class="panel st-panel" id="wtPanel" aria-labelledby="wtH">
-    <div class="pt-head"><h2 id="wtH" data-t="wtTitle"></h2><button type="button" class="btn btn-outline" id="wtNew" data-t="wtNew"></button></div>
-    <p class="meta" id="wtIntro" style="margin:0"></p>
-    <div class="parties" id="wtList"></div>
-  </section>
+  <!-- Unterseiten: Runden (orange) und "Hat jemand …?" (lila), umschaltbar per #partys / #suche. -->
+  <nav class="subtabs" id="ptSub" aria-label="Mitspieler-/Spielesuche">
+    <a href="#partys" class="o" data-sub="rounds"><span data-t="subRounds"></span> <span class="cnt o" id="cntRounds"></span></a>
+    <a href="#suche" class="p" data-sub="wanted"><span data-t="wtTitle"></span> <span class="cnt p" id="cntWanted"></span></a>
+  </nav>
+  <div class="sub-page" id="subRounds">
+    <section class="panel st-panel acc-o">
+      <div class="pt-head"><h2 data-t="ptTitle"></h2><button type="button" class="btn btn-primary" id="ptNew" data-t="ptNew"></button></div>
+      <p class="meta" data-t="ptIntro" style="margin:0"></p>
+      <div class="pt-how" id="ptHow"></div>
+    </section>
+    <p class="meta" id="ptState" style="margin:0"></p>
+    <h2 class="sec-h" data-t="ptUpcoming"></h2>
+    <div class="parties rounds" id="ptUpcoming"></div>
+    <h2 class="sec-h" id="ptPastH" data-t="ptPast"></h2>
+    <div class="parties rounds" id="ptPast"></div>
+  </div>
+  <div class="sub-page" id="subWanted" hidden>
+    <section class="panel st-panel acc-p" id="wtPanel" aria-labelledby="wtH">
+      <div class="pt-head"><h2 id="wtH" data-t="wtTitle"></h2><button type="button" class="btn btn-mem" id="wtNew" data-t="wtNew"></button></div>
+      <p class="meta" id="wtIntro" style="margin:0"></p>
+    </section>
+    <h2 class="sec-h" data-t="wtOpen"></h2>
+    <div class="parties wants" id="wtList"></div>
+  </div>
 </main>
 
 <main class="wrap" id="viewStats" hidden>
@@ -753,8 +778,8 @@ const TXT = {
     whRoundTxt: 'Die Runde wird sofort angelegt und im Bot-Kanal angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Bot-Kanal auf Discord Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
     whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
-    wtTitle: 'Hat jemand …?', wtNew: 'Neue Suche', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
-    wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Ich will auch mitspielen', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
+    wtTitle: 'Hat jemand …?', subRounds: 'Runden', wtOpen: 'Offene Suchen', wtSince: 'Gesucht seit {d}', wtTag: 'Gesucht', wtSeeks: 'sucht', wtN1: '1 will mitspielen', wtNn: '{n} wollen mitspielen', wtN0: 'Noch niemand dabei', wtNew: 'Neue Suche', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
+    wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'Offen bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Ich will auch mitspielen', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
     wtDlgT: 'Hat jemand dieses Spiel?', wtGame: 'Welches Spiel suchst du?', wtNote: 'Nachricht (optional, z. B. wann es dir passt)', wtSend: 'Im Discord fragen',
     wtInClub: 'Das Spiel ist in der Club-Sammlung. Biete einfach eine Runde damit an.', wtInMem: '{o} hat das Spiel (Mitglieder besitzen). Frag direkt, ob es mitgebracht wird.', wtAskBring: 'Mitbringen anfragen', wtOffer: 'Runde anbieten',
     wtDup: 'Dieses Spiel sucht schon jemand. Drück „Ich will auch mitspielen“, dann bist du bei einer Runde gleich dabei.', wtSent: 'Gefragt ✓ Die Antwort kommt im Bot-Kanal auf Discord.', wtErrOwn: 'Das ist deine eigene Suche.',
@@ -822,7 +847,7 @@ const TXT = {
     bgSync: 'Abgleichen: {n} neu, {r} entfernen', bgSyncDone: '{n} Spiele übernommen, {r} entfernt ✓',
     bgImport: '{n} Spiele übernehmen', bgDone: '{n} Spiele übernommen ✓', bgEmpty: 'In dieser Sammlung ist kein Spiel als „besitze ich“ markiert.', bgNoUser: 'Diesen BGG-Benutzernamen gibt es nicht.', bgBusy: 'BGG bereitet die Sammlung gerade vor. Bitte in einer Minute noch einmal laden.', bgErr: 'BGG ist gerade nicht erreichbar.',
     brIntroMulti: 'Das Spiel haben mehrere Mitglieder: {o}. Wir fragen alle gleichzeitig im Bot-Kanal auf Discord. Wer zuerst einen Termin annimmt, bringt es mit, danach ist die Anfrage geschlossen. Es wird automatisch eine Spielrunde angelegt, in der ihr beide schon eingetragen seid.', brDates: 'Terminvorschläge (bis zu 3)', brDatesNote: 'Der erste Termin ist Pflicht, die anderen sind optional.', brNote: 'Nachricht (optional)', brSend: 'Anfrage senden',
-    brSent: 'Anfrage gesendet ✓ Die Antwort kommt im Bot-Kanal auf Discord.', brErrDates: 'Bitte mindestens einen Termin ab heute wählen.', brErrDup: 'Du hast dieses Spiel schon angefragt. Warte bitte auf die Antwort in Discord.', brErrOff: 'Der Discord-Bot ist gerade nicht erreichbar.', brErrGone: 'Dieses Mitglied ist nicht mehr auf dem Server, das Spiel wurde entfernt.', tabParties: 'Mitspieler finden', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
+    brSent: 'Anfrage gesendet ✓ Die Antwort kommt im Bot-Kanal auf Discord.', brErrDates: 'Bitte mindestens einen Termin ab heute wählen.', brErrDup: 'Du hast dieses Spiel schon angefragt. Warte bitte auf die Antwort in Discord.', brErrOff: 'Der Discord-Bot ist gerade nicht erreichbar.', brErrGone: 'Dieses Mitglied ist nicht mehr auf dem Server, das Spiel wurde entfernt.', tabParties: 'Mitspieler-/Spielesuche', ptTitle: 'Mitspieler finden', ptNew: 'Runde anbieten', ptCreate: 'Runde anlegen',
     ptHowSum: 'Wer darf wann eine Runde anbieten oder mitspielen? So richtest du Discord ein', ptHowT: 'Wer kann wann eine Runde anbieten?', ptHowJoinT: 'Wer kann wann mitspielen?', ptHowJoinAll: 'An Stammtisch-Tagen und bei Event-Runden alle.', ptHowJoinMem: 'An anderen Tagen nur Mitglieder (mit der Mitgliederrolle). Melde dich dafür vor dem Eintragen mit Discord an.', ptMemOnly: 'Nur Mitglieder', ptErrJoinLogin: 'Diese Runde ist nicht an einem Stammtisch-Tag, da können nur Mitglieder mitspielen. Bist du Mitglied, melde dich zuerst an (unter „Runde anbieten“ → „Mit Discord anmelden“).', ptErrJoinMember: 'Diese Runde ist nicht an einem Stammtisch-Tag, da können nur Mitglieder (mit der Mitgliederrolle) mitspielen. Du kannst an Stammtisch-Tagen ({r}) und bei Event-Runden mitspielen.', ptHowMember: 'Mitglieder (mit der Mitgliederrolle auf unserem Discord) an jedem Tag.', ptHowAll: 'Alle anderen an unseren Stammtisch-Tagen: {r} (nächste Termine: {n}). Dabei stellst du dich im Hinweis kurz vor, damit die anderen wissen, mit wem sie spielen.', ptHowEv: 'Mit einem Event-Code vom Orga-Team an den Eventtagen, auch ohne Discord.', ptHowDcT: 'So richtest du Discord ein', ptHowDc1: 'Tritt unserem Discord-Server bei (Button unten) und lies die Regeln.', ptHowDc2: 'Hol dir dort die Brettspiel-Rolle, damit du den Brettspiel-Kanal siehst. Ohne diese Rolle klappt die Anmeldung hier nicht.', ptHowDc3: 'Klicke hier auf „Runde anbieten“ und dann auf „Mit Discord anmelden“. Geht das in deinem Browser nicht, tippe im Brettspiel-Kanal /code und gib den Code hier einmal ein.', ptHowDc4: 'Du kannst Runden auch direkt in Discord mit /party anbieten. Mitspielende tragen sich dort per Klick ein.', ptHowJoin: 'Zum N3-Discord', ptHowNoMember: 'Ohne Mitgliederrolle sind auf dieser Seite nur Stammtisch-Tage wählbar.',
     wdLong: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], wdMin: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], nthTxt: { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' }, ruleEvery: 'jeden {d}', ruleNth: 'am {n} {d} im Monat', ruleNone: 'nach Ankündigung',
     calPrev: 'Vorheriger Monat', calNext: 'Nächster Monat', calStm: 'Umrandet = Stammtisch.', calNonMember: 'Ohne Mitgliederrolle nur an Stammtisch-Tagen (die anderen Tage sind gesperrt).', calGuest: 'Gesperrte Tage sind nur für Mitglieder. Mitglied? Bitte zuerst anmelden.', calPicked: 'Gewählt: {d}',
@@ -852,8 +877,8 @@ const TXT = {
     whRoundTxt: 'The game is created right away and announced in the bot channel. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the bot channel on Discord that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
     whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
-    wtTitle: 'Does anyone have …?', wtNew: 'New request', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
-    wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'I want to play too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
+    wtTitle: 'Does anyone have …?', subRounds: 'Games', wtOpen: 'Open requests', wtSince: 'Wanted since {d}', wtTag: 'Wanted', wtSeeks: 'looking', wtN1: '1 wants to play', wtNn: '{n} want to play', wtN0: 'Nobody yet', wtNew: 'New request', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
+    wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'Open until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'I want to play too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
     wtDlgT: 'Does anyone have this game?', wtGame: 'Which game are you looking for?', wtNote: 'Message (optional, e.g. when you are free)', wtSend: 'Ask on Discord',
     wtInClub: 'This game is in the club collection. Just offer a game with it.', wtInMem: '{o} owns this game (member games). Ask directly whether it can be brought.', wtAskBring: 'Request to bring', wtOffer: 'Offer a game',
     wtDup: 'Someone is already looking for this game. Press “I want to play too” and you will be added when a game is set up.', wtSent: 'Asked ✓ The answer will come in the bot channel on Discord.', wtErrOwn: 'This is your own request.',
@@ -921,7 +946,7 @@ const TXT = {
     bgSync: 'Sync: {n} new, {r} to remove', bgSyncDone: '{n} games imported, {r} removed ✓',
     bgImport: 'Import {n} games', bgDone: '{n} games imported ✓', bgEmpty: 'No game in this collection is marked as owned.', bgNoUser: 'This BGG username doesn’t exist.', bgBusy: 'BGG is preparing the collection. Please load again in a minute.', bgErr: 'BGG is not reachable right now.',
     brIntroMulti: 'Several members own this game: {o}. We ask all of them at once in the bot channel on Discord. Whoever accepts a date first brings it, then the request is closed. A game round is created automatically with both of you already signed up.', brDates: 'Suggested dates (up to 3)', brDatesNote: 'The first date is required, the others are optional.', brNote: 'Message (optional)', brSend: 'Send request',
-    brSent: 'Request sent ✓ The answer will come in the bot channel on Discord.', brErrDates: 'Please pick at least one date from today on.', brErrDup: 'You have already asked for this game. Please wait for the answer on Discord.', brErrOff: 'The Discord bot is not reachable right now.', brErrGone: 'This member is no longer on the server, the game has been removed.', tabParties: 'Find players', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
+    brSent: 'Request sent ✓ The answer will come in the bot channel on Discord.', brErrDates: 'Please pick at least one date from today on.', brErrDup: 'You have already asked for this game. Please wait for the answer on Discord.', brErrOff: 'The Discord bot is not reachable right now.', brErrGone: 'This member is no longer on the server, the game has been removed.', tabParties: 'Find players / games', ptTitle: 'Find players', ptNew: 'Offer a game', ptCreate: 'Create game',
     ptHowSum: 'Who can offer or join a game, and when? Setting up Discord', ptHowT: 'Who can offer a game, and when?', ptHowJoinT: 'Who can join, and when?', ptHowJoinAll: 'On regular game nights and at event games: everyone.', ptHowJoinMem: 'On other days: members only (with the member role). Sign in with Discord before joining.', ptMemOnly: 'Members only', ptErrJoinLogin: 'This game is not on a regular game night, so only members can join. If you are a member, sign in first (“Offer a game” → “Sign in with Discord”).', ptErrJoinMember: 'This game is not on a regular game night, so only members (with the member role) can join. You can join on game nights ({r}) and at event games.', ptHowMember: 'Members (with the member role on our Discord) on any day.', ptHowAll: 'Everyone else on our regular game nights: {r} (next dates: {n}). Please introduce yourself briefly in the note so the others know who they’ll be playing with.', ptHowEv: 'With an event code from the organisers on the event days, even without Discord.', ptHowDcT: 'How to set up Discord', ptHowDc1: 'Join our Discord server (button below) and read the rules.', ptHowDc2: 'Pick up the board game role there so you can see the board game channel. Without it, signing in here won’t work.', ptHowDc3: 'Click “Offer a game” here and then “Sign in with Discord”. If that doesn’t work in your browser, type /code in the board game channel and enter the code here once.', ptHowDc4: 'You can also offer games directly in Discord with /party. Players join there with one click.', ptHowJoin: 'Go to the N3 Discord', ptHowNoMember: 'Without the member role only regular game nights can be picked on this page.',
     wdLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], wdMin: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], nthTxt: { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' }, ruleEvery: 'every {d}', ruleNth: 'the {n} {d} of the month', ruleNone: 'as announced',
     calPrev: 'Previous month', calNext: 'Next month', calStm: 'Outlined = game night.', calNonMember: 'Without the member role only on game nights (other days are locked).', calGuest: 'Locked days are for members only. Member? Please sign in first.', calPicked: 'Picked: {d}',
@@ -1983,6 +2008,7 @@ function renderParties() {
   const past = parties.filter((x) => String(x.p.date) < td && String(x.p.date) >= lim);
   $('ptUpcoming').innerHTML = up.length ? up.map((x) => partyCard(x, false)).join('') : partyState === 'ready' ? '<p class="st-empty">' + esc(t.ptNone) + '</p>' : '';
   $('ptPast').innerHTML = past.map((x) => partyCard(x, true)).join('');
+  $('cntRounds').textContent = partyState === 'ready' ? String(up.length) : '';
   $('ptPastH').hidden = !past.length;
 }
 $('viewParties').addEventListener('click', async (e) => {
@@ -2386,23 +2412,25 @@ function memFor(gameId, n) { const lc = String(n || '').trim().toLowerCase(); re
 function wantedFor(gameId, n) { const lc = String(n || '').trim().toLowerCase(); return wanted.find((w) => (gameId ? Number(w.gameId) === Number(gameId) : !w.gameId && String(w.game).toLowerCase() === lc)); }
 function wtCard(w) {
   const t = T(), own = isMine('wanted', w.id), joined = isMine('wantedJoined', w.id);
-  const th = thumbHtml({ guest: true, gameId: w.gameId }, null, w.game);
-  // Wie in Discord: Hab ich (mit/ohne Runde), Will ich auch, Zurückziehen. Antworten geht nur mit Discord-Anmeldung.
+  const th = thumbHtml({ guest: true, gameId: w.gameId }, null, w.game), n = w.interested.length;
+  // Gleicher Aufbau wie die Runden-Karten: Kopfzeile, Spiel, Label; Zeile mit Stand; Personen; Notiz; Buttons.
+  // Antworten geht nur mit Discord-Anmeldung (wie in Discord: Hab ich mit/ohne Runde, Will ich auch, Zurückziehen).
   let actions = '';
   if (!own) actions += '<button type="button" class="btn btn-primary" data-wh="round" data-id="' + esc(w.id) + '">' + esc(t.whRound) + '</button>' +
-    '<button type="button" class="btn btn-outline" data-wh="later" data-id="' + esc(w.id) + '">' + esc(t.whLater) + '</button>' +
-    (joined ? '<button type="button" class="btn btn-quiet" data-wtint="' + esc(w.id) + '" data-on="0">' + esc(t.wtLeave) + '</button>' : '<button type="button" class="btn btn-outline" data-wh="interest" data-id="' + esc(w.id) + '">' + esc(t.wtJoin) + '</button>');
+    '<button type="button" class="btn btn-quiet" data-wh="later" data-id="' + esc(w.id) + '">' + esc(t.whLater) + '</button>' +
+    (joined ? '<button type="button" class="btn btn-quiet" data-wtint="' + esc(w.id) + '" data-on="0">' + esc(t.wtLeave) + '</button>' : '<button type="button" class="btn btn-quiet" data-wh="interest" data-id="' + esc(w.id) + '">' + esc(t.wtJoin) + '</button>');
   if (own || canEdit) actions += '<button type="button" class="btn ' + (pendingWtDel === w.id ? 'btn-primary' : 'btn-quiet') + '" data-wtdel="' + esc(w.id) + '">' + esc(pendingWtDel === w.id ? t.delConfirm : t.wtDel) + '</button>';
   if (w.url) actions += '<a class="btn btn-quiet" href="' + esc(w.url) + '" target="_blank" rel="noopener">' + esc(t.wtSeeDc) + '</a>';
-  return '<article class="party"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.wtBy, { n: w.by })) + '</span><h3>' + esc(w.game) + (w.year ? ' <span class="meta">(' + w.year + ')</span>' : '') + '</h3><span class="meta">' + esc(dmy(String(w.createdAt).slice(0, 10)) + ' · ' + fill(t.wtUntil, { d: dmy(w.expiresAt) })) + '</span></div></div>' +
-    '<div class="body">' + (w.note ? '<span class="meta">' + esc(w.note) + '</span>' : '') +
-    (w.interested.length ? '<div class="who">' + w.interested.map((n) => '<span class="pill">' + esc(n) + '</span>').join('') + '</div>' : '') +
-    (joined ? '<span class="meta">' + esc(t.wtYouIn) + '</span>' : '') + '<div class="actions">' + actions + '</div></div></article>';
+  return '<article class="party"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.wtSince, { d: ((d) => (d === t.ptToday ? d.toLowerCase() : d))(dayLabel(String(w.createdAt).slice(0, 10))) })) + '</span><h3>' + esc(w.game) + (w.year ? ' <span class="meta">(' + w.year + ')</span>' : '') + '</h3><span class="src wt">' + esc(t.wtTag) + '</span></div></div>' +
+    '<div class="body"><div class="seats"><span class="meta">' + esc(fill(t.wtUntil, { d: dmy(w.expiresAt) }) + ' · ' + (n === 1 ? t.wtN1 : n ? fill(t.wtNn, { n }) : t.wtN0)) + '</span></div>' +
+    '<div class="who"><span class="pill host">' + esc(w.by) + ' · ' + esc(t.wtSeeks) + '</span>' + w.interested.map((x) => '<span class="pill">' + esc(x) + '</span>').join('') + '</div>' +
+    (w.note ? '<span class="meta">' + esc(w.note) + '</span>' : '') + '<div class="actions">' + actions + '</div></div></article>';
 }
 function renderWanted() {
   const t = T(); if (!$('wtList')) return;
   $('wtIntro').textContent = fill(t.wtIntro, { m: WT_MONTHS });
   $('wtList').innerHTML = wanted.length ? wanted.map(wtCard).join('') : '<p class="st-empty">' + esc(t.wtNone) + '</p>';
+  $('cntWanted').textContent = String(wanted.length);
   if ($('whDlg').open && whId) renderWh();
 }
 $('wtList').addEventListener('click', async (e) => {
@@ -2516,17 +2544,25 @@ $('whForm').addEventListener('submit', async (e) => {
   }
 });
 /* ---------- Ansichten (Tabs) ---------- */
-const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : 'collection');
+const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties|suche|wanted)$/i.test(location.hash) ? 'parties' : 'collection');
 function renderView() {
   const v = currentView();
-  $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties'; $('viewWanted').hidden = v !== 'wanted';
+  $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties';
+  const sub = /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : 'rounds';
+  $('subRounds').hidden = sub !== 'rounds'; $('subWanted').hidden = sub !== 'wanted';
+  document.querySelectorAll('#ptSub a').forEach((a) => { if (a.dataset.sub === sub) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   document.querySelectorAll('#tabs a').forEach((a) => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 }
 $('tabs').addEventListener('click', (e) => {
   const a = e.target.closest('a[data-view]'); if (!a) return; e.preventDefault();
-  const hs = { stats: '#statistik', parties: '#partys', wanted: '#suche' }[a.dataset.view] || '';
+  const hs = { stats: '#statistik', parties: '#partys' }[a.dataset.view] || '';
   try { history.replaceState(null, '', hs || location.pathname + location.search); } catch (x) { location.hash = hs.slice(1); }
-  renderView(); if (a.dataset.view === 'stats') renderStats(); else if (a.dataset.view === 'parties') renderParties(); else if (a.dataset.view === 'wanted') renderWanted(); else renderSlider(); window.scrollTo(0, 0);
+  renderView(); if (a.dataset.view === 'stats') renderStats(); else if (a.dataset.view === 'parties') { renderParties(); renderWanted(); } else renderSlider(); window.scrollTo(0, 0);
+});
+$('ptSub').addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-sub]'); if (!a) return; e.preventDefault();
+  try { history.replaceState(null, '', a.getAttribute('href')); } catch (x) { location.hash = a.getAttribute('href').slice(1); }
+  renderView(); if (a.dataset.sub === 'wanted') renderWanted(); else renderParties();
 });
 window.addEventListener('hashchange', () => { renderView(); renderSlider(); });
 

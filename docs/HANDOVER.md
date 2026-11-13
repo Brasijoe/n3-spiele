@@ -90,7 +90,7 @@ Key design choices worth keeping:
 | `events` | Event codes | `name`, `code`, `valid_until`, `date_from`, `date_to`. |
 | `member_games` | Games owned by members | `discord_id`, `game_id`, `data` (BGG details JSON, may be null until backfilled), `consent_at`, `src` (`bgg` = imported, removed again by a sync). |
 | `bring_requests` | "Please bring" requests | `dates` (JSON, up to 3), `status`, `owners`/`declined` (JSON, multi-owner flow), `party_id` once accepted. |
-| `wanted` | "Does anyone have …?" requests (tab "Spiel suchen") | `req_discord`, `req_member`, `game`/`game_id`, `interested` (JSON `[{id,name,m}]`), `status` (open/found/withdrawn/expired), `finder_discord`, `party_id`, `expires_at` (3 months), Discord message ids. |
+| `wanted` | "Does anyone have …?" requests (sub-page "Hat jemand …?" of the "Mitspieler-/Spielesuche" tab, `#suche`) | `req_discord`, `req_member`, `game`/`game_id`, `interested` (JSON `[{id,name,m}]`), `status` (open/found/withdrawn/expired), `finder_discord`, `party_id`, `expires_at` (3 months), Discord message ids. |
 | `extra_games` | GeekList games not in the built-in data | `data` JSON in the same shape as built-in games, `thumb`. |
 
 ### Built-in game data (`#gameData` in `public/index.html`)
