@@ -1,6 +1,6 @@
 // „Hat jemand …?“ (Spiel im Bot-Kanal suchen). Startet selbst einen Mock-Discord auf :8801 (OAuth, Bot-API, Kanal CH1).
 // Worker per test/reset.sh mit .dev.vars: ADMIN_TOKEN=test-admin-pw, DISCORD_API_BASE=http://localhost:8801, DISCORD_OAUTH_URL=http://localhost:8801/authorize,
-// DISCORD_CLIENT_SECRET=x, DISCORD_BOT_TOKEN=TESTTOKEN, PUBLIC_URL=http://localhost:8799, DISCORD_GUILD_ID=g1, DISCORD_CHANNEL_ID=CH1,
+// DISCORD_CLIENT_SECRET=x, DISCORD_BOT_TOKEN=TESTTOKEN, PUBLIC_URL=http://localhost:8799, DISCORD_GUILD_ID=g1, DISCORD_CHANNEL_ID=CH1, DISCORD_WANTED_CHANNEL_ID=CH2,
 // DISCORD_MEMBER_ROLE_ID=777, DISCORD_PUBLIC_KEY=<pub aus DK_FILE>. DK_FILE = JSON {pub, priv} (Ed25519, priv als PKCS8 base64).
 // Mock-Nutzer: 555 Eva (Mitglied, Server-Name „Eva vom Server“), 556 Fritz (Mitglied), 557 Gast (keine Mitgliederrolle), 558 Hans, 559 Ida (Mitglieder).
 import http from 'node:http';
@@ -20,7 +20,7 @@ http.createServer((req, res) => {
     if ((m = u.pathname.match(/^\/guilds\/g1\/members\/(\d+)$/))) { const x = USERS[m[1]]; return x ? out({ user: { id: m[1], username: x.username, global_name: x.global_name }, nick: x.nick, roles: x.roles }) : out({}, 404); }
     if (u.pathname === '/guilds/g1/roles') return out([{ id: 'g1', permissions: '1024' }, { id: '777', permissions: '0' }]);
     if (u.pathname === '/channels/CH1') return out({ id: 'CH1', permission_overwrites: [] });
-    if (req.method === 'POST' && u.pathname === '/channels/CH1/messages') { const id = 'msg' + (++n); msgs.push({ id, ...JSON.parse(b) }); return out({ id }); }
+    if (req.method === 'POST' && (m = u.pathname.match(/^\/channels\/(CH[12])\/messages$/))) { const id = 'msg' + (++n); msgs.push({ id, ch: m[1], ...JSON.parse(b) }); return out({ id }); }
     if (req.method === 'PATCH') { msgs.push({ patch: u.pathname, ...JSON.parse(b) }); return out({ id: 'x' }); }
     out({}, 404);
   });
@@ -60,8 +60,8 @@ r = await call('POST', '/wanted', eva, { game: 'selbstgebautes spiel' }); assert
 console.log('available check ok');
 
 r = await call('POST', '/wanted', eva, { gameId: 999999, game: 'Testspiel X', year: 2024, note: 'Am liebsten dienstags' }); assert.equal(r.status, 200);
-const w1 = await r.json(); assert.match(w1.url, /discord\.com\/channels\/g1\/CH1\/msg/);
-let m = msgs.at(-1); assert.match(m.content, /sucht \*\*Testspiel X\*\*/); assert.deepEqual(m.allowed_mentions, { parse: [] });
+const w1 = await r.json(); assert.match(w1.url, /discord\.com\/channels\/g1\/CH2\/msg/);
+let m = msgs.at(-1); assert.equal(m.ch, 'CH2'); assert.match(m.content, /sucht \*\*Testspiel X\*\*/); assert.deepEqual(m.allowed_mentions, { parse: [] });
 assert.deepEqual(m.components[0].components.map((b) => b.custom_id), [`wantr:${w1.id}`, `wanth:${w1.id}`, `wanti:${w1.id}`, `wantx:${w1.id}`]);
 r = await call('POST', '/wanted', fritz, { gameId: 999999, game: 'Testspiel X' }); const d = await r.json(); assert.equal(d.error, 'already_wanted'); assert.equal(d.id, w1.id);
 let list = await (await fetch(W + '/wanted')).json(); assert.equal(list.length, 1); assert.equal(list[0].by, 'Eva vom Server'); assert.equal(list[0].req_discord, undefined);
@@ -89,7 +89,7 @@ const party = (await (await fetch(W + '/parties')).json())[0];
 assert.equal(party.host, 'Fritz'); assert.equal(party.date, wed); assert.equal(party.time, '19:30');
 // Gast hat keine Mitgliederrolle und Mittwoch ist kein Stammtisch: nicht eingetragen, aber erwähnt
 assert.deepEqual(Object.values(party.attendees).map((a) => a.name).sort(), ['Eva vom Server', 'Hans']);
-m = msgs.at(-1); assert.match(m.content, /<@555> <@558>, Fritz hat/); assert.match(m.content, /<@557> ihr wolltet auch/);
+m = msgs.at(-1); assert.equal(m.ch, 'CH1'); assert.match(m.content, /<@555> <@558>, Fritz hat/); assert.match(m.content, /<@557> ihr wolltet auch/);
 x = await interact({ type: 3, ...as('558'), data: { custom_id: `wanth:${w1.id}` } }); assert.match(x.data.content, /Fritz hat das Spiel schon/);
 assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
 console.log('found with round ok');
@@ -100,7 +100,7 @@ x = await submit({ datum: wedTxt, uhrzeit: '18:00', plaetze: '4' }, '556', w2.id
 // Hab ich ohne Runde
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wanth:${w2.id}` } }); assert.equal(x.type, 7); assert.match(x.data.content, /Fritz\*\* hat \*\*Gastspiel Y/);
 assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/557');
-await wait(); assert.match(msgs.at(-1).content, /^<@557> Fritz \(<@556>\) hat/);
+await wait(); assert.equal(msgs.at(-1).ch, 'CH2'); assert.match(msgs.at(-1).content, /^<@557> Fritz \(<@556>\) hat/);
 console.log('found without round ok');
 
 // Zurückziehen: nur selbst (oder Verwaltung); Spam-Bremse 3 pro Tag
