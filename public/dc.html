@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Discord</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;background:#1b1b1b;color:#fff;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;text-align:center}a{color:#8f9bff}</style></head>
+<body><p id="m">Discord wird geöffnet …</p><p><a id="w" href="https://discord.com/app">Im Browser öffnen</a></p>
+<script>
+// Öffnet einen Discord-Link zuerst in der Discord-App (discord://); geht das nicht, nach kurzer Zeit im Browser.
+// Nur Links zu discord.com / discord.gg sind erlaubt.
+(function () {
+  var u = new URLSearchParams(location.search).get('u') || '';
+  var m = /^https:\/\/(?:discord\.com\/(channels\/[\w@/-]+|invite\/[\w-]+)|discord\.gg\/([\w-]+))$/.exec(u);
+  if (!m) { location.replace('https://discord.com/app'); return; }
+  document.getElementById('w').href = u;
+  var app = 'discord://-/' + (m[1] || 'invite/' + m[2]), left = false;
+  var gone = function () { left = true; };
+  window.addEventListener('blur', gone); document.addEventListener('visibilitychange', function () { if (document.hidden) gone(); });
+  location.href = app;
+  setTimeout(function () {
+    if (left) { document.getElementById('m').textContent = 'In der Discord-App geöffnet. Dieses Fenster kann zu.'; setTimeout(function () { window.close(); }, 800); }
+    else location.replace(u);
+  }, 1600);
+})();
+</script></body></html>
