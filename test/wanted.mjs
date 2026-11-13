@@ -1,0 +1,124 @@
+// „Hat jemand …?“ (Spiel im Bot-Kanal suchen). Startet selbst einen Mock-Discord auf :8801 (OAuth, Bot-API, Kanal CH1).
+// Worker per test/reset.sh mit .dev.vars: ADMIN_TOKEN=test-admin-pw, DISCORD_API_BASE=http://localhost:8801, DISCORD_OAUTH_URL=http://localhost:8801/authorize,
+// DISCORD_CLIENT_SECRET=x, DISCORD_BOT_TOKEN=TESTTOKEN, PUBLIC_URL=http://localhost:8799, DISCORD_GUILD_ID=g1, DISCORD_CHANNEL_ID=CH1,
+// DISCORD_MEMBER_ROLE_ID=777, DISCORD_PUBLIC_KEY=<pub aus DK_FILE>. DK_FILE = JSON {pub, priv} (Ed25519, priv als PKCS8 base64).
+// Mock-Nutzer: 555 Eva (Mitglied, Server-Name „Eva vom Server“), 556 Fritz (Mitglied), 557 Gast (keine Mitgliederrolle), 558 Hans, 559 Ida (Mitglieder).
+import http from 'node:http';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const W = 'http://localhost:8799/api';
+const USERS = { 555: { username: 'eva_x', global_name: 'Eva', nick: 'Eva vom Server', roles: ['777'] }, 556: { username: 'fritz', global_name: 'Fritz', nick: null, roles: ['777'] }, 557: { username: 'gast', global_name: 'Gast', nick: null, roles: [] }, 558: { username: 'hans', global_name: 'Hans', nick: null, roles: ['777'] }, 559: { username: 'ida', global_name: 'Ida', nick: null, roles: ['777'] } };
+const msgs = []; let cur = '555', n = 0;
+http.createServer((req, res) => {
+  let b = ''; req.on('data', (c) => (b += c)); req.on('end', () => {
+    const u = new URL(req.url, 'http://x'), out = (d, s = 200) => { res.writeHead(s, { 'content-type': 'application/json' }); res.end(JSON.stringify(d)); };
+    if (u.pathname === '/set') { cur = u.searchParams.get('as'); return out({}); }
+    if (u.pathname === '/authorize') { res.writeHead(302, { location: `${u.searchParams.get('redirect_uri')}?code=c${cur}&state=${u.searchParams.get('state')}` }); return res.end(); }
+    if (u.pathname === '/oauth2/token') return out({ access_token: 'at' + new URLSearchParams(b).get('code').slice(1) });
+    if (u.pathname === '/users/@me') { const id = req.headers.authorization.replace('Bearer at', ''); return out({ id, username: USERS[id].username, global_name: USERS[id].global_name }); }
+    let m;
+    if ((m = u.pathname.match(/^\/guilds\/g1\/members\/(\d+)$/))) { const x = USERS[m[1]]; return x ? out({ user: { id: m[1], username: x.username, global_name: x.global_name }, nick: x.nick, roles: x.roles }) : out({}, 404); }
+    if (u.pathname === '/guilds/g1/roles') return out([{ id: 'g1', permissions: '1024' }, { id: '777', permissions: '0' }]);
+    if (u.pathname === '/channels/CH1') return out({ id: 'CH1', permission_overwrites: [] });
+    if (req.method === 'POST' && u.pathname === '/channels/CH1/messages') { const id = 'msg' + (++n); msgs.push({ id, ...JSON.parse(b) }); return out({ id }); }
+    if (req.method === 'PATCH') { msgs.push({ patch: u.pathname, ...JSON.parse(b) }); return out({ id: 'x' }); }
+    out({}, 404);
+  });
+}).listen(8801);
+
+const hex = (k) => Array.from(crypto.getRandomValues(new Uint8Array(k)), (x) => x.toString(16).padStart(2, '0')).join('');
+async function login(id) {
+  await fetch('http://localhost:8801/set?as=' + id); const nn = hex(16);
+  let r = await fetch(W + '/auth/discord?n=' + nn, { redirect: 'manual' }); const cookie = r.headers.get('set-cookie').split(';')[0];
+  r = await fetch(r.headers.get('location'), { redirect: 'manual' }); await fetch(r.headers.get('location'), { headers: { cookie } });
+  return (await (await fetch(W + '/auth/poll?n=' + nn)).json()).token;
+}
+const call = (m, p, tok, b, h = {}) => fetch(W + p, { method: m, headers: { 'content-type': 'application/json', ...(tok ? { 'x-session': tok } : {}), ...h }, body: b ? JSON.stringify(b) : undefined });
+const { priv } = JSON.parse(fs.readFileSync(process.env.DK_FILE, 'utf8'));
+const key = await crypto.subtle.importKey('pkcs8', Buffer.from(priv, 'base64'), 'Ed25519', false, ['sign']);
+async function interact(obj) {
+  const body = JSON.stringify({ guild_id: 'g1', channel_id: 'CH1', ...obj }), ts = String(Date.now());
+  const sig = Buffer.from(await crypto.subtle.sign('Ed25519', key, new TextEncoder().encode(ts + body))).toString('hex');
+  return (await fetch(W + '/discord/interactions', { method: 'POST', headers: { 'x-signature-ed25519': sig, 'x-signature-timestamp': ts }, body })).json();
+}
+const as = (id) => ({ member: { user: { id, username: USERS[id].username, global_name: USERS[id].global_name }, nick: USERS[id].nick, roles: USERS[id].roles } });
+const wait = (ms = 600) => new Promise((r) => setTimeout(r, ms));
+
+import { execSync } from 'node:child_process';
+const sql = (q) => execSync(`npx wrangler d1 execute n3-spiele --local --command ${JSON.stringify(q)}`, { stdio: 'pipe' });
+const berlinIso = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(d);
+// nächster Mittwoch (kein Stammtisch-Tag nach Standardregel)
+const wed = (() => { const d = new Date(Date.now() + 864e5); while (d.getUTCDay() !== 3) d.setUTCDate(d.getUTCDate() + 1); return berlinIso(d); })();
+const wedTxt = wed.split('-').reverse().join('.');
+
+const eva = await login('555'), fritz = await login('556'), gast = await login('557'), hans = await login('558');
+let r = await call('POST', '/wanted', null, { game: 'X' }); assert.equal(r.status, 403);
+// Schon in der Sammlung (CATAN, BGG 13) oder bei Mitgliedern: keine Discord-Frage
+r = await call('POST', '/wanted', eva, { gameId: 13, game: 'CATAN' }); assert.equal((await r.json()).error, 'in_club');
+await call('POST', '/member-games', fritz, { game: 'Selbstgebautes Spiel', consent: true });
+r = await call('POST', '/wanted', eva, { game: 'selbstgebautes spiel' }); assert.equal((await r.json()).error, 'in_members');
+console.log('available check ok');
+
+r = await call('POST', '/wanted', eva, { gameId: 999999, game: 'Testspiel X', year: 2024, note: 'Am liebsten dienstags' }); assert.equal(r.status, 200);
+const w1 = await r.json(); assert.match(w1.url, /discord\.com\/channels\/g1\/CH1\/msg/);
+let m = msgs.at(-1); assert.match(m.content, /sucht \*\*Testspiel X\*\*/); assert.deepEqual(m.allowed_mentions, { parse: [] });
+assert.deepEqual(m.components[0].components.map((b) => b.custom_id), [`wantr:${w1.id}`, `wanth:${w1.id}`, `wanti:${w1.id}`, `wantx:${w1.id}`]);
+r = await call('POST', '/wanted', fritz, { gameId: 999999, game: 'Testspiel X' }); const d = await r.json(); assert.equal(d.error, 'already_wanted'); assert.equal(d.id, w1.id);
+let list = await (await fetch(W + '/wanted')).json(); assert.equal(list.length, 1); assert.equal(list[0].by, 'Eva vom Server'); assert.equal(list[0].req_discord, undefined);
+assert.deepEqual((await (await call('GET', '/my', eva)).json()).wanted, [w1.id]);
+console.log('post wanted ok');
+
+// „Will auch mitspielen“: Webseite (Gast, ohne Mitgliederrolle) und Discord (Hans)
+r = await call('POST', `/wanted/${w1.id}/interest`, eva, { on: true }); assert.equal((await r.json()).error, 'own_request');
+r = await call('POST', `/wanted/${w1.id}/interest`, gast, { on: true }); assert.equal(r.status, 200);
+assert.deepEqual((await (await call('GET', '/my', gast)).json()).wantedJoined, [w1.id]);
+let x = await interact({ type: 3, ...as('558'), data: { custom_id: `wanti:${w1.id}` } }); assert.match(x.data.content, /Notiert/);
+await wait();
+list = await (await fetch(W + '/wanted')).json(); assert.deepEqual(list[0].interested, ['Gast', 'Hans']);
+const p = msgs.filter((q) => q.patch).at(-1); assert.match(JSON.stringify(p.embeds), /Wollen auch mitspielen \(2\)/);
+console.log('interest ok');
+
+// Hab ich: Runde anlegen (Fritz). Eigene Suche nicht.
+x = await interact({ type: 3, ...as('555'), data: { custom_id: `wantr:${w1.id}` } }); assert.match(x.data.content, /eigene Suche/);
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `wantr:${w1.id}` } }); assert.equal(x.type, 9);
+const submit = (vals, u = '556', id = w1.id) => interact({ type: 5, ...as(u), data: { custom_id: `wantr:${id}`, components: Object.entries(vals).map(([k, v]) => ({ type: 1, components: [{ type: 4, custom_id: k, value: v }] })) } });
+x = await submit({ datum: 'quatsch', uhrzeit: '18:00', plaetze: '4' }); assert.match(x.data.content, /Datum nicht verstanden/);
+x = await submit({ datum: wedTxt, uhrzeit: '19:30', plaetze: '4' }); assert.equal(x.type, 7, JSON.stringify(x)); assert.match(x.data.content, /Fritz\*\* hat \*\*Testspiel X/);
+await wait();
+const party = (await (await fetch(W + '/parties')).json())[0];
+assert.equal(party.host, 'Fritz'); assert.equal(party.date, wed); assert.equal(party.time, '19:30');
+// Gast hat keine Mitgliederrolle und Mittwoch ist kein Stammtisch: nicht eingetragen, aber erwähnt
+assert.deepEqual(Object.values(party.attendees).map((a) => a.name).sort(), ['Eva vom Server', 'Hans']);
+m = msgs.at(-1); assert.match(m.content, /<@555> <@558>, Fritz hat/); assert.match(m.content, /<@557> ihr wolltet auch/);
+x = await interact({ type: 3, ...as('558'), data: { custom_id: `wanth:${w1.id}` } }); assert.match(x.data.content, /Fritz hat das Spiel schon/);
+assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
+console.log('found with round ok');
+
+// Nicht-Mitglied sucht: Runde nur an Stammtisch-Tagen
+r = await call('POST', '/wanted', gast, { game: 'Gastspiel Y' }); const w2 = await r.json(); assert.equal(r.status, 200);
+x = await submit({ datum: wedTxt, uhrzeit: '18:00', plaetze: '4' }, '556', w2.id); assert.match(x.data.content, /keine Mitgliederrolle/);
+// Hab ich ohne Runde
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `wanth:${w2.id}` } }); assert.equal(x.type, 7); assert.match(x.data.content, /Fritz\*\* hat \*\*Gastspiel Y/);
+assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/557');
+await wait(); assert.match(msgs.at(-1).content, /^<@557> Fritz hat/);
+console.log('found without round ok');
+
+// Zurückziehen: nur selbst (oder Verwaltung); Spam-Bremse 3 pro Tag
+r = await call('POST', '/wanted', eva, { game: 'Zieh zurück' }); const w3 = await r.json();
+r = await call('DELETE', '/wanted/' + w3.id, fritz); assert.equal(r.status, 403);
+r = await call('DELETE', '/wanted/' + w3.id, eva); assert.equal(r.status, 200);
+await wait(); assert.match(msgs.filter((q) => q.patch).at(-1).content, /Zurückgezogen/);
+r = await call('POST', '/wanted', eva, { game: 'Noch eins' }); assert.equal(r.status, 200); const w4 = await r.json();
+r = await call('POST', '/wanted', eva, { game: 'Zu viel' }); assert.equal(r.status, 429);
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `wantx:${w4.id}` } }); assert.match(x.data.content, /Nur wer gesucht hat/);
+console.log('withdraw + rate limit ok');
+
+// Ablauf nach 3 Monaten (nächtlicher Lauf)
+assert.ok(w4.expiresAt > new Date(Date.now() + 88 * 864e5).toISOString().slice(0, 10));
+sql(`UPDATE wanted SET expires_at = '2020-01-01' WHERE id = '${w4.id}'`);
+assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
+await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(3000);
+assert.match(msgs.filter((q) => q.patch).at(-1).content, /Abgelaufen/);
+console.log('expire ok');
+console.log('ALL OK');
+process.exit(0);

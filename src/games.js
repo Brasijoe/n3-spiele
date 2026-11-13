@@ -101,6 +101,14 @@ async function builtInIds(env) {
   return builtIn;
 }
 
+// Steht ein Spiel (BGG-ID) in der Club-Sammlung (eingebaut oder aus der GeekList übernommen)?
+export async function inClub(env, id) {
+  if (!id) return false;
+  try { if ((await builtInIds(env)).has(id)) return true; } catch { /* Seite nicht lesbar: nur D1 prüfen */ }
+  await ensureExtra(env);
+  return !!(await env.DB.prepare('SELECT 1 FROM extra_games WHERE id = ?1').bind(id).first());
+}
+
 // Fehlende GeekList-Einträge von BGG holen und speichern. Gibt die Anzahl neu übernommener Spiele zurück.
 export async function syncExtras(env) {
   if (!env.BGG_TOKEN) throw Object.assign(new Error('no_token'), { code: 'no_token' });
