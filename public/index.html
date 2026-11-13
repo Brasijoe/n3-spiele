@@ -521,6 +521,12 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="dcReg">Discord-Befehle registrieren</button><span id="dcMsg" role="status" class="note"></span></div>
       <div class="gl-list pills" id="glList"></div>
     </div>
+    <div class="adm-block">
+      <h3>Datensicherung</h3>
+      <p class="note" style="margin:0">Jede Nacht wird die ganze Datenbank (Partien, Runden, Codes, Besitzerverzeichnis …) als SQL-Datei in einem privaten Cloudflare-Speicher (R2) gesichert, die letzten 30 bleiben liegen. Lade ab und zu eine Sicherung herunter, damit es auch eine Kopie außerhalb von Cloudflare gibt. Die Datei enthält private Daten: nicht weitergeben, nicht ins GitHub-Repo legen.</p>
+      <div class="row" style="align-items:center"><button type="button" class="btn btn-quiet" id="bkNow">Aktuellen Stand herunterladen</button><button type="button" class="btn btn-quiet" id="bkRun">Jetzt in R2 sichern</button><span id="bkMsg" role="status" class="note"></span></div>
+      <ul id="bkList" class="note" style="margin:6px 0 0;padding-left:18px"></ul>
+    </div>
   </section>
 </main>
 
@@ -2486,7 +2492,7 @@ $('admLink').onclick = () => {
 $('admForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const pw = $('admPw').value; if (!pw) return;
   try { sessionStorage.setItem('n3-admin', pw); } catch (x) {}
-  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); loadBkAdm(); }
+  try { await api('GET', '/admin/check'); canEdit = true; $('admPw').value = ''; $('admMsg').textContent = ''; $('admForm').hidden = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); loadBkAdm(); loadBackups(); }
   catch (x) { try { sessionStorage.removeItem('n3-admin'); } catch (y) {} $('admMsg').textContent = T().admBad; }
 });
 /* ---------- QR-Code zum Eintragen (Verwaltung) ---------- */
@@ -2594,6 +2600,39 @@ async function loadGeeklist() {
     $('glList').innerHTML = missing.map((i) => '<a class="pill" target="_blank" rel="noopener" href="https://boardgamegeek.com/boardgame/' + i.id + '">' + esc(i.n) + '</a>').join('');
   } catch (e) { $('glMsg').textContent = ''; }
 }
+/* ---------- Datensicherung ---------- */
+async function bkDownload(path, fallbackName) {
+  const res = await fetch('/api' + path, { headers: { 'X-Admin-Token': adminTok() } });
+  if (!res.ok) { let c = 'http_' + res.status; try { c = (await res.json()).error || c; } catch (e) {} throw Object.assign(new Error(c), { code: c }); }
+  const m = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '');
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a'); a.href = url; a.download = m ? m[1] : fallbackName; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+const bkSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
+async function loadBackups() {
+  const ul = $('bkList'); if (!ul || !adminTok()) return;
+  try {
+    const r = await api('GET', '/admin/backups');
+    if (!r.bucket) { ul.innerHTML = '<li>Der R2-Speicher „n3-spiele-backup“ ist noch nicht verbunden (siehe README, Datensicherung). Download des aktuellen Stands geht trotzdem.</li>'; return; }
+    if (!r.items.length) { ul.innerHTML = '<li>Noch keine nächtliche Sicherung vorhanden.</li>'; return; }
+    ul.innerHTML = r.items.map((o) => '<li><button type="button" class="linkbtn" data-bk="' + esc(o.key) + '">' + esc(new Date(o.uploaded).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })) + '</button> · ' + bkSize(o.size) + '</li>').join('');
+  } catch (e) { ul.innerHTML = '<li>Liste konnte nicht geladen werden (' + esc((e && e.code) || '?') + ').</li>'; }
+}
+$('bkList').onclick = async (ev) => {
+  const b = ev.target.closest('[data-bk]'); if (!b) return;
+  $('bkMsg').textContent = 'Lade …';
+  try { await bkDownload('/admin/backup/file?key=' + encodeURIComponent(b.dataset.bk), 'n3-spiele.sql'); $('bkMsg').textContent = ''; } catch (e) { $('bkMsg').textContent = 'Download fehlgeschlagen (' + ((e && e.code) || '?') + ').'; }
+};
+$('bkNow').onclick = async () => {
+  $('bkMsg').textContent = 'Erstelle Sicherung …';
+  try { await bkDownload('/admin/backup/now', 'n3-spiele.sql'); $('bkMsg').textContent = 'Heruntergeladen.'; } catch (e) { $('bkMsg').textContent = 'Download fehlgeschlagen (' + ((e && e.code) || '?') + ').'; }
+};
+$('bkRun').onclick = async () => {
+  $('bkMsg').textContent = 'Sichere …';
+  try { const r = await api('POST', '/admin/backups'); $('bkMsg').textContent = 'Gesichert (' + bkSize(r.size) + ').'; loadBackups(); }
+  catch (e) { $('bkMsg').textContent = e && e.code === 'no_bucket' ? 'R2-Speicher fehlt noch (siehe README).' : 'Sicherung fehlgeschlagen (' + ((e && e.code) || '?') + ').'; }
+};
 $('dcReg').onclick = async () => {
   $('dcMsg').textContent = '…';
   try { const r = await api('POST', '/admin/discord/register'); $('dcMsg').textContent = r.count + ' Befehle registriert ✓'; } catch (e) { $('dcMsg').textContent = 'Fehler: ' + ((e && e.code) || '?'); }
@@ -2651,7 +2690,7 @@ watch('/config/highlights', (cfg) => {
   hlCfg = cfg; applyHl(); renderSlider();
   if (canEdit && !hlDirty) { hlDraft = null; renderAdmin(); }
 }, () => {}, 60000);
-if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); loadBkAdm(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
+if (adminTok()) api('GET', '/admin/check').then(() => { canEdit = true; renderAdmin(); renderGrid(); renderAdminLink(); renderParties(); loadGeeklist(); loadOwners(); loadQr(); loadEvents(); loadBkAdm(); loadBackups(); }).catch(() => { try { sessionStorage.removeItem('n3-admin'); } catch (e) {} });
 })();
 </script>
 

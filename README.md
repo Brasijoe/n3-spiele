@@ -80,7 +80,7 @@ Nützliche Parameter für Links und iFrame: `?lang=de` oder `?lang=en`, `#statis
 - **Mitglieder besitzen:** Mitglieder (Discord-Mitgliederrolle) tragen unter „Mitglieder besitzen“ eigene Spiele ein, nur mit Zustimmung, dass ihr Discord-Server-Name öffentlich als Besitzer erscheint. Die Spiele stehen lila umrandet in der Übersicht und lassen sich mit dem Filter „Herkunft“ ein- oder ausblenden; sie zählen nicht zur Sammlung. Spiele von Personen ohne Mitgliederrolle werden nicht angezeigt. Mitglieder können andere bitten, ein Spiel an bis zu 3 Terminen mitzubringen: Der Bot schreibt im (ersten) Bot-Kanal mit Erwähnung des Besitzers, der einen Termin annimmt (Uhrzeit und Plätze im Fenster) oder ablehnt (optionale Nachricht, danach Buttons für eine Direktnachricht). Annehmen legt automatisch eine Runde an, in der beide schon stehen. Grenzen: 5 Anfragen pro Tag und Person, 30 insgesamt. Admins löschen Einträge unter „Mitglieder besitzen“. Test: `test/member-games.mjs` (Anleitung oben in der Datei).
 - **Besitzer-Verzeichnis:** Verwaltung, aufklappbar unter der Spieleliste. Eine Zeile pro Person, `Kurzname = voller Name`. Gespeichert in `config` unter `owners` und nur mit Admin-Token lesbar (`/api/config/owners`), damit volle Namen nicht im öffentlichen Code stehen. Das Besitzerfeld schlägt beim Tippen alle bekannten Besitzer vor. Der volle Name erscheint beim Überfahren und im Excel-Export unter Leihgeber/Spender.
 - **Excel-Export für die Inventurliste:** Verwaltung, „Als Excel exportieren“. Spalten wie in der Inventurliste plus BGG-ID, Besitzer, Datum, Sprache und BGG-Daten. Die Datei entsteht im Browser, ohne Fremdbibliothek.
-- **Backup:** `npx wrangler d1 export n3-spiele --remote --output backup.sql`
+- **Datensicherung:** siehe Abschnitt „Datensicherung“ unten (nächtlich nach R2, Download in der Verwaltung).
 - **Tokens tauschen:** `npx wrangler secret put BGG_TOKEN` (oder `ADMIN_TOKEN`), ohne neues Deployment.
 - **Logs bei Fehlern:** `npx wrangler tail`
 
@@ -175,3 +175,27 @@ Test: `node test/booking.mjs` (siehe Kopf der Datei).
 
 Mitglieder holen sich auf dem Discord-Server mit `/code` einen persönlichen 8-stelligen Code (nur für sie sichtbar). Damit legen sie auf der Webseite Runden an oder tragen Partien ein; der Browser merkt sich den Code. Die Runde trägt den Discord-Namen und gehört dem Discord-Konto, der Ersteller kann sie also auch in Discord über „Verwalten“ ändern. Ein neues `/code` macht den alten ungültig. Wer den Server verlässt, verliert den Code (Prüfung höchstens alle 10 Minuten, braucht `DISCORD_GUILD_ID` und den Bot-Token). Der Code wird nur als Hash gespeichert (Tabelle `members`).
 Nach dem Deploy einmal in der Verwaltung „Discord-Befehle registrieren“ klicken, damit `/code` erscheint.
+
+## Datensicherung
+
+**Was passiert:** Jede Nacht um 03:17 UTC (vor dem GeekList-Abgleich) schreibt der Worker die ganze D1-Datenbank als SQL-Datei in den privaten R2-Bucket `n3-spiele-backup` (`d1/<Datum>T<Uhrzeit>Z.sql`). Die letzten 30 Sicherungen bleiben liegen, ältere löscht der Worker. Inhalt aller Tabellen außer `rate` und `auth_handoff` (nur kurzlebige Zähler und Login-Übergaben; deren Struktur ist dabei). Code: `src/backup.js`.
+
+**Einmalig einrichten (vor dem ersten Deploy mit dieser Version):** Cloudflare-Dashboard → *R2 Object Storage* → *Create bucket* → Name `n3-spiele-backup`, Standort automatisch, **keinen** öffentlichen Zugriff einschalten. Alternativ `npx wrangler r2 bucket create n3-spiele-backup`. R2 muss im Konto einmal aktiviert sein (kostenlos bis 10 GB; die Sicherungen sind wenige MB). Fehlt der Bucket, bricht das Deploy ab.
+
+**Verwaltung, Block „Datensicherung“:**
+- *Aktuellen Stand herunterladen*: erzeugt sofort eine SQL-Datei und lädt sie herunter, unabhängig von R2. Ab und zu machen und außerhalb von Cloudflare ablegen (z. B. OneDrive).
+- *Jetzt in R2 sichern*: legt sofort eine Sicherung im Bucket an (z. B. vor größeren Änderungen).
+- Liste der Sicherungen im Bucket, Klick lädt die Datei herunter.
+
+Die Dateien enthalten private Daten (volle Namen im Besitzerverzeichnis, Discord-IDs, Sitzungen, Code-Hashes). Nicht weitergeben und **nicht ins öffentliche GitHub-Repo legen**.
+
+**Wiederherstellen:**
+1. Sicherung holen: in der Verwaltung herunterladen, oder im Dashboard unter R2 → `n3-spiele-backup` → `d1/` die Datei laden.
+2. Im Ordner des Repos: `npx wrangler d1 execute n3-spiele --remote --file=n3-spiele-….sql`
+   Die Datei löscht jede gesicherte Tabelle (`DROP TABLE`) und legt sie mit dem gesicherten Inhalt neu an. Alles, was nach der Sicherung eingetragen wurde, ist danach weg.
+3. Erst ausprobieren: `npx wrangler d1 execute n3-spiele --local --file=….sql` und mit `npx wrangler dev` ansehen.
+
+**Kleinere Pannen (letzte 30 Tage):** D1 *Time Travel* stellt die Datenbank auf eine beliebige Minute zurück, ohne Datei:
+`npx wrangler d1 time-travel info n3-spiele` (aktueller Stand) und `npx wrangler d1 time-travel restore n3-spiele --timestamp=2026-11-13T10:00:00Z`. Auch das überschreibt alles danach.
+
+**Prüfen, ob es läuft:** Workers → n3-spiele → Observability, nach `backup ok` bzw. `backup failed` suchen, oder in der Verwaltung auf das Datum der neuesten Sicherung schauen.
