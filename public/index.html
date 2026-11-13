@@ -180,6 +180,7 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .tabs a { min-height: 40px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 8px; color: var(--band-muted); font-weight: 700; text-decoration: none; }
 .tabs a[aria-current="page"] { background: var(--accent); color: var(--on-accent); }
 .tabs a:not([aria-current="page"]):hover { color: var(--band-fg); background: #3a3a3a; }
+@media (max-width: 520px) { .tabs { flex-wrap: wrap; gap: 2px; } .tabs a { padding: 0 10px; font-size: 14px; } }
 /* Herkunfts-Label im Partien-Log */
 .src { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
 .src::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: currentColor; flex: none; }
@@ -342,6 +343,7 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
       <nav class="tabs" id="tabs" aria-label="Bereiche">
         <a href="#" data-view="collection" data-t="tabCollection"></a>
         <a href="#partys" data-view="parties" data-t="tabParties"></a>
+        <a href="#suche" data-view="wanted" data-t="tabWanted"></a>
         <a href="#statistik" data-view="stats" data-t="tabStats"></a>
       </nav>
       <div style="display:flex;align-items:center;gap:8px">
@@ -522,16 +524,19 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <p class="meta" data-t="ptIntro" style="margin:0"></p>
     <div class="pt-how" id="ptHow"></div>
   </section>
-  <section class="panel st-panel" id="wtPanel" aria-labelledby="wtH">
-    <div class="pt-head"><h2 id="wtH" data-t="wtTitle"></h2><button type="button" class="btn btn-outline" id="wtNew" data-t="wtNew"></button></div>
-    <p class="meta" id="wtIntro" style="margin:0"></p>
-    <div class="parties" id="wtList"></div>
-  </section>
   <p class="meta" id="ptState" style="margin:0"></p>
   <h2 class="sec-h" style="font-size:24px" data-t="ptUpcoming"></h2>
   <div class="parties" id="ptUpcoming"></div>
   <h2 class="sec-h" style="font-size:24px" id="ptPastH" data-t="ptPast"></h2>
   <div class="parties" id="ptPast"></div>
+</main>
+
+<main class="wrap" id="viewWanted" hidden>
+  <section class="panel st-panel" id="wtPanel" aria-labelledby="wtH">
+    <div class="pt-head"><h2 id="wtH" data-t="wtTitle"></h2><button type="button" class="btn btn-outline" id="wtNew" data-t="wtNew"></button></div>
+    <p class="meta" id="wtIntro" style="margin:0"></p>
+    <div class="parties" id="wtList"></div>
+  </section>
 </main>
 
 <main class="wrap" id="viewStats" hidden>
@@ -732,11 +737,11 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich (Termin später)', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
+  de: { tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich (Termin später)', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Bot-Kanal angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Bot-Kanal auf Discord Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Mitspielen',
-    whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unten bei den geplanten Runden.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
-    wtTitle: 'Hat jemand …?', wtNew: 'Spiel suchen', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
+    whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
+    wtTitle: 'Hat jemand …?', wtNew: 'Neue Suche', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
     wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Will ich auch', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
     wtDlgT: 'Hat jemand dieses Spiel?', wtGame: 'Welches Spiel suchst du?', wtNote: 'Nachricht (optional, z. B. wann es dir passt)', wtSend: 'Im Discord fragen',
     wtInClub: 'Das Spiel ist in der Club-Sammlung. Biete einfach eine Runde damit an.', wtInMem: '{o} hat das Spiel (Mitglieder besitzen). Frag direkt, ob es mitgebracht wird.', wtAskBring: 'Mitbringen anfragen', wtOffer: 'Runde anbieten',
@@ -831,11 +836,11 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { whRound: 'I have it: set up a game', whLater: 'I have it (date later)', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
+  en: { tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it (date later)', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the bot channel. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the bot channel on Discord that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'Join',
-    whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it below under planned games.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
-    wtTitle: 'Does anyone have …?', wtNew: 'Look for a game', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
+    whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
+    wtTitle: 'Does anyone have …?', wtNew: 'New request', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
     wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'Me too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
     wtDlgT: 'Does anyone have this game?', wtGame: 'Which game are you looking for?', wtNote: 'Message (optional, e.g. when you are free)', wtSend: 'Ask on Discord',
     wtInClub: 'This game is in the club collection. Just offer a game with it.', wtInMem: '{o} owns this game (member games). Ask directly whether it can be brought.', wtAskBring: 'Request to bring', wtOffer: 'Offer a game',
@@ -2499,17 +2504,17 @@ $('whForm').addEventListener('submit', async (e) => {
   }
 });
 /* ---------- Ansichten (Tabs) ---------- */
-const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : 'collection');
+const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties)$/i.test(location.hash) ? 'parties' : /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : 'collection');
 function renderView() {
   const v = currentView();
-  $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties';
+  $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties'; $('viewWanted').hidden = v !== 'wanted';
   document.querySelectorAll('#tabs a').forEach((a) => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 }
 $('tabs').addEventListener('click', (e) => {
   const a = e.target.closest('a[data-view]'); if (!a) return; e.preventDefault();
-  const hs = { stats: '#statistik', parties: '#partys' }[a.dataset.view] || '';
+  const hs = { stats: '#statistik', parties: '#partys', wanted: '#suche' }[a.dataset.view] || '';
   try { history.replaceState(null, '', hs || location.pathname + location.search); } catch (x) { location.hash = hs.slice(1); }
-  renderView(); if (a.dataset.view === 'stats') renderStats(); else if (a.dataset.view === 'parties') renderParties(); else renderSlider(); window.scrollTo(0, 0);
+  renderView(); if (a.dataset.view === 'stats') renderStats(); else if (a.dataset.view === 'parties') renderParties(); else if (a.dataset.view === 'wanted') renderWanted(); else renderSlider(); window.scrollTo(0, 0);
 });
 window.addEventListener('hashchange', () => { renderView(); renderSlider(); });
 
