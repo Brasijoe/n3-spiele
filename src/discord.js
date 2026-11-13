@@ -92,15 +92,19 @@ export const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Da
 
 // ---- Nachricht ----
 export function view(r, env = {}) {
-  const att = JSON.parse(r.attendees || '{}');
-  const people = Object.entries(att).filter(([, a]) => !a.out).map(([k, a]) => (/^d\d{5,}$/.test(k) ? `<@${k.slice(1)}>` : a.name));
-  const taken = people.length + 1, free = Math.max(0, r.seats - taken);
+  const att = JSON.parse(r.attendees || '{}'), now = new Date().toISOString();
+  // Reservierte Plätze (Runde aus „Hat jemand …?“): zählen als belegt, bis bestätigt, abgesagt, abgelaufen oder freigegeben.
+  const live = Object.entries(att).filter(([, a]) => !a.out && !resExpired(a, now));
+  const tag = ([k, a]) => (/^d\d{5,}$/.test(k) ? `<@${k.slice(1)}>` : a.name);
+  const people = live.filter(([, a]) => !a.res).map(tag);
+  const reserved = live.filter(([, a]) => a.res).map((e) => `${tag(e)} (${e[1].until ? 'bis ' + berlinTime(e[1].until) : 'bis zur Bestätigung'})`);
+  const taken = live.length + 1, free = Math.max(0, r.seats - taken);
   const logged = !!r.play_id;
   const hostTxt = r.host_discord ? `<@${r.host_discord}>` : r.host;
   const gameTxt = r.game + (r.year ? ` (${r.year})` : '');
   // Klare Felder statt langer Textzeile: Feldnamen fett, Werte normal, keine Leerräume.
   const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬜'.repeat(Math.max(0, r.seats - taken));
-  const dabei = [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x)].join('\n').slice(0, 1000);
+  const dabei = [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x), ...(logged ? [] : reserved.map((x) => '⏳ ' + x + ' – reserviert'))].join('\n').slice(0, 1000);
   const fields = logged
     ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
@@ -118,7 +122,7 @@ export function view(r, env = {}) {
   }
   const embeds = [embed];
   const components = logged ? [] : [{ type: 1, components: [
-    { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free },
+    { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free && !reserved.length },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
     { type: 2, style: 1, label: 'Verwalten (Ersteller)', emoji: { name: '⚙️' }, custom_id: 'manage:' + r.id },
   ] }];
@@ -129,8 +133,32 @@ export function view(r, env = {}) {
 const managePanel = (r) => ({ type: 7, data: { content: `**Runde verwalten:** ${r.game}`, embeds: [], components: [{ type: 1, components: [
   { type: 2, style: 1, label: 'Als gespielt registrieren', custom_id: 'log:' + r.id },
   { type: 2, style: 2, label: 'Bearbeiten', custom_id: 'edit:' + r.id },
+  ...(hasReservations(r) ? [{ type: 2, style: 2, label: 'Reservierungen freigeben', custom_id: 'release:' + r.id }] : []),
   { type: 2, style: 4, label: 'Stornieren', custom_id: 'cancel:' + r.id },
 ] }] } });
+// ---------- Reservierungen ----------
+// Eintrag {name, at, res: 1, until: ISO|null}: Platz ist für die Person reserviert. until = null bleibt bis zur Bestätigung/Freigabe.
+export const resExpired = (a, now = new Date().toISOString()) => !!(a && a.res && a.until && a.until < now);
+const berlinTime = (iso) => new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)).replace(',', '') + ' Uhr';
+export const hasReservations = (r) => { try { return Object.values(JSON.parse(r.attendees || '{}')).some((a) => a && a.res && !a.out && !resExpired(a)); } catch { return false; } };
+// Abgelaufene Reservierungen als abgesagt markieren (gibt die aktuelle Zeile zurück). all = true gibt alle frei (Gastgeber).
+export async function expireReservations(env, row, all = false) {
+  if (!row) return row;
+  let att; try { att = JSON.parse(row.attendees || '{}'); } catch { return row; }
+  const now = new Date().toISOString(); let n = 0;
+  for (const a of Object.values(att)) if (a && a.res && !a.out && (all || resExpired(a, now))) { a.out = 1; n++; }
+  if (!n) return row;
+  const js = JSON.stringify(att);
+  await env.DB.prepare('UPDATE parties SET attendees = ?1 WHERE id = ?2 AND attendees = ?3').bind(js, row.id, row.attendees).run();
+  return { ...row, attendees: js };
+}
+// Alle 20 Minuten: abgelaufene Reservierungen freigeben und den Discord-Post aktualisieren.
+export async function sweepReservations(env) {
+  const { results } = await env.DB.prepare("SELECT * FROM parties WHERE attendees LIKE '%\"res\":1%' AND date >= ?1 LIMIT 50").bind(berlinToday()).all();
+  let n = 0;
+  for (const r of results) { const f = await expireReservations(env, r); if (f !== r) { n++; if (f.discord_msg && env.DISCORD_BOT_TOKEN) await syncParty(env, f.id, true).catch((e) => console.log('res sync failed', e && e.message)); } }
+  return n;
+}
 const done = (text) => reply({ type: 7, data: { content: text, embeds: [], components: [] } });
 function editModal(r) {
   const row = (custom_id, label, value, extra = {}) => ({ type: 1, components: [{ type: 4, custom_id, label, style: 1, value: String(value == null ? '' : value), required: true, ...extra }] });
@@ -196,7 +224,7 @@ async function cmdLog(i, env) {
 async function button(i, env, ctx) {
   const [act, id] = String(i.data.custom_id).split(':');
   const w = who(i);
-  const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
+  let row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   if (!row) return say('Diese Runde gibt es nicht mehr.');
   if (!row.discord_msg && i.message && i.channel_id && !(i.message.flags & 64)) await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(i.channel_id, i.message.id, id).run();
   // Verwalten dürfen: der Ersteller (bei Runden aus Discord) und Personen mit der Serverrecht „Server verwalten“ oder Administrator
@@ -206,6 +234,7 @@ async function button(i, env, ctx) {
   const isHost = isMod || (await ownsRound(row, w.id));
   const isOwner = await ownsRound(row, w.id);
   const key = 'd' + w.id;
+  if (act === 'join' || act === 'release') row = await expireReservations(env, row);
   if (act === 'join') {
     if (isOwner) return say('Du bist der Gastgeber und hast schon einen Platz.');
     const rule = await getBooking(env);
@@ -225,7 +254,7 @@ async function button(i, env, ctx) {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde als gespielt registrieren.');
     if (!hasStarted(row)) return say(`Das geht erst am Tag des vereinbarten Termins (${fmtDate(row.date)}).`);
     if (!row.play_id) {
-      const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
+      const att = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out && !a.res).length + 1;
       const pid = newId();
       await env.DB.prepare("INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,NULL,0,?10,?11,'discord',?12)")
         .bind(pid, row.game_id, row.game, row.guest, row.year, row.date, att, '', 'Über Discord eingetragen', new Date().toISOString(), w.name, row.host_discord || w.id).run();
@@ -243,6 +272,11 @@ async function button(i, env, ctx) {
       { type: 2, style: 4, label: 'Ja, Runde stornieren', custom_id: 'cancelyes:' + id },
       { type: 2, style: 2, label: 'Zurück', custom_id: 'cancelno:' + id },
     ] }] } });
+  } else if (act === 'release') {
+    if (!isHost) return say('Nur der Ersteller oder Moderierende können Reservierungen freigeben.');
+    await expireReservations(env, row, true);
+    await syncParty(env, id, true);
+    return done('Reservierungen freigegeben ✓ Die Plätze sind jetzt für alle frei.');
   } else if (act === 'cancelno') {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können das entscheiden.');
     return reply(managePanel(row));

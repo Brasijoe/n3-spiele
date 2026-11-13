@@ -5,7 +5,8 @@ import { discord, openPartyThread, channelIds, wantedChannel, discordOn, fmtDate
 import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
 import { listMemberGames } from './membergames.js';
 import { inClub } from './games.js';
-const DAY_MAX_MEMBER = 10; // Suchen pro Person in 24 Stunden (nur Mitglieder dürfen suchen)
+const DAY_MAX_MEMBER = 10;
+const RES_HOURS = 24; // reservierte Plätze für „Will auch mitspielen“ in Runden aus einer Suche // Suchen pro Person in 24 Stunden (nur Mitglieder dürfen suchen)
 
 const enc = new TextEncoder();
 const sha256 = async (s) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s))), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -239,10 +240,13 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
     pid = newId();
     const u = await env.DB.prepare("UPDATE wanted SET status = 'found', finder_discord = ?1, finder_name = ?2, party_id = ?3, closed_at = ?4 WHERE id = ?5 AND status = 'open'").bind(finder.id, finder.name, pid, now, r.id).run();
     if (!u.meta.changes) return { err: 'gone' };
-    // Suchende Person plus alle, die „Will auch mitspielen“ gedrückt haben (soweit Platz ist und sie an dem Tag dürfen).
-    const att = { ['d' + r.req_discord]: { name: r.req_name, at: now } };
+    // Reservierte Plätze (Johannes, 2026-11-13): Wer die Runde anlegt, ist Gastgeber. Die suchende Person und alle mit
+    // „Will auch mitspielen“ bekommen eine Benachrichtigung und einen reservierten Platz, den sie mit „Ich bin dabei“ bestätigen.
+    // Die suchende Person behält ihn bis zur Bestätigung/Absage/Freigabe, die anderen 24 Stunden; danach ist er für alle frei.
+    const until = new Date(Date.now() + RES_HOURS * 3600e3).toISOString();
+    const att = { ['d' + r.req_discord]: { name: r.req_name, at: now, res: 1, until: null } };
     inn = []; out = [];
-    for (const x of ints) { if (Object.keys(att).length + 1 < seats && canJoin(rule, prow, x.m ? [rule.memberRole] : [])) { att['d' + x.id] = { name: x.name, at: now }; inn.push(x); } else out.push(x); }
+    for (const x of ints) { if (Object.keys(att).length + 1 < seats && canJoin(rule, prow, x.m ? [rule.memberRole] : [])) { att['d' + x.id] = { name: x.name, at: now, res: 1, until }; inn.push(x); } else out.push(x); }
     const note = hint || `${finder.name} bringt das Spiel mit (gesucht von ${r.req_name}).`;
     await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,1,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)')
       .bind(pid, r.game_id, r.game, r.year, date, time, seats, finder.name, await sha256('discord:' + finder.id), note, JSON.stringify(att), now, finder.id).run();
@@ -253,7 +257,7 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
   // Suche lebt im Such-Kanal, die daraus entstandene Runde wird im Runden-Kanal angekündigt.
   const ch = r.discord_channel || wantedChannel(env), pch = channelIds(env)[0] || ch;
   const v = round
-    ? { content: `✅ **${finder.name}** hat **${r.game}** (gesucht von ${r.req_name}) und bringt es am ${wdName(date)}, ${fmtDate(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${[r.req_name, ...inn.map((x) => x.name)].join(', ')} ${inn.length ? 'sind' : 'ist'} schon dabei.`,
+    ? { content: `✅ **${finder.name}** hat **${r.game}** (gesucht von ${r.req_name}) und bringt es am ${wdName(date)}, ${fmtDate(date)} um ${time} Uhr mit. Die Runde ist angelegt, für ${[r.req_name, ...inn.map((x) => x.name)].join(', ')} ist ein Platz reserviert (bestätigen mit „Ich bin dabei“ am Runden-Post).`,
       embeds: [gameEmbed(r, env)], components: [], allowed_mentions: { parse: [] } }
     : { content: `✅ **${finder.name}** hat **${r.game}** (gesucht von ${r.req_name}). Schreibt euch, um einen Termin auszumachen.` + (ints.length ? ` Auch mitspielen wollen: ${ints.map((x) => x.name).join(', ')}.` : '') + '\nTipp: Trag das Spiel auf der Webseite unter „Mitglieder besitzen“ ein, dann findet man es beim nächsten Mal direkt.',
       embeds: [gameEmbed(r, env)], components: dmLinks([{ id: finder.id, name: finder.name }, { id: r.req_discord, name: r.req_name }, ...ints].filter((p) => fromDiscord ? p.id !== finder.id : true)), allowed_mentions: { parse: [] } };
@@ -264,7 +268,7 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
       const party = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(pid).first();
       const pinged = [r.req_discord, ...inn.map((x) => x.id), ...out.map((x) => x.id)];
       const extra = out.length ? `\n${out.map((x) => `<@${x.id}>`).join(' ')} ihr wolltet auch mitspielen: tragt euch mit „Ich bin dabei“ ein, solange Platz ist.` : '';
-      const msg = await discord(env, 'POST', `/channels/${pch}/messages`, { ...view(party, env), content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${finder.name} hat **${r.game}** und bringt es mit – ihr seid schon dabei.` + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
+      const msg = await discord(env, 'POST', `/channels/${pch}/messages`, { ...view(party, env), content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${finder.name} hat **${r.game}** und bringt es mit. Für euch ist ein Platz reserviert: bestätigt ihn mit „Ich bin dabei“.` + (inn.length ? ` <@${r.req_discord}>, deiner bleibt reserviert, bis du bestätigst oder absagst; die anderen haben ${RES_HOURS} Stunden, danach ist der Platz für alle frei.` : ` Er bleibt reserviert, bis du bestätigst oder absagst.`) + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
       await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(pch, msg.id, pid).run();
       await openPartyThread(env, party, pch, msg.id);
     } else if (r.discord_msg) {
