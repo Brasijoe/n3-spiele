@@ -150,7 +150,7 @@ export const who = (i) => {
 };
 const opt = (i, name) => { const o = (i.data.options || []).find((x) => x.name === name); return o ? o.value : undefined; };
 
-async function cmdParty(i, env) {
+async function cmdParty(i, env, ctx) {
   const w = who(i);
   const raw = str(opt(i, 'spiel'), 160);
   if (!raw) return say('Bitte ein Spiel angeben.');
@@ -174,7 +174,7 @@ async function cmdParty(i, env) {
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   // Per REST posten, damit wir die Nachricht später aktualisieren können; sonst normale Antwort.
   try {
-    if (i.channel_id && env.DISCORD_BOT_TOKEN) { await announceParty(env, id, i.channel_id); return say('Runde angelegt ✓ – sie steht jetzt im Kanal.'); }
+    if (i.channel_id && env.DISCORD_BOT_TOKEN) { await announceParty(env, id, i.channel_id, false, ctx); return say('Runde angelegt ✓ – sie steht jetzt im Kanal.'); }
   } catch (e) { console.log('announce failed', e && e.message); }
   return reply({ type: 4, data: { content: `**${w.name}** sucht Mitspielende!`, ...view(row, env) } });
 }
@@ -193,7 +193,7 @@ async function cmdLog(i, env) {
   return say(`Eingetragen: ${game}, ${players} Spielende, ${fmtDate(date)} ✓`);
 }
 
-async function button(i, env) {
+async function button(i, env, ctx) {
   const [act, id] = String(i.data.custom_id).split(':');
   const w = who(i);
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
@@ -253,6 +253,7 @@ async function button(i, env) {
     return done('Runde storniert ✓');
   } else return say('Unbekannte Aktion.');
   const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
+  if (fresh && fresh.discord_thread && ctx) ctx.waitUntil(syncThread(env, fresh));
   return reply({ type: 7, data: view(fresh, env) });
 }
 
@@ -316,9 +317,9 @@ export async function handleInteraction(req, env, ctx) {
   try {
     await ensureCols(env);
     if (i.type === 4) return await autocomplete(i, env, ctx);
-    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
+    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env, ctx) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
     const cid = String((i.data && i.data.custom_id) || '');
-    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env);
+    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env, ctx);
     if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
   return say('Nicht unterstützt.');
@@ -358,7 +359,9 @@ const api = (env) => env.DISCORD_API_BASE || 'https://discord.com/api/v10';
 export async function discord(env, method, path, body) {
   const res = await fetch(api(env) + path, { method, headers: { Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) throw new Error('discord ' + res.status + ' ' + (await res.text()).slice(0, 160));
-  return res.json();
+  // 204 (z. B. Thread-Mitglied hinzufügen/entfernen) hat keinen Inhalt.
+  const t = res.status === 204 ? '' : await res.text();
+  return t ? JSON.parse(t) : {};
 }
 // DISCORD_CHANNEL_ID: eine oder mehrere Kanal-IDs, durch Komma getrennt. Der erste Kanal ist das Ziel für Runden von der Webseite.
 export const channelIds = (env) => String(env.DISCORD_CHANNEL_ID || '').split(',').map((x) => x.trim()).filter(Boolean);
@@ -380,6 +383,9 @@ export async function ensureCols(env) {
   if (!have.has('event_id')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_id TEXT').run();
   if (!have.has('event_name')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN event_name TEXT').run();
   if (!have.has('bring_id')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN bring_id TEXT').run();
+  // Discord-Thread zur Runde: ID und Stand (JSON {m: Mitglieder-IDs, n: Name, a: archiviert}).
+  if (!have.has('discord_thread')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_thread TEXT').run();
+  if (!have.has('thread_state')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN thread_state TEXT').run();
   // Spiele, die Mitglieder selbst besitzen (Besitzer = Discord-Name, mit Zustimmung), und Anfragen „Bitte mitbringen“.
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS member_games (id TEXT PRIMARY KEY, discord_id TEXT NOT NULL, game_id INTEGER, game TEXT NOT NULL, year INTEGER, note TEXT NOT NULL DEFAULT \'\', data TEXT, consent_at TEXT NOT NULL, created_at TEXT NOT NULL)').run();
   await env.DB.prepare('CREATE INDEX IF NOT EXISTS member_games_owner ON member_games(discord_id)').run();
@@ -416,25 +422,85 @@ async function budget(env, name, max, windowSec) {
   const row = await env.DB.prepare('INSERT INTO rate(k, n, ts) VALUES(?1, 1, ?2) ON CONFLICT(k) DO UPDATE SET n = n + 1 RETURNING n').bind(k, Date.now()).first();
   return row.n <= max;
 }
-export async function announceParty(env, id, channelId, fromWeb = false) {
+export async function announceParty(env, id, channelId, fromWeb = false, ctx = null) {
   if (fromWeb && !((await budget(env, 'new-h', 5, 3600)) && (await budget(env, 'new-d', 15, 86400)))) { console.log('discord: announce limit reached, skipped'); return null; }
   channelId = channelId || channelIds(env)[0];
   const row = await getParty(env, id); if (!row) return null;
   if (row.game_id) { try { await Promise.race([warmCover(env, row.game_id), new Promise((r) => setTimeout(r, 4000))]); } catch { /* ohne Vorwärmen */ } }
   const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: headline(row), ...view(row, env) });
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
+  // Aus einem Discord-Befehl im Hintergrund, damit die Antwort innerhalb von 3 Sekunden bleibt.
+  const th = openPartyThread(env, row, channelId, msg.id);
+  if (ctx) ctx.waitUntil(th); else await th;
   return msg.id;
+}
+
+// ---------- Thread pro Runde ----------
+// Öffentlicher Thread am Runden-Post: Ersteller und alle Mitspielenden (mit Discord) werden hinzugefügt, wer austritt, wird entfernt.
+// Nach dem Spieltag (nächtlich) oder bei Absage wird er archiviert und gesperrt. Braucht die Bot-Rechte
+// „Öffentliche Threads erstellen“, „Nachrichten in Threads senden“ und „Threads verwalten“. Fehler hier stören die Runde nie.
+const threadName = (row) => `${row.game} · ${wdName(row.date)} ${fmtDate(row.date)}`.slice(0, 100);
+const tState = (row) => { try { return JSON.parse(row.thread_state || '{}') || {}; } catch { return {}; } };
+export function partyDiscordIds(row) {
+  const ids = new Set(row.host_discord ? [row.host_discord] : []);
+  let att = {}; try { att = JSON.parse(row.attendees || '{}'); } catch { /* leer */ }
+  for (const [k, a] of Object.entries(att)) { if (a && a.out) continue; const id = (a && a.did) || (k.startsWith('d') && /^d\d+$/.test(k) ? k.slice(1) : null); if (id) ids.add(String(id)); }
+  return [...ids];
+}
+export async function openPartyThread(env, row, channelId, msgId) {
+  if (!env.DISCORD_BOT_TOKEN || !channelId || !msgId) return;
+  try {
+    const name = threadName(row);
+    const th = await discord(env, 'POST', `/channels/${channelId}/messages/${msgId}/threads`, { name, auto_archive_duration: 10080 });
+    await env.DB.prepare('UPDATE parties SET discord_thread = ?1, thread_state = ?2 WHERE id = ?3').bind(th.id, JSON.stringify({ m: [], n: name }), row.id).run();
+    await discord(env, 'POST', `/channels/${th.id}/messages`, { content: `Absprachen zur Runde hier: wer bringt was mit, kleine Änderungen, Fragen. Alle, die dabei sind, werden automatisch hinzugefügt.`, allowed_mentions: { parse: [] } });
+    await syncThread(env, { ...row, discord_thread: th.id, thread_state: JSON.stringify({ m: [], n: name }) });
+  } catch (e) { console.log('party thread failed', e && e.message); }
+}
+// Mitglieder und Name des Threads an die Runde angleichen (nur Änderungen werden an Discord geschickt).
+export async function syncThread(env, row) {
+  if (!row || !row.discord_thread || !env.DISCORD_BOT_TOKEN) return;
+  const st = tState(row); if (st.a) return;
+  const want = partyDiscordIds(row), have = new Set(st.m || []);
+  const add = want.filter((x) => !have.has(x)), rem = [...have].filter((x) => !want.includes(x));
+  const name = threadName(row), t = row.discord_thread;
+  try {
+    if (name !== st.n) { await discord(env, 'PATCH', `/channels/${t}`, { name }); st.n = name; }
+    for (const id of add.slice(0, 30)) { await discord(env, 'PUT', `/channels/${t}/thread-members/${id}`); have.add(id); }
+    for (const id of rem.slice(0, 30)) { await discord(env, 'DELETE', `/channels/${t}/thread-members/${id}`); have.delete(id); }
+  } catch (e) { console.log('party thread sync failed', e && e.message); }
+  st.m = [...have];
+  await env.DB.prepare('UPDATE parties SET thread_state = ?1 WHERE id = ?2').bind(JSON.stringify(st), row.id).run();
+}
+// Thread schließen: optional mit Abschlussnachricht, dann archivieren und sperren.
+export async function closeThread(env, row, text) {
+  if (!row || !row.discord_thread || !env.DISCORD_BOT_TOKEN) return;
+  const st = tState(row); if (st.a) return;
+  try {
+    if (text) await discord(env, 'POST', `/channels/${row.discord_thread}/messages`, { content: text, allowed_mentions: { parse: [] } });
+    await discord(env, 'PATCH', `/channels/${row.discord_thread}`, { archived: true, locked: true });
+  } catch (e) { console.log('party thread close failed', e && e.message); }
+  st.a = 1;
+  try { await env.DB.prepare('UPDATE parties SET thread_state = ?1 WHERE id = ?2').bind(JSON.stringify(st), row.id).run(); } catch { /* Runde schon gelöscht */ }
+}
+// Nächtlich: Threads von Runden, deren Spieltag vorbei ist, archivieren (höchstens 40 pro Lauf).
+export async function archiveOldThreads(env) {
+  const { results } = await env.DB.prepare("SELECT * FROM parties WHERE discord_thread IS NOT NULL AND date < ?1 AND coalesce(json_extract(thread_state, '$.a'), 0) = 0 LIMIT 40").bind(berlinToday()).all();
+  for (const r of results) await closeThread(env, r, null);
+  return results.length;
 }
 export async function syncParty(env, id, internal = false) {
   if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   const row = await getParty(env, id);
   if (!row || !row.discord_msg) return;
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: headline(row), ...view(row, env) });
+  await syncThread(env, row);
 }
 export async function cancelPartyMessage(env, row, internal = false) {
   if (!row || !row.discord_msg) return;
   if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] });
+  await closeThread(env, row, `❌ Die Runde wurde abgesagt. Dieser Thread ist jetzt geschlossen.`);
 }
 
 // Prüft (höchstens alle 10 Minuten pro Person), ob jemand noch auf dem Server ist. Wer ihn verlassen hat, verliert den Code.

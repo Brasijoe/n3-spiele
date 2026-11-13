@@ -1,7 +1,7 @@
 // „Hat jemand …?“: Ein Spiel, das weder in der Club-Sammlung noch bei den Mitgliederspielen steht, im Such-Kanal (DISCORD_WANTED_CHANNEL_ID, z. B. #spiele-gesucht) suchen.
 // Wer es hat, antwortet in Discord mit „Hab ich“ (optional gleich mit einer Runde). Andere können „Will auch mitspielen“ drücken.
 // Offene Suchen stehen auf der Webseite im Tab „Mitspieler-/Spielesuche“, Unterseite „Hat jemand …?“ (#suche), und laufen nach 3 Monaten ohne Zusage ab.
-import { discord, channelIds, wantedChannel, discordOn, fmtDate, wdName, who, say, reply, berlinToday, parseDate, nextStammtischDate, headline, view } from './discord.js';
+import { discord, openPartyThread, channelIds, wantedChannel, discordOn, fmtDate, wdName, who, say, reply, berlinToday, parseDate, nextStammtischDate, headline, view } from './discord.js';
 import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
 import { listMemberGames } from './membergames.js';
 import { inClub } from './games.js';
@@ -264,6 +264,7 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
       const extra = out.length ? `\n${out.map((x) => `<@${x.id}>`).join(' ')} ihr wolltet auch mitspielen: tragt euch mit „Ich bin dabei“ ein, solange Platz ist.` : '';
       const msg = await discord(env, 'POST', `/channels/${pch}/messages`, { ...view(party, env), content: headline(party) + `\n🙌 <@${r.req_discord}>${inn.map((x) => ` <@${x.id}>`).join('')}, ${finder.name} hat **${r.game}** und bringt es mit – ihr seid schon dabei.` + extra, allowed_mentions: { users: pinged.slice(0, 100) } });
       await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(pch, msg.id, pid).run();
+      await openPartyThread(env, party, pch, msg.id);
     } else if (r.discord_msg) {
       await discord(env, 'POST', `/channels/${r.discord_channel}/messages`, {
         content: `<@${r.req_discord}>${ints.length ? ' ' + ints.map((x) => `<@${x.id}>`).join(' ') : ''} ${finder.name} (<@${finder.id}>) hat **${r.game}**! Macht direkt einen Termin aus, eine Runde kann ${finder.name} jederzeit mit \`/party\` oder auf der Webseite anlegen.`,
