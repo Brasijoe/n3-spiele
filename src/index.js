@@ -4,7 +4,7 @@ import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
-import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads } from './discord.js';
 
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -233,9 +233,12 @@ async function route(req, env, ctx, url) {
       if (u.err || !canJoin(rule, prow, u.member.roles)) return fail(403, u.err ? 'join_login' : 'join_members_only');
     }
     // Atomar: nur eintragen, wenn noch ein Platz frei ist (Gastgeber belegt einen Platz).
+    // Angemeldet (Discord oder /code)? Dann die Discord-ID mitspeichern, damit der Bot die Person zum Thread der Runde hinzufügt.
+    let did = null;
+    if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (!u.err) did = u.member.discord_id; }
     const r = await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2))
       WHERE id = ?3 AND date >= ?4 AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0) + 1 < seats`)
-      .bind(key, JSON.stringify({ name, at: new Date().toISOString() }), g[1], new Date(Date.now() - 864e5).toISOString().slice(0, 10)).run();
+      .bind(key, JSON.stringify(did ? { name, at: new Date().toISOString(), did } : { name, at: new Date().toISOString() }), g[1], new Date(Date.now() - 864e5).toISOString().slice(0, 10)).run();
     if (!r.meta.changes) return fail(409, 'full_or_gone');
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
     return json({ ok: true });
@@ -456,6 +459,7 @@ export default {
       try { await ensureCols(env); const n = await pruneMemberGames(env); if (n) console.log('member games removed', n); } catch (e) { console.log('member games prune failed', e.code || e.message); }
       try { await backfillMemberGames(env); } catch (e) { console.log('member games backfill failed', e.code || e.message); }
       try { const n = await expireWanted(env); if (n) console.log('wanted expired', n); } catch (e) { console.log('wanted expire failed', e.code || e.message); }
+      try { await ensureCols(env); const n = await archiveOldThreads(env); if (n) console.log('party threads archived', n); } catch (e) { console.log('thread archive failed', e.code || e.message); }
     })());
   },
 };

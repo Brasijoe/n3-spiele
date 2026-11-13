@@ -2,7 +2,7 @@
 // Andere Mitglieder können sie bitten, ein Spiel an bis zu 3 Terminen mitzubringen. Die Anfrage landet im Bot-Kanal
 // mit Erwähnung des Besitzers; er nimmt einen Termin an (Uhrzeit und Plätze im Fenster) oder lehnt ab.
 // Annehmen legt automatisch eine Spielrunde an, in der beide schon stehen.
-import { discord, view, headline, channelIds, discordOn, fmtDate, wdName, who, say, reply, berlinToday } from './discord.js';
+import { discord, view, headline, openPartyThread, channelIds, discordOn, fmtDate, wdName, who, say, reply, berlinToday } from './discord.js';
 import { fetchThings } from './games.js';
 import { fetchCollection } from './bgg.js';
 import { getBooking, isMember } from './booking.js';
@@ -325,6 +325,7 @@ export async function bringSubmit(i, env, ctx) {
       const v = view(party, env);
       const msg = await discord(env, 'POST', `/channels/${ch}/messages`, { ...v, content: headline(party) + `\n🙌 <@${r.req_discord}>, ${w.name} bringt **${r.game}** mit – du bist schon dabei.`, allowed_mentions: { users: [r.req_discord] } });
       await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(ch, msg.id, pid).run();
+      await openPartyThread(env, await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(pid).first(), ch, msg.id);
     })().catch((e) => console.log('bring party announce failed', e && e.message)));
     return reply({ type: 7, data: {
       content: `✅ **${w.name}** bringt **${r.game}** am ${dayTxt(date)} um ${time} Uhr mit. Die Runde ist angelegt, ${r.req_name} ist schon dabei. Uhrzeit und Plätze kannst du später über „Verwalten“ an der Runde ändern.` + (multi ? ' Die Anfrage ist damit für die anderen Besitzer geschlossen.' : ''),
