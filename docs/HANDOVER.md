@@ -48,7 +48,7 @@ Cloudflare Worker  (src/index.js, run_worker_first only for /api/*)
    ├── src/membergames.js  member-owned games, BGG collection import, bring requests
    ├── src/games.js        GeekList games missing from the page (extra_games), cover proxy
    ├── src/bgg.js          BGG XML API: search, GeekList, collection (token only here)
-   ├── D1 database "DB"    plays, parties, config, rate, members, sessions, events, member_games, bring_requests, extra_games, auth_handoff
+   ├── D1 database "DB"    plays, parties, config, rate, members, sessions, events, member_games, bring_requests, wanted, extra_games, auth_handoff
    └── Cron                03:17 UTC daily (GeekList, missing games, prune, backfill, rate cleanup); every 20 min (member game backfill)
           ▲
 Discord  ─┘  POST /api/discord/interactions (Ed25519-signed); the Worker calls the Discord REST API with the bot token
@@ -90,6 +90,7 @@ Key design choices worth keeping:
 | `events` | Event codes | `name`, `code`, `valid_until`, `date_from`, `date_to`. |
 | `member_games` | Games owned by members | `discord_id`, `game_id`, `data` (BGG details JSON, may be null until backfilled), `consent_at`, `src` (`bgg` = imported, removed again by a sync). |
 | `bring_requests` | "Please bring" requests | `dates` (JSON, up to 3), `status`, `owners`/`declined` (JSON, multi-owner flow), `party_id` once accepted. |
+| `wanted` | "Does anyone have …?" requests (tab "Spiel suchen") | `req_discord`, `req_member`, `game`/`game_id`, `interested` (JSON `[{id,name,m}]`), `status` (open/found/withdrawn/expired), `finder_discord`, `party_id`, `expires_at` (3 months), Discord message ids. |
 | `extra_games` | GeekList games not in the built-in data | `data` JSON in the same shape as built-in games, `thumb`. |
 
 ### Built-in game data (`#gameData` in `public/index.html`)
