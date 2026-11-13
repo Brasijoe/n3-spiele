@@ -1,201 +1,205 @@
-# N3 Spielesammlung (eigenständige Version)
+# N3 game collection (standalone version)
 
-Die Spielesammlung des Nerd Nexus Nürnberg als eigene Webseite: Sammlung mit Filtern, Partien eintragen (auch Gastspiele mit Live-Suche bei BoardGameGeek), Statistik, „Mitspieler finden“ und eine Verwaltungsansicht. Sie läuft komplett auf **Cloudflare** (Worker + D1-Datenbank, Free-Tarif reicht) und lässt sich per Link oder **iFrame** in die N3-Homepage einbinden.
+The board game collection of Nerd Nexus Nürnberg as its own website: the collection with filters, logging plays (including guest games with live search on BoardGameGeek), statistics, "Mitspieler finden" (find players) and an admin view. It runs entirely on **Cloudflare** (Worker + D1 database, the free plan is enough) and can be linked to or embedded in the N3 homepage via **iFrame**.
+
+Want to set this up for another club? See [`docs/HANDOVER.md`](docs/HANDOVER.md).
+
+UI labels in quotes below are the German texts shown on the page (the admin view, "Verwaltung", is German only).
 
 ```
-public/            statische Seite (index.html), Cover, Schriften, _headers
-src/index.js       Worker: API unter /api/*, Rechteprüfung (Anmeldung, Admin, QR-/Event-Codes), Limits
-src/auth.js        „Mit Discord anmelden“, Sitzungen, Zugangsprüfung über den Bot
-src/discord.js     Discord-Bot (/party, /log, /code) und Abgleich der Runden-Nachrichten
-src/games.js       Spiele, die per GeekList-Import nachgetragen wurden
-src/bgg.js         BGG-XML-API: Suche und GeekList (Token nur hier)
-schema.sql         Tabellen der D1-Datenbank
-seed.sql           übernommene Daten aus dem Prototyp
-docs/              Einbettungs-Snippet für die Homepage
-test/              Parser-Test, Browser-Test (e2e), Hilfsskript
+public/            static page (index.html), covers, fonts, _headers
+src/index.js       Worker: API under /api/*, permission checks (login, admin, QR/event codes), limits
+src/auth.js        "Mit Discord anmelden" (sign in with Discord), sessions, access check via the bot
+src/discord.js     Discord bot (/party, /log, /code) and sync of round messages
+src/games.js       games added later via the GeekList import
+src/bgg.js         BGG XML API: search and GeekList (token only here)
+schema.sql         D1 database tables
+seed.sql           data taken over from the prototype
+docs/              embed snippet for the homepage, handover for reuse
+test/              parser tests, browser test (e2e), helper script
 ```
 
-## Für neue Helfer
+## For new helpers
 
-Kurzer Einstieg, wenn du (oder dein Claude) hier mitarbeiten willst.
+A short intro if you (or your Claude) want to work on this.
 
-**Wie es läuft:** Ein Push auf `main` wird von Cloudflare automatisch gebaut und ist nach 1–2 Minuten live unter https://n3-spiele.nerdnexus.workers.dev (eingebettet auf nerd-nexus.de). Deshalb wird nie direkt auf `main` gearbeitet, sondern auf einem eigenen Branch mit Pull Request. Gemergt wird erst, wenn Johannes es freigibt. Der fehlschlagende Check „Workers Builds“ bei Pull Requests ist bekannt (Vorschau-Builds sind nicht eingerichtet) und kein Fehler im Code.
+**How it runs:** A push to `main` is built automatically by Cloudflare and is live after 1–2 minutes at https://n3-spiele.nerdnexus.workers.dev (embedded on nerd-nexus.de). That is why nobody works directly on `main`: use your own branch and a pull request. Merging happens only once Johannes approves. The failing "Workers Builds" check on pull requests is known (preview builds are not set up) and is not a code error.
 
-**Was du brauchst:**
-- Zum Mitentwickeln: Zugriff auf dieses Repo (Johannes fügt dich unter Settings → Collaborators hinzu). Mehr nicht, lokal läuft alles mit Testwerten.
-- Nur wer selbst deployt oder Einstellungen ändert: Zugang zum Cloudflare-Konto (Worker `n3-spiele`, D1-Datenbank) und zur Discord-App im Developer Portal. Das vergibt Johannes.
+**What you need:**
+- To develop: access to this repo (Johannes adds you under Settings → Collaborators). Nothing else; locally everything runs with test values.
+- Only if you deploy yourself or change settings: access to the Cloudflare account (Worker `n3-spiele`, D1 database) and to the Discord app in the Developer Portal. Johannes grants that.
 
-**Wo was steht:**
-- Die ganze Seite (HTML, CSS, JS, Texte DE/EN, Spieledaten) ist `public/index.html`. Texte stehen im Objekt `TXT` (`de` und `en`).
-- Öffentliche Einstellungen (Discord-Server, Kanal, Rolle, Adresse) stehen in `wrangler.toml`. Geheimnisse stehen **nur** in Cloudflare (Liste am Ende von `wrangler.toml`).
-- Tabellen legt der Worker beim ersten Zugriff selbst an bzw. ergänzt Spalten. `schema.sql` ist nur der Grundstock.
+**Where things are:**
+- The whole page (HTML, CSS, JS, texts DE/EN, game data) is `public/index.html`. Texts are in the `TXT` object (`de` and `en`).
+- Public settings (Discord server, channel, role, address) are in `wrangler.toml`. Secrets are **only** in Cloudflare (list at the end of `wrangler.toml`).
+- The Worker creates tables on first access and adds missing columns itself. `schema.sql` is only the base.
 
-**Regeln:**
-- Niemals Tokens oder Passwörter (BGG, Discord-Bot, Client-Secret, Admin) ins Repo, in Code oder in Chats schreiben.
-- Volle Namen von Leihgebern gehören nicht ins öffentliche Repo, nur Kurznamen (das Verzeichnis liegt in der Verwaltung).
-- Der Bot läuft noch auf dem **Discord-Testserver**. Umstellen auf den echten N3-Server nur auf Ansage von Johannes (vorbereitete Werte stehen auskommentiert in `wrangler.toml`; dann auch `DISCORD_ROLE_ID` auf die Brettspiel-Rolle setzen).
-- Vor jedem Pull Request: `npm test` und, wenn Anmeldung/Rechte betroffen sind, `node test/web-login.mjs` (siehe Abschnitt 6).
+**Rules:**
+- Never write tokens or passwords (BGG, Discord bot, client secret, admin) into the repo, code or chats.
+- Full names of lenders do not belong in the public repo, only short names (the directory is in the admin view).
+- The bot still runs on the **Discord test server**. Switch to the real N3 server only when Johannes says so (prepared values are commented out in `wrangler.toml`; then also set `DISCORD_ROLE_ID` to the board game role).
+- Before every pull request: `npm test` and, if login/permissions are affected, `node test/web-login.mjs` (see section 6).
 
-**Mit Claude arbeiten:** Repo in Claude Code (z. B. claude.ai/code) öffnen und sagen, was du willst. Ein guter Startsatz: „Lies zuerst die README, arbeite auf einem eigenen Branch und öffne einen Pull Request, nicht mergen.“ Claude kann von dort aus BGG nicht erreichen; Änderungen am BGG-Import also auf dem eigenen Rechner testen.
+**Working with Claude:** Open the repo in Claude Code (e.g. claude.ai/code) and say what you want. A good opening line: "Read the README first, work on your own branch and open a pull request, don't merge." Claude cannot reach BGG from there, so test changes to the BGG import on your own computer.
 
-**Offene Ideen (nur nach Absprache):** eigene Adresse wie `spiele.nerd-nexus.de` (DNS der Domain zu Cloudflare), Rollenprüfung am Go-Live, `/code` für Nicht-Mitglieder nur befristet, installierbare Web-App (PWA).
+**Open ideas (only after agreement):** own address like `spiele.nerd-nexus.de` (domain DNS moved to Cloudflare), role check at go-live, `/code` for non-members only time-limited, installable web app (PWA).
 
-## 1. Einmalig einrichten
+## 1. One-time setup
 
-Voraussetzungen: Node.js 20 oder neuer und ein Cloudflare-Account.
+Requirements: Node.js 20 or newer and a Cloudflare account.
 
 ```bash
 npm install
 npx wrangler login
-npx wrangler d1 create n3-spiele        # gibt eine database_id aus -> in wrangler.toml eintragen
-npm run db:init                         # legt Tabellen an und übernimmt die bisherigen Daten
-npx wrangler secret put ADMIN_TOKEN     # Passwort für die Verwaltung, lang und zufällig wählen
-npx wrangler secret put BGG_TOKEN       # NEUEN BGG-Token eintragen (siehe unten)
+npx wrangler d1 create n3-spiele        # prints a database_id -> put it into wrangler.toml
+npm run db:init                         # creates tables and imports the existing data
+npx wrangler secret put ADMIN_TOKEN     # password for the admin view, choose long and random
+npx wrangler secret put BGG_TOKEN       # enter a NEW BGG token (see below)
 npm run deploy
 ```
 
-Danach auf der Seite unten rechts **„Verwaltung“** öffnen, mit dem Admin-Passwort anmelden und unter „Vereinscode ändern“ den 4-stelligen Code setzen. Solange kein Code gesetzt ist, lassen sich keine Partien und Runden anlegen.
+Then open **"Verwaltung"** (admin) at the bottom right of the page, log in with the admin password and set the 4-digit code under "Vereinscode ändern" (change club code). As long as no code is set, no plays or rounds can be created.
 
-Alternativ lässt sich das GitHub-Repo in Cloudflare importieren (Workers & Pages, Import a repository). Dann wird bei jedem Push automatisch veröffentlicht. Die Secrets und die D1-Anbindung stellst du dann im Dashboard ein.
+Alternatively, import the GitHub repo into Cloudflare (Workers & Pages, Import a repository). Every push is then published automatically. You then set the secrets and the D1 binding in the dashboard.
 
-**Domain:** Unter Workers, Einstellungen, Domains & Routen eine Custom Domain wie `spiele.<n3-domain>` hinzufügen (die Domain muss bei Cloudflare liegen). Ohne eigene Domain gibt es eine `*.workers.dev`-Adresse.
+**Domain:** Under Workers, Settings, Domains & Routes, add a custom domain like `spiele.<n3-domain>` (the domain must be on Cloudflare). Without your own domain you get a `*.workers.dev` address.
 
-## 2. In die Homepage einbetten
+## 2. Embedding in the homepage
 
-1. In `public/_headers` bei `frame-ancestors` die Adresse der Homepage eintragen, zum Beispiel
+1. In `public/_headers`, enter the homepage address under `frame-ancestors`, for example
    `Content-Security-Policy: frame-ancestors 'self' https://www.n3-domain.de`
-   (ausgeliefert ist `*`, also jede Seite darf einbetten) und neu veröffentlichen.
-2. Den Block aus `docs/embed-snippet.html` an die gewünschte Stelle der Homepage setzen und die Adresse im `src` anpassen.
+   (with `*` any site may embed it) and publish again.
+2. Put the block from `docs/embed-snippet.html` where you want it on the homepage and adjust the address in `src`.
 
-Das Snippet sorgt dafür, dass der iFrame mit dem Inhalt wächst (kein Scrollbalken im iFrame) und dass Dialoge im sichtbaren Bereich der Homepage erscheinen. Im iFrame blendet die Seite automatisch Titel und Einleitung aus.
+The snippet makes the iFrame grow with its content (no scroll bar inside the iFrame) and makes dialogs appear in the visible part of the homepage. Inside the iFrame the page hides its title and intro automatically.
 
-Nützliche Parameter für Links und iFrame: `?lang=de` oder `?lang=en`, `#statistik` und `#partys` für die Tabs, `?embed=1` für die kompakte Ansicht auch ohne iFrame.
+Useful parameters for links and the iFrame: `?lang=de` or `?lang=en`, `#statistik` and `#partys` for the tabs, `?embed=1` for the compact view even without an iFrame.
 
-## 3. Betrieb
+## 3. Operation
 
-- **Vereinscode ändern:** Verwaltung in der Seite. Der Code wird mit Salz als SHA-256 in der Datenbank gespeichert und nur auf dem Server geprüft.
-- **Partien, Runden, Highlights:** Verwaltung in der Seite. Partien löschen können nur Admins, Runden löschen Admins und der Gastgeber im selben Browser.
-- **Eintragen per QR-Code (ohne Discord):** In der Verwaltung unter „Eintragen per QR-Code“ einen Schlüssel erzeugen und „Aushang drucken“ (A4-Plakat, `qr.html`). Der QR-Code führt auf `/?log=<schlüssel>`, öffnet direkt den Eintragen-Dialog und merkt sich den Schlüssel auf dem Handy. Wer so einträgt, gibt nur seinen Namen an (in der Verwaltung bei der Partie sichtbar, „(QR)“). Grenzen: 40 Partien pro Stunde und IP, 150 pro Tag insgesamt über diesen Weg. Wird der Link weitergegeben, einfach einen neuen Schlüssel erzeugen und neu drucken; alte Aushänge und gemerkte Schlüssel gelten dann sofort nicht mehr. Test: `node test/qr-log.cjs` (nach `test/reset.sh`).
-- **Sprache, Besitzer, Inventurdaten:** Verwaltung, Block „Sprache, Besitzer und Inventurdaten“. Vorbelegt aus der Inventurliste (Stand 11.11.2026, `DEF_META` in `public/index.html`): Inventarnummer, Anschaffungsdatum, Zustand und Leihgeber/Spender (nur Vorname, weil die Seite öffentlich ist; „?“ = unbekannt). Je Spiel die Sprache der Ausgabe (DE/EN/FR), die Sprachabhängigkeit (Standard: BGG-Umfrage „Language Dependence“, Stand 11.11.2026, hier überschreibbar), Besitzer und „dabei seit“. Gespeichert in `config` unter `gamemeta`. Besitzer und Datum sieht man beim Überfahren eines Covers. Der Sprachfilter zeigt zuerst die Spiele in der gewählten Sprache, dann sprachneutrale und fast sprachneutrale Spiele.
-- **Mitglieder besitzen:** Mitglieder (Discord-Mitgliederrolle) tragen unter „Mitglieder besitzen“ eigene Spiele ein, nur mit Zustimmung, dass ihr Discord-Server-Name öffentlich als Besitzer erscheint. Die Spiele stehen lila umrandet in der Übersicht und lassen sich mit dem Filter „Herkunft“ ein- oder ausblenden; sie zählen nicht zur Sammlung. Spiele von Personen ohne Mitgliederrolle werden nicht angezeigt. Mitglieder können andere bitten, ein Spiel an bis zu 3 Terminen mitzubringen: Der Bot schreibt im (ersten) Bot-Kanal mit Erwähnung des Besitzers, der einen Termin annimmt (Uhrzeit und Plätze im Fenster) oder ablehnt (optionale Nachricht, danach Buttons für eine Direktnachricht). Annehmen legt automatisch eine Runde an, in der beide schon stehen. Grenzen: 5 Anfragen pro Tag und Person, 30 insgesamt. Admins löschen Einträge unter „Mitglieder besitzen“. Test: `test/member-games.mjs` (Anleitung oben in der Datei).
-- **Besitzer-Verzeichnis:** Verwaltung, aufklappbar unter der Spieleliste. Eine Zeile pro Person, `Kurzname = voller Name`. Gespeichert in `config` unter `owners` und nur mit Admin-Token lesbar (`/api/config/owners`), damit volle Namen nicht im öffentlichen Code stehen. Das Besitzerfeld schlägt beim Tippen alle bekannten Besitzer vor. Der volle Name erscheint beim Überfahren und im Excel-Export unter Leihgeber/Spender.
-- **Excel-Export für die Inventurliste:** Verwaltung, „Als Excel exportieren“. Spalten wie in der Inventurliste plus BGG-ID, Besitzer, Datum, Sprache und BGG-Daten. Die Datei entsteht im Browser, ohne Fremdbibliothek.
-- **Datensicherung:** siehe Abschnitt „Datensicherung“ unten (nächtlich nach R2, Download in der Verwaltung).
-- **Tokens tauschen:** `npx wrangler secret put BGG_TOKEN` (oder `ADMIN_TOKEN`), ohne neues Deployment.
-- **Logs bei Fehlern:** `npx wrangler tail`
+- **Change the club code:** admin view on the page. The code is stored salted as SHA-256 in the database and checked only on the server.
+- **Plays, rounds, highlights:** admin view on the page. Only admins delete plays; admins and the host (in the same browser) delete rounds.
+- **Logging via QR code (without Discord):** In the admin view under "Eintragen per QR-Code", create a key and click "Aushang drucken" (print poster, A4, `qr.html`). The QR code leads to `/?log=<key>`, opens the log dialog directly and remembers the key on the phone. People logging this way only enter their name (visible on the play in the admin view, "(QR)"). Limits: 40 plays per hour per IP, 150 per day in total via this route. If the link gets passed around, just create a new key and reprint; old posters and remembered keys stop working immediately. Test: `node test/qr-log.cjs` (after `test/reset.sh`).
+- **Language, owner, inventory data:** admin view, block "Sprache, Besitzer und Inventurdaten". Pre-filled from the inventory list (as of 2026-11-11, `DEF_META` in `public/index.html`): inventory number, acquisition date, condition and lender/donor (first name only, because the page is public; "?" = unknown). Per game: the language of the edition (DE/EN/FR), language dependence (default: BGG poll "Language Dependence" as of 2026-11-11, can be overridden here), owner and "dabei seit" (in the club since). Stored in `config` under `gamemeta`. Owner and date show when hovering over a cover. The language filter shows games in the chosen language first, then language-neutral and mostly language-neutral games.
+- **Member-owned games ("Mitglieder besitzen"):** Members (Discord member role) add their own games under "Mitglieder besitzen", only with consent that their Discord server name is shown publicly as owner. The games are framed purple in the overview and can be shown or hidden with the "Herkunft" (origin) filter; they do not count as part of the collection. Games of people without the member role are not shown. Members can ask others to bring a game on up to 3 dates: the bot posts in the (first) bot channel mentioning the owner, who accepts a date (time and seats in a dialog) or declines (optional message, then buttons for a direct message). Accepting automatically creates a round with both people already in it. Limits: 5 requests per day per person, 30 in total. Admins delete entries under "Mitglieder besitzen". Test: `test/member-games.mjs` (instructions at the top of the file).
+- **Owner directory:** admin view, expandable below the game list. One line per person, `short name = full name`. Stored in `config` under `owners` and readable only with the admin token (`/api/config/owners`), so full names are not in the public code. The owner field suggests all known owners while typing. The full name appears on hover and in the Excel export under lender/donor.
+- **Excel export for the inventory list:** admin view, "Als Excel exportieren". Columns as in the inventory list plus BGG ID, owner, date, language and BGG data. The file is created in the browser, without a third-party library.
+- **Backup:** see the "Backup" section below (nightly to R2, download in the admin view).
+- **Swap tokens:** `npx wrangler secret put BGG_TOKEN` (or `ADMIN_TOKEN`), no new deployment needed.
+- **Logs when something fails:** `npx wrangler tail`
 
 ## 4. BoardGameGeek
 
-- **Live-Suche:** Die Seite fragt `/api/bgg/search?q=…`. Der Worker ruft die BGG-XML-API mit dem Token auf, begrenzt auf 60 Anfragen pro Minute und IP, und merkt sich Ergebnisse 24 Stunden im Cloudflare-Cache. Fällt BGG aus, durchsucht die Seite weiter die eigene Sammlung und der Name lässt sich frei eintragen.
-- **GeekList-Abgleich:** Täglich um 03:17 UTC lädt der Worker die GeekList (`GEEKLIST_ID` in `wrangler.toml`). In der Verwaltung steht, welche Einträge der GeekList auf der Seite noch fehlen. Mit „Jetzt von BGG laden“ geht es auch sofort.
-- **Wichtig:** Dieses Paket wurde ohne Netzzugriff zu BGG gebaut. Die Auswertung der XML-Antworten ist mit Beispielen im dokumentierten Format getestet (`npm test`), aber noch nicht gegen die echte API. Bitte nach dem Veröffentlichen einmal „Jetzt von BGG laden“ in der Verwaltung und eine Suche im Gastspiel-Dialog ausprobieren. Bei `bgg_error` hilft `npx wrangler tail`; meist ist dann der Token falsch oder abgelaufen.
-- **Token:** Der Token, der im Chat gepostet wurde, bitte bei https://boardgamegeek.com/applications neu erzeugen und nur den neuen eintragen.
-- Cover und das „Powered by BGG“-Logo liegen lokal in `public/covers/`. Die BGG-Nutzungsbedingungen verlangen die Nennung weiterhin (ist im Footer).
+- **Live search:** The page calls `/api/bgg/search?q=…`. The Worker calls the BGG XML API with the token, limited to 60 requests per minute per IP, and caches results for 24 hours in the Cloudflare cache. If BGG is down, the page still searches the club's own collection and the name can be typed freely.
+- **GeekList sync:** Daily at 03:17 UTC the Worker loads the GeekList (`GEEKLIST_ID` in `wrangler.toml`). The admin view shows which GeekList entries are still missing on the page. "Jetzt von BGG laden" (load from BGG now) does it immediately.
+- **Important:** This package was built without network access to BGG. The parsing of the XML responses is tested with samples in the documented format (`npm test`), but not yet against the real API. After publishing, please try "Jetzt von BGG laden" in the admin view once and a search in the guest game dialog. On `bgg_error`, `npx wrangler tail` helps; usually the token is wrong or expired.
+- **Token:** Please regenerate the token that was posted in the chat at https://boardgamegeek.com/applications and enter only the new one.
+- Covers and the "Powered by BGG" logo are stored locally in `public/covers/`. The BGG terms of use still require the credit (it is in the footer).
 
-## 5. Sicherheit und Datenschutz
+## 5. Security and privacy
 
-- Der BGG-Token liegt nur als Secret im Worker, nie im Browser oder im Repo.
-- Die Seite ist öffentlich lesbar. Schreiben geht nur mit Vereinscode (Partien, Runden anlegen) oder Admin-Passwort (Verwaltung). Beitreten zu einer Runde braucht nur einen Namen, ist aber begrenzt.
-- Falscher Code: höchstens 15 Versuche in 10 Minuten pro IP. Das schützt gegen Spaß und Zufall, ein 4-stelliger Code ist aber kein Schutz gegen einen gezielten Angriff mit vielen Adressen.
-- Es gibt keine Cookies und keine Drittanbieter-Aufrufe: Schriften (Karla, Rubik, OFL-Lizenz) und Cover werden selbst ausgeliefert. Anmeldedaten und Namen von Mitspielern werden nur in der D1-Datenbank gespeichert.
-- Für die Begrenzung speichert die Tabelle `rate` IP-Adressen kurzzeitig im Klartext und löscht sie nach spätestens 24 Stunden. Bitte in der Datenschutzerklärung erwähnen, ebenso die Server-Logs von Cloudflare.
-- Die API schickt keine CORS-Header, andere Webseiten können sie also nicht aus dem Browser aufrufen.
+- The BGG token is stored only as a secret in the Worker, never in the browser or the repo.
+- The page is publicly readable. Writing requires the club code (creating plays and rounds) or the admin password (admin view). Joining a round only needs a name, but is limited.
+- Wrong code: at most 15 attempts in 10 minutes per IP. That protects against fun and chance, but a 4-digit code is no protection against a targeted attack from many addresses.
+- There are no cookies and no third-party calls: fonts (Karla, Rubik, OFL license) and covers are served by the site itself. Login data and names of players are stored only in the D1 database.
+- For rate limiting, the `rate` table briefly stores IP addresses in plain text and deletes them after 24 hours at the latest. Please mention this in the privacy statement, as well as Cloudflare's server logs.
+- The API sends no CORS headers, so other websites cannot call it from the browser.
 
-## 6. Lokal entwickeln
+## 6. Local development
 
 ```bash
-cp .dev.vars.example .dev.vars   # lokale Testwerte
+cp .dev.vars.example .dev.vars   # local test values
 npm run db:init:local
 npm run dev                      # http://localhost:8787
-npm test                         # Parser-Tests (BGG, Discord, Spiele)
+npm test                         # parser tests (BGG, Discord, games)
 ```
 
-`test/reset.sh` startet einen frischen Worker auf Port 8799 (Admin-Passwort `test-admin-pw` aus `.dev.vars`). `test/web-login.mjs` prüft Anmeldung und Rechte gegen ein simuliertes Discord; welche Werte in `.dev.vars` dafür nötig sind, steht oben in der Datei.
+`test/reset.sh` starts a fresh Worker on port 8799 (admin password `test-admin-pw` from `.dev.vars`). `test/web-login.mjs` checks login and permissions against a simulated Discord; the `.dev.vars` values it needs are listed at the top of the file.
 
-Der Browser-Test `test/e2e.cjs` braucht Playwright, eine frische lokale Datenbank (`test/reset.sh`, startet Port 8799 mit Code 1234 und Admin-Passwort `test-admin-pw`) und einen kleinen Webserver für die Elternseite (`cd test/parent && python3 -m http.server 8800`).
+The browser test `test/e2e.cjs` needs Playwright, a fresh local database (`test/reset.sh`, starts port 8799 with code 1234 and admin password `test-admin-pw`) and a small web server for the parent page (`cd test/parent && python3 -m http.server 8800`). Note: this test is outdated (written for the old club code) and needs updating.
 
-## 7. Datenmodell (D1)
+## 7. Data model (D1)
 
-`plays` (Partien, mit `guest` für Gastspiele), `parties` (Runden mit `attendees` als JSON-Objekt, `play_id` sobald geloggt), `config` (`club_code_hash`, `highlights`, `geeklist`), `rate` (Begrenzung).
+`plays` (plays, with `guest` for guest games), `parties` (rounds with `attendees` as a JSON object, `play_id` once logged), `config` (`club_code_hash`, `highlights`, `geeklist`), `rate` (rate limiting). More tables are added by the Worker itself; see [`docs/HANDOVER.md`](docs/HANDOVER.md) for the full list.
 
-Die Spieledaten selbst (Bewertungen, Spielerzahlen, Kategorien, Texte) stehen als JSON in `public/index.html` (`<script id="gameData">`). Das automatische Neubauen dieser Daten aus der GeekList ist noch nicht umgesetzt, im Moment zeigt der Abgleich nur, was fehlt.
+The game data itself (ratings, player counts, categories, texts) is JSON in `public/index.html` (`<script id="gameData">`). Rebuilding this data automatically from the GeekList is not implemented yet; for now the sync only shows what is missing.
 
-## 8. Unterschiede zum Prototyp
+## 8. Differences from the prototype
 
-- Vereinscode wird jetzt auf dem Server geprüft statt im Browser.
-- Verwaltung per Admin-Passwort statt Claude-Konto.
-- Änderungen anderer erscheinen nach 15 bis 20 Sekunden (Abfrage statt Live-Verbindung), eigene Änderungen sofort.
-- Die Live-Suche nutzt die echte BGG-API statt eines mitgelieferten Katalogs.
+- The club code is now checked on the server instead of in the browser.
+- Admin access by admin password instead of a Claude account.
+- Other people's changes appear after 15 to 20 seconds (polling instead of a live connection), your own changes immediately.
+- The live search uses the real BGG API instead of a bundled catalog.
 
-## 9. Nächste Schritte
+## 9. Next steps
 
-- **Discord-Bot** im selben Worker: Endpunkt `/api/discord` (Slash-Befehle `/party` und `/log`, Beitreten-Button, Erinnerung am Tag danach). Er arbeitet auf denselben Tabellen, die Runden aus Discord erscheinen also auch auf der Seite. Dafür braucht es eine Discord-App (Application-ID, Public Key, Bot-Token als Secrets) und einen Kanal.
-- Spieledaten automatisch aus der GeekList neu bauen.
+- **Discord bot** in the same Worker: endpoint `/api/discord` (slash commands `/party` and `/log`, join button, reminder the day after). It works on the same tables, so rounds from Discord also appear on the page. This needs a Discord app (application ID, public key, bot token as secrets) and a channel.
+- Rebuild the game data automatically from the GeekList.
 
-## Discord-Bot
+## Discord bot
 
-Der Bot läuft im selben Worker (kein extra Server). Endpoint: `https://<worker>/api/discord/interactions`.
+The bot runs in the same Worker (no extra server). Endpoint: `https://<worker>/api/discord/interactions`.
 
-- Befehle: `/party spiel [datum] [uhrzeit] [plaetze] [hinweis]` legt eine Runde an (Standard: nächster Dienstag 18:00, 4 Plätze), die Nachricht hat Buttons *Ich bin dabei*, *Absagen* und (Gastgeber) *Partie eintragen*. `/log spiel spieler [datum] [sieger] [dauer] [hinweis]` trägt direkt eine Partie ein. Spielnamen werden live bei BGG vorgeschlagen.
-- Die Runden liegen in derselben Tabelle wie auf der Webseite (Reiter „Mitspieler finden“).
-- Variablen in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (nur dieser Server darf den Bot nutzen), optional `DISCORD_CHANNEL_ID` (nur dieser Kanal; hierhin postet der Bot auch Runden, die auf der Webseite angelegt werden). Secret: `DISCORD_BOT_TOKEN`.
-- Befehle registrieren (nach jeder Änderung an `COMMANDS`): `POST /api/admin/discord/register` mit Header `X-Admin-Token`.
-- Im Developer Portal unter *General Information* als **Interactions Endpoint URL** die URL oben eintragen.
+- Commands: `/party spiel [datum] [uhrzeit] [plaetze] [hinweis]` (game, date, time, seats, note) creates a round (default: next Tuesday 18:00, 4 seats); the message has the buttons *Ich bin dabei* (I'm in), *Absagen* (cancel) and, for the host, *Partie eintragen* (log play). `/log spiel spieler [datum] [sieger] [dauer] [hinweis]` (game, players, date, winner, duration, note) logs a play directly. Game names are suggested live from BGG.
+- The rounds are in the same table as on the website ("Mitspieler finden" tab).
+- Variables in `wrangler.toml`: `DISCORD_APP_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` (only this server may use the bot), optional `DISCORD_CHANNEL_ID` (only this channel; the bot also posts rounds created on the website here). Secret: `DISCORD_BOT_TOKEN`.
+- Register commands (after every change to `COMMANDS`): `POST /api/admin/discord/register` with header `X-Admin-Token`.
+- In the Developer Portal under *General Information*, enter the URL above as the **Interactions Endpoint URL**.
 
-## Anmeldung auf der Webseite („Mit Discord anmelden“)
+## Website login ("Mit Discord anmelden")
 
-Partien eintragen und Runden anbieten geht nach einer Anmeldung: **„Mit Discord anmelden“** (Popup, Discord-Scope nur `identify`) oder einmalig mit dem persönlichen Code aus `/code`. Beides ergibt eine Sitzung, die sich der Browser 180 Tage merkt (in der Datenbank nur als Hash, Tabelle `sessions`). Ein früher gemerkter Code wird beim nächsten Besuch automatisch in eine Anmeldung getauscht.
+Logging plays and offering rounds works after signing in: **"Mit Discord anmelden"** (popup, Discord scope `identify` only) or once with the personal code from `/code`. Both create a session that the browser remembers for 180 days (stored in the database only as a hash, table `sessions`). A previously remembered code is automatically swapped for a login on the next visit.
 
-Zugang hat nur, wer auf dem Discord-Server (`DISCORD_GUILD_ID`) ist und den ersten Bot-Kanal (`DISCORD_CHANNEL_ID`) sehen kann. Ist `DISCORD_ROLE_ID` gesetzt, braucht man zusätzlich diese Rolle (für den N3-Server: Brettspiel-Rolle; auf dem Testserver leer). Geprüft wird über den Bot, höchstens alle 10 Minuten neu; wer den Server verlässt, wird abgemeldet.
+Access is granted only to people who are on the Discord server (`DISCORD_GUILD_ID`) and can see the first bot channel (`DISCORD_CHANNEL_ID`). If `DISCORD_ROLE_ID` is set, that role is also required (for the N3 server: the board game role; empty on the test server). This is checked via the bot, re-checked at most every 10 minutes; anyone who leaves the server is logged out.
 
-Angemeldete sehen bei ihren eigenen Partien und Runden „Bearbeiten“ (Partie: Datum, Spieler, Dauer, Gewinner, Notiz, Löschen; Runde: Spiel, Datum, Uhrzeit, Plätze, Notiz, Löschen). Bei fremden Einträgen erscheinen die Knöpfe nicht, und der Server lehnt es ab.
+Signed-in users see "Bearbeiten" (edit) on their own plays and rounds (play: date, players, duration, winner, note, delete; round: game, date, time, seats, note, delete). On other people's entries the buttons do not appear, and the server rejects it.
 
-Einrichtung (einmalig):
-1. Discord Developer Portal → die App → **OAuth2** → **Redirects**: `https://n3-spiele.nerdnexus.workers.dev/api/auth/callback` hinzufügen.
-2. Dort das **Client Secret** kopieren und in Cloudflare als Secret `DISCORD_CLIENT_SECRET` speichern.
-3. Später auf dem N3-Server: `DISCORD_ROLE_ID` in `wrangler.toml` auf die ID der Brettspiel-Rolle setzen.
+Setup (one time):
+1. Discord Developer Portal → the app → **OAuth2** → **Redirects**: add `https://n3-spiele.nerdnexus.workers.dev/api/auth/callback`.
+2. Copy the **Client Secret** there and save it in Cloudflare as the secret `DISCORD_CLIENT_SECRET`.
+3. Later on the N3 server: set `DISCORD_ROLE_ID` in `wrangler.toml` to the ID of the board game role.
 
-Test: `node test/web-login.mjs` gegen `test/reset.sh` mit einem Mock-Discord (siehe Kopf der Datei).
+Test: `node test/web-login.mjs` against `test/reset.sh` with a mock Discord (see the top of the file).
 
-## Wer darf wann eine Runde anbieten? (Mitglieder und Stammtisch-Tage)
+## Who may offer a round when? (members and Stammtisch days)
 
-- **Mitglieder** (Discord-Rolle, z. B. „Mitglied“) können Runden an jedem Tag anbieten, auf der Webseite und mit `/party`.
-- **Alle anderen** nur an **Stammtisch-Tagen** (Standard: jeden Dienstag und am ersten Samstag im Monat). Im Kalender des Dialogs sind die übrigen Tage gesperrt. Außerdem ist der Hinweis Pflicht und muss eine kurze Vorstellung enthalten (mind. 40 Zeichen).
-- **Event-Code**: davon ausgenommen, es gelten wie bisher nur die Eventtage.
+- **Members** (Discord role, e.g. "Mitglied") can offer rounds on any day, on the website and with `/party`.
+- **Everyone else** only on **Stammtisch days** (club nights; default: every Tuesday and the first Saturday of the month). In the dialog's calendar the other days are disabled. The note is also required and must contain a short introduction (at least 40 characters).
+- **Event code**: exempt from this; as before, only the event days apply.
 
-Einstellungen in der Verwaltung unter „Runden: Mitglieder und Stammtisch-Tage“: Rollen-ID der Mitglieder, wöchentliche und monatliche Termine, zusätzliche Tage und ausfallende Tage (gespeichert in `config`, Schlüssel `booking`). Solange dort nichts gespeichert wurde, gilt `DISCORD_MEMBER_ROLE_ID` aus `wrangler.toml` als Rolle. Rollen-ID leer = keine Einschränkung. Die Rollen werden bei der Anmeldung und danach höchstens alle 10 Minuten über den Bot gelesen (Spalte `members.roles`); in Discord kommen sie direkt mit dem Befehl.
+Settings in the admin view under "Runden: Mitglieder und Stammtisch-Tage": role ID of the members, weekly and monthly dates, extra days and cancelled days (stored in `config`, key `booking`). As long as nothing has been saved there, `DISCORD_MEMBER_ROLE_ID` from `wrangler.toml` is used as the role. Empty role ID = no restriction. Roles are read via the bot at login and after that at most every 10 minutes (column `members.roles`); in Discord they come directly with the command.
 
-Der Kalender auf nerd-nexus.de/termine (WordPress-Plugin EventPrime) bietet keine lesbare Schnittstelle mit Daten (REST nur Namen, keine iCal-Adresse) und ist nicht aktuell gepflegt. Deshalb kommen die Stammtisch-Tage aus der Regel in der Verwaltung.
+The calendar on nerd-nexus.de/termine (WordPress plugin EventPrime) offers no readable interface with dates (REST only gives names, no iCal address) and is not kept up to date. That is why the Stammtisch days come from the rule in the admin view.
 
-Nach dem Deploy einmal „Discord-Befehle registrieren“ klicken (neue Beschreibungen bei `/party`).
+After deploying, click "Discord-Befehle registrieren" (register Discord commands) once (new descriptions for `/party`).
 
-Test: `node test/booking.mjs` (siehe Kopf der Datei).
+Test: `node test/booking.mjs` (see the top of the file).
 
-## Persönliche Codes (statt Vereinscode)
+## Personal codes (instead of the club code)
 
-Mitglieder holen sich auf dem Discord-Server mit `/code` einen persönlichen 8-stelligen Code (nur für sie sichtbar). Damit legen sie auf der Webseite Runden an oder tragen Partien ein; der Browser merkt sich den Code. Die Runde trägt den Discord-Namen und gehört dem Discord-Konto, der Ersteller kann sie also auch in Discord über „Verwalten“ ändern. Ein neues `/code` macht den alten ungültig. Wer den Server verlässt, verliert den Code (Prüfung höchstens alle 10 Minuten, braucht `DISCORD_GUILD_ID` und den Bot-Token). Der Code wird nur als Hash gespeichert (Tabelle `members`).
-Nach dem Deploy einmal in der Verwaltung „Discord-Befehle registrieren“ klicken, damit `/code` erscheint.
+On the Discord server, members get a personal 8-digit code with `/code` (visible only to them). With it they create rounds or log plays on the website; the browser remembers the code. The round carries the Discord name and belongs to the Discord account, so the creator can also change it in Discord via "Verwalten" (manage). A new `/code` invalidates the old one. Anyone who leaves the server loses the code (checked at most every 10 minutes, needs `DISCORD_GUILD_ID` and the bot token). The code is stored only as a hash (table `members`).
+After deploying, click "Discord-Befehle registrieren" once in the admin view so that `/code` appears.
 
-## Datensicherung
+## Backup
 
-**Was passiert:** Jede Nacht um 03:17 UTC (vor dem GeekList-Abgleich) schreibt der Worker die ganze D1-Datenbank als SQL-Datei in den privaten R2-Bucket `n3-spiele-backup` (`d1/<Datum>T<Uhrzeit>Z.sql`). Die letzten 30 Sicherungen bleiben liegen, ältere löscht der Worker. Inhalt aller Tabellen außer `rate` und `auth_handoff` (nur kurzlebige Zähler und Login-Übergaben; deren Struktur ist dabei). Code: `src/backup.js`.
+**What happens:** Every night at 03:17 UTC (before the GeekList sync) the Worker writes the whole D1 database as a SQL file into the private R2 bucket `n3-spiele-backup` (`d1/<date>T<time>Z.sql`). The newest 30 backups are kept, older ones are deleted by the Worker. All tables are included except the data of `rate` and `auth_handoff` (short-lived counters and login handoffs; their structure is included). Code: `src/backup.js`.
 
-**Einmalig einrichten (vor dem ersten Deploy mit dieser Version):** Cloudflare-Dashboard → *R2 Object Storage* → *Create bucket* → Name `n3-spiele-backup`, Standort automatisch, **keinen** öffentlichen Zugriff einschalten. Alternativ `npx wrangler r2 bucket create n3-spiele-backup`. R2 muss im Konto einmal aktiviert sein (kostenlos bis 10 GB; die Sicherungen sind wenige MB). Fehlt der Bucket, bricht das Deploy ab.
+**One-time setup (before the first deploy of this version):** Cloudflare dashboard → *R2 Object Storage* → *Create bucket* → name `n3-spiele-backup`, location automatic, do **not** enable public access. Alternatively `npx wrangler r2 bucket create n3-spiele-backup`. R2 must be enabled once on the account (free up to 10 GB; the backups are a few MB). If the bucket is missing, the deploy fails.
 
-**Verwaltung, Block „Datensicherung“:**
-- *Aktuellen Stand herunterladen*: erzeugt sofort eine SQL-Datei und lädt sie herunter, unabhängig von R2. Ab und zu machen und außerhalb von Cloudflare ablegen (z. B. OneDrive).
-- *Jetzt in R2 sichern*: legt sofort eine Sicherung im Bucket an (z. B. vor größeren Änderungen).
-- Liste der Sicherungen im Bucket, Klick lädt die Datei herunter.
+**Admin view, block "Datensicherung" (backup):**
+- "Aktuellen Stand herunterladen" (download current state): creates a SQL file right away and downloads it, independent of R2. Do this now and then and keep the file outside Cloudflare (e.g. OneDrive).
+- "Jetzt in R2 sichern" (back up to R2 now): stores a backup in the bucket immediately (e.g. before bigger changes).
+- List of the backups in the bucket; a click downloads the file.
 
-Die Dateien enthalten private Daten (volle Namen im Besitzerverzeichnis, Discord-IDs, Sitzungen, Code-Hashes). Nicht weitergeben und **nicht ins öffentliche GitHub-Repo legen**.
+The files contain private data (full names from the owner directory, Discord IDs, sessions, code hashes). Do not share them and **never put them into the public GitHub repo**.
 
-**Wiederherstellen:**
-1. Sicherung holen: in der Verwaltung herunterladen, oder im Dashboard unter R2 → `n3-spiele-backup` → `d1/` die Datei laden.
-2. Im Ordner des Repos: `npx wrangler d1 execute n3-spiele --remote --file=n3-spiele-….sql`
-   Die Datei löscht jede gesicherte Tabelle (`DROP TABLE`) und legt sie mit dem gesicherten Inhalt neu an. Alles, was nach der Sicherung eingetragen wurde, ist danach weg.
-3. Erst ausprobieren: `npx wrangler d1 execute n3-spiele --local --file=….sql` und mit `npx wrangler dev` ansehen.
+**Restore:**
+1. Get a backup: download it in the admin view, or in the dashboard under R2 → `n3-spiele-backup` → `d1/`.
+2. In the repo folder: `npx wrangler d1 execute n3-spiele --remote --file=n3-spiele-….sql`
+   The file drops every backed-up table (`DROP TABLE`) and recreates it with the saved content. Everything entered after the backup is lost.
+3. Try it first locally: `npx wrangler d1 execute n3-spiele --local --file=….sql` and look at it with `npx wrangler dev`.
 
-**Kleinere Pannen (letzte 30 Tage):** D1 *Time Travel* stellt die Datenbank auf eine beliebige Minute zurück, ohne Datei:
-`npx wrangler d1 time-travel info n3-spiele` (aktueller Stand) und `npx wrangler d1 time-travel restore n3-spiele --timestamp=2026-11-13T10:00:00Z`. Auch das überschreibt alles danach.
+**Smaller mishaps (last 30 days):** D1 *Time Travel* resets the database to any minute, without a file:
+`npx wrangler d1 time-travel info n3-spiele` (current state) and `npx wrangler d1 time-travel restore n3-spiele --timestamp=2026-11-13T10:00:00Z`. This also overwrites everything after that point.
 
-**Prüfen, ob es läuft:** Workers → n3-spiele → Observability, nach `backup ok` bzw. `backup failed` suchen, oder in der Verwaltung auf das Datum der neuesten Sicherung schauen.
+**Check that it runs:** Workers → n3-spiele → Observability, search for `backup ok` or `backup failed`, or check the date of the newest backup in the admin view.
