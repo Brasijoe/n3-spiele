@@ -24,9 +24,12 @@ button, input, select { font-family: inherit; font-size: inherit; }
 .topbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .dc-link { margin-right: 6px; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; border-radius: 8px; color: #5865f2; }
 .dc-link:hover, .dc-link:focus-visible { background: rgba(88,101,242,.15); }
-.dc-link.login { background: #5865f2; color: #fff; gap: 8px; padding: 0 12px; font-weight: 700; font-size: 14px; text-decoration: none; }
+.dc-link.login { background: #5865f2; color: #fff; gap: 0; padding: 0 9px; font-weight: 700; font-size: 14px; text-decoration: none; }
+.dc-link.login .dc-lbl { max-width: 0; overflow: hidden; white-space: nowrap; transition: max-width .2s, margin .2s; }
+.dc-link.login:hover .dc-lbl, .dc-link.login:focus-visible .dc-lbl { max-width: 220px; margin-left: 8px; }
+@media (prefers-reduced-motion: reduce) { .dc-link.login .dc-lbl { transition: none; } }
 .dc-link.login:hover, .dc-link.login:focus-visible { background: #4752c4; }
-@media (max-width: 520px) { .dc-link.login { padding: 0 10px; font-size: 13px; } }
+
 .lang { display: flex; border: 1px solid #5a5a5a; border-radius: 8px; overflow: hidden; }
 .lang button { min-width: 48px; min-height: 40px; border: 0; background: transparent; color: var(--band-fg); font-weight: 700; cursor: pointer; }
 .lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
@@ -746,15 +749,15 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich (Termin später)', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
+  de: { dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Bot-Kanal angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Bot-Kanal auf Discord Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
-    whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Mitspielen',
+    whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
     whDone: 'Danke! {r} bekommt im Bot-Kanal Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
     wtTitle: 'Hat jemand …?', wtNew: 'Neue Suche', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Bot-Kanal auf Discord, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
-    wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Will ich auch', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
+    wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Ich will auch mitspielen', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
     wtDlgT: 'Hat jemand dieses Spiel?', wtGame: 'Welches Spiel suchst du?', wtNote: 'Nachricht (optional, z. B. wann es dir passt)', wtSend: 'Im Discord fragen',
     wtInClub: 'Das Spiel ist in der Club-Sammlung. Biete einfach eine Runde damit an.', wtInMem: '{o} hat das Spiel (Mitglieder besitzen). Frag direkt, ob es mitgebracht wird.', wtAskBring: 'Mitbringen anfragen', wtOffer: 'Runde anbieten',
-    wtDup: 'Dieses Spiel sucht schon jemand. Drück „Will ich auch“, dann bist du bei einer Runde gleich dabei.', wtSent: 'Gefragt ✓ Die Antwort kommt im Bot-Kanal auf Discord.', wtErrOwn: 'Das ist deine eigene Suche.',
+    wtDup: 'Dieses Spiel sucht schon jemand. Drück „Ich will auch mitspielen“, dann bist du bei einer Runde gleich dabei.', wtSent: 'Gefragt ✓ Die Antwort kommt im Bot-Kanal auf Discord.', wtErrOwn: 'Das ist deine eigene Suche.',
     wtNoteFound: '{o} bringt das Spiel mit (gesucht von {r}).',
     title: 'Unsere Spielesammlung', intro: 'Über 180 Brett- und Kartenspiele warten jeden Dienstag ab 18 Uhr auf euch. Stöbert, filtert und sucht euch schon vorab euer nächstes Abenteuer aus.',
     prev: 'Vorheriges Spiel', next: 'Nächstes Spiel', viewBgg: 'Auf BGG ansehen', logPlay: 'Partie eintragen',
@@ -845,15 +848,15 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it (date later)', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
+  en: { dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the bot channel. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the bot channel on Discord that you have the game. You then arrange a date directly with each other.',
-    whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'Join',
+    whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
     whDone: 'Thanks! {r} will be notified in the bot channel.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
     wtTitle: 'Does anyone have …?', wtNew: 'New request', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the bot channel on Discord who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
-    wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'Me too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
+    wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'I want to play too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
     wtDlgT: 'Does anyone have this game?', wtGame: 'Which game are you looking for?', wtNote: 'Message (optional, e.g. when you are free)', wtSend: 'Ask on Discord',
     wtInClub: 'This game is in the club collection. Just offer a game with it.', wtInMem: '{o} owns this game (member games). Ask directly whether it can be brought.', wtAskBring: 'Request to bring', wtOffer: 'Offer a game',
-    wtDup: 'Someone is already looking for this game. Press “Me too” and you will be added when a game is set up.', wtSent: 'Asked ✓ The answer will come in the bot channel on Discord.', wtErrOwn: 'This is your own request.',
+    wtDup: 'Someone is already looking for this game. Press “I want to play too” and you will be added when a game is set up.', wtSent: 'Asked ✓ The answer will come in the bot channel on Discord.', wtErrOwn: 'This is your own request.',
     wtNoteFound: '{o} is bringing the game (wanted by {r}).',
     title: 'Our game collection', intro: 'More than 180 board and card games are waiting for you every Tuesday from 6 pm. Browse, filter and pick your next adventure in advance.',
     prev: 'Previous game', next: 'Next game', viewBgg: 'View on BGG', logPlay: 'Log a play',
@@ -2573,7 +2576,7 @@ function setDcLink() {
   const c = dcCfg, a = $('dcLink'); if (!a) return;
   const t = T(), direct = me && c && c.discordGuild ? 'https://discord.com/channels/' + c.discordGuild + (c.discordChannel ? '/' + c.discordChannel : '') : '';
   a.hidden = !!me && !direct; a.classList.toggle('login', !me);
-  $('dcLbl').hidden = !!me; $('dcLbl').textContent = t.dcLogin;
+  $('dcLbl').hidden = !!me; $('dcLbl').textContent = t.dcLoginT;
   if (me) { a.href = direct; a.target = '_blank'; } else { a.href = '#'; a.removeAttribute('target'); }
   const l = me ? (de() ? 'Zum N3-Discord (neuer Tab)' : 'Open the N3 Discord (new tab)') : t.dcLoginT;
   a.title = l; a.setAttribute('aria-label', l);
