@@ -5,6 +5,7 @@ import { discord, channelIds, wantedChannel, discordOn, fmtDate, wdName, who, sa
 import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
 import { listMemberGames } from './membergames.js';
 import { inClub } from './games.js';
+const DAY_MAX_MEMBER = 10, DAY_MAX_GUEST = 3; // Suchen pro Person in 24 Stunden
 
 const enc = new TextEncoder();
 const sha256 = async (s) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s))), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -59,9 +60,12 @@ export async function wantedRoute(req, env, ctx, path, m, ip, h) {
     if (!game || (gameId != null && !(gameId > 0))) return fail(400, 'invalid');
     const av = await available(env, gameId, game); if (av) return fail(409, av);
     const dup = await sameGame(env, gameId, game); if (dup) return json({ error: 'already_wanted', id: dup.id }, 409);
-    // Spam-Bremse: 3 Suchen pro Tag und Person, 20 pro Tag insgesamt.
-    if (!(await allow(env, 'want:' + u.member.discord_id, 3, 86400)) || !(await allow(env, 'want-all', 20, 86400))) return fail(429, 'rate_limited');
+    // Spam-Bremse: Suchen der letzten 24 Stunden (auch zurückgezogene) zählen; Mitglieder 10, sonst 3. Dazu 50 pro Tag insgesamt.
     const today = berlinToday(), rule = await getBooking(env);
+    const max = isMember(rule, u.member.roles) ? DAY_MAX_MEMBER : DAY_MAX_GUEST;
+    const used = (await env.DB.prepare('SELECT COUNT(*) AS n FROM wanted WHERE req_discord = ?1 AND created_at > ?2').bind(u.member.discord_id, new Date(Date.now() - 864e5).toISOString()).first()).n;
+    if (used >= max) return json({ error: 'day_limit', used, max }, 429);
+    if (!(await allow(env, 'want-all', 50, 86400))) return fail(429, 'rate_limited');
     const row = { id: newId(), req_discord: u.member.discord_id, req_name: u.member.name, req_member: isMember(rule, u.member.roles) ? 1 : 0, game, game_id: gameId, year: int(b.year), note: str(b.note, 300), interested: '[]', created_at: new Date().toISOString(), expires_at: addMonths(today, WANT_MONTHS) };
     await env.DB.prepare('INSERT INTO wanted(id, req_discord, req_name, req_member, game, game_id, year, note, interested, created_at, expires_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)')
       .bind(row.id, row.req_discord, row.req_name, row.req_member, row.game, row.game_id, row.year, row.note, row.interested, row.created_at, row.expires_at).run();

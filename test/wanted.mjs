@@ -103,13 +103,17 @@ assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/
 await wait(); assert.equal(msgs.at(-1).ch, 'CH2'); assert.match(msgs.at(-1).content, /^<@557> Fritz \(<@556>\) hat/);
 console.log('found without round ok');
 
-// Zurückziehen: nur selbst (oder Verwaltung); Spam-Bremse 3 pro Tag
+// Zurückziehen: nur selbst (oder Verwaltung)
 r = await call('POST', '/wanted', eva, { game: 'Zieh zurück' }); const w3 = await r.json();
 r = await call('DELETE', '/wanted/' + w3.id, fritz); assert.equal(r.status, 403);
 r = await call('DELETE', '/wanted/' + w3.id, eva); assert.equal(r.status, 200);
 await wait(); assert.match(msgs.filter((q) => q.patch).at(-1).content, /Zurückgezogen/);
+// Tageslimit: Mitglieder 10, Nicht-Mitglieder 3 (zurückgezogene zählen mit); Fehler nennt den Stand.
 r = await call('POST', '/wanted', eva, { game: 'Noch eins' }); assert.equal(r.status, 200); const w4 = await r.json();
-r = await call('POST', '/wanted', eva, { game: 'Zu viel' }); assert.equal(r.status, 429);
+for (let k = 4; k <= 10; k++) { r = await call('POST', '/wanted', eva, { game: 'Mitgliedersuche ' + k }); assert.equal(r.status, 200, 'eva ' + k); }
+r = await call('POST', '/wanted', eva, { game: 'Zu viel' }); assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: 'day_limit', used: 10, max: 10 });
+for (const g of ['Gast 2', 'Gast 3']) { r = await call('POST', '/wanted', gast, { game: g }); assert.equal(r.status, 200, g); }
+r = await call('POST', '/wanted', gast, { game: 'Gast 4' }); assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: 'day_limit', used: 3, max: 3 });
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wantx:${w4.id}` } }); assert.match(x.data.content, /Nur wer gesucht hat/);
 console.log('withdraw + rate limit ok');
 
@@ -135,7 +139,7 @@ console.log('answer from web ok');
 
 // Ablauf nach 3 Monaten (nächtlicher Lauf)
 assert.ok(w4.expiresAt > new Date(Date.now() + 88 * 864e5).toISOString().slice(0, 10));
-sql(`UPDATE wanted SET expires_at = '2020-01-01' WHERE id = '${w4.id}'`);
+sql(`UPDATE wanted SET expires_at = '2020-01-01' WHERE status = 'open'`);
 assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
 await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(3000);
 assert.match(msgs.filter((q) => q.patch).at(-1).content, /Abgelaufen/);
