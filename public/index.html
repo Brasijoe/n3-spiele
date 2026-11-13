@@ -331,6 +331,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .seat.on { background: var(--club); }
 .who { display: flex; flex-wrap: wrap; gap: 6px; }
 .who .pill.host { font-weight: 700; }
+.who .pill.res { background: transparent; border: 1px dashed var(--line-strong); color: var(--muted); }
 .party .actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
 .party .actions .btn { flex: 1 1 auto; min-height: 40px; font-size: 13px; padding: 0 12px; }
 .party .actions .btn-primary:first-child { flex-basis: 100%; }
@@ -778,7 +779,7 @@ const TXT = {
     whRoundTxt: 'Die Runde wird sofort angelegt und im Discord-Kanal #mitspieler-gesucht angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Discord-Kanal #spiele-gesucht Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
     whDone: 'Danke! {r} bekommt im Discord-Kanal #spiele-gesucht Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
-    wtTitle: 'Hat jemand …?', wtErrLimit: 'Limit an Spielsuchen pro Tag erreicht ({u}/{m}).', subRounds: 'Mitspieler gesucht', subWanted: 'Spiele gesucht', wtOpen: 'Offene Suchen', wtSince: 'Gesucht seit {d}', wtTag: 'Gesucht', wtSeeks: 'sucht', wtN1: '1 will mitspielen', wtNn: '{n} wollen mitspielen', wtN0: 'Noch niemand dabei', wtNew: 'Neue Suche', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Discord-Kanal #spiele-gesucht, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate.',
+    wtTitle: 'Hat jemand …?', wtErrLimit: 'Limit an Spielsuchen pro Tag erreicht ({u}/{m}).', wtMembersOnly: 'Neue Suchen können nur Mitglieder anlegen (Mitgliederrolle auf Discord). Auf bestehende Suchen antworten kannst du trotzdem.', subRounds: 'Mitspieler gesucht', subWanted: 'Spiele gesucht', wtOpen: 'Offene Suchen', wtSince: 'Gesucht seit {d}', wtTag: 'Gesucht', wtSeeks: 'sucht', wtN1: '1 will mitspielen', wtNn: '{n} wollen mitspielen', wtN0: 'Noch niemand dabei', wtNew: 'Neue Suche', wtIntro: 'Du suchst ein Spiel, das weder in der Sammlung noch bei den Mitgliedern steht? Der Bot fragt im Discord-Kanal #spiele-gesucht, wer es hat und mitspielen mag. Wer es hat, antwortet hier oder in Discord mit „Hab ich“ und kann gleich eine Runde anlegen (auf der Webseite mit Discord-Anmeldung). Offene Suchen stehen hier {m} Monate. Neue Suchen können nur Mitglieder (Mitgliederrolle auf Discord) anlegen, antworten können alle.',
     wtNone: 'Gerade sucht niemand ein Spiel.', wtBy: 'Gesucht von {n}', wtUntil: 'Offen bis {d}', wtAlso: 'Wollen auch: {n}', wtDiscord: 'In Discord antworten', wtJoin: 'Ich will auch mitspielen', wtLeave: 'Doch nicht', wtYouIn: 'Du willst auch mitspielen', wtDel: 'Zurückziehen',
     wtDlgT: 'Hat jemand dieses Spiel?', wtGame: 'Welches Spiel suchst du?', wtNote: 'Nachricht (optional, z. B. wann es dir passt)', wtSend: 'Nach dem Spiel fragen',
     wtInClub: 'Das Spiel ist in der Club-Sammlung. Biete einfach eine Runde damit an.', wtInMem: '{o} hat das Spiel (Mitglieder besitzen). Frag direkt, ob es mitgebracht wird.', wtAskBring: 'Mitbringen anfragen', wtOffer: 'Runde anbieten',
@@ -854,7 +855,7 @@ const TXT = {
     noteIntro: 'Hinweis mit kurzer Vorstellung (Pflicht)', noteIntroHelp: 'Da du ohne Mitgliederrolle anbietest: Schreib bitte kurz, wer du bist, ob du schon mal bei uns warst, wie gut du das Spiel kennst und ob du es erklären kannst oder erklärt bekommen möchtest. Mindestens {n} Zeichen ({c}/{n}).', errIntro: 'Bitte stell dich im Hinweis kurz vor (mindestens {n} Zeichen).', errStammtisch: 'Ohne Mitgliederrolle geht das nur an Stammtisch-Tagen ({r}).',
     ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Geplante Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
-    ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
+    ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
     ptLog: 'Als gespielt registrieren', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
     ptBringNote: '{o} bringt das Spiel mit (auf Wunsch von {r}).', ptErrFull: 'Die Runde ist leider schon voll.', ptCreated: 'Runde angelegt.', ptNoteAuto: 'Runde: {n}', ptToday: 'Heute', ptTomorrow: 'Morgen', ptHostTag: 'organisiert', tabCollection: 'Sammlung', tabStats: 'Statistik', logGuest: 'Gastspiel eintragen', guestCta: 'Jemand hat ein eigenes Spiel mitgebracht? Tragt die Partie als Gastspiel ein.',
     guestTag: 'Gastspiel', clubTag: 'Sammlung', bggSearch: 'Spiel auf BoardGameGeek suchen', bggPh: 'Name eingeben, z. B. Cascadia', change: 'Ändern',
@@ -877,7 +878,7 @@ const TXT = {
     whRoundTxt: 'The game is created right away and announced in the Discord channel #mitspieler-gesucht. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the Discord channel #spiele-gesucht that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
     whDone: 'Thanks! {r} will be notified in the Discord channel #spiele-gesucht.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
-    wtTitle: 'Does anyone have …?', wtErrLimit: 'Limit of game requests per day reached ({u}/{m}).', subRounds: 'Players wanted', subWanted: 'Games wanted', wtOpen: 'Open requests', wtSince: 'Wanted since {d}', wtTag: 'Wanted', wtSeeks: 'looking', wtN1: '1 wants to play', wtNn: '{n} want to play', wtN0: 'Nobody yet', wtNew: 'New request', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the Discord channel #spiele-gesucht who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months.',
+    wtTitle: 'Does anyone have …?', wtErrLimit: 'Limit of game requests per day reached ({u}/{m}).', wtMembersOnly: 'Only members can start a new request (member role on Discord). You can still answer existing requests.', subRounds: 'Players wanted', subWanted: 'Games wanted', wtOpen: 'Open requests', wtSince: 'Wanted since {d}', wtTag: 'Wanted', wtSeeks: 'looking', wtN1: '1 wants to play', wtNn: '{n} want to play', wtN0: 'Nobody yet', wtNew: 'New request', wtIntro: 'Looking for a game that is neither in the collection nor owned by members? The bot asks in the Discord channel #spiele-gesucht who has it and wants to play. Whoever has it answers here or in Discord with “I have it” and can set up a game right away (on the website, sign in with Discord). Open requests stay here for {m} months. Only members (member role on Discord) can start a new request; anyone can answer.',
     wtNone: 'Nobody is looking for a game right now.', wtBy: 'Wanted by {n}', wtUntil: 'Open until {d}', wtAlso: 'Also interested: {n}', wtDiscord: 'Answer in Discord', wtJoin: 'I want to play too', wtLeave: 'Not anymore', wtYouIn: 'You want to play too', wtDel: 'Withdraw',
     wtDlgT: 'Does anyone have this game?', wtGame: 'Which game are you looking for?', wtNote: 'Message (optional, e.g. when you are free)', wtSend: 'Ask for this game',
     wtInClub: 'This game is in the club collection. Just offer a game with it.', wtInMem: '{o} owns this game (member games). Ask directly whether it can be brought.', wtAskBring: 'Request to bring', wtOffer: 'Offer a game',
@@ -953,7 +954,7 @@ const TXT = {
     noteIntro: 'Note with a short introduction (required)', noteIntroHelp: 'As you’re offering without the member role: please write who you are, whether you’ve been with us before, how well you know the game and whether you can teach it or would like it explained. At least {n} characters ({c}/{n}).', errIntro: 'Please introduce yourself briefly in the note (at least {n} characters).', errStammtisch: 'Without the member role this is only possible on game nights ({r}).',
     ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Planned games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
-    ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
+    ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
     ptLog: 'Register as played', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
     ptBringNote: '{o} is bringing the game (requested by {r}).', ptErrFull: 'Sorry, this game is already full.', ptCreated: 'Game created.', ptNoteAuto: 'Players: {n}', ptToday: 'Today', ptTomorrow: 'Tomorrow', ptHostTag: 'host', tabCollection: 'Collection', tabStats: 'Statistics', logGuest: 'Log a guest game', guestCta: 'Someone brought their own game? Log the play as a guest game.',
     guestTag: 'Guest game', clubTag: 'Collection', bggSearch: 'Search BoardGameGeek', bggPh: 'Type a name, e.g. Cascadia', change: 'Change',
@@ -1961,7 +1962,10 @@ const mine = () => { try { return JSON.parse(localStorage.getItem(MINE_KEY) || '
 const setMine = (m) => { try { localStorage.setItem(MINE_KEY, JSON.stringify(m)); } catch (e) {} };
 const rid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const todayIso = () => isoDay(new Date());
-function whoIn(p) { return Object.entries(p.attendees || {}).filter(([, a]) => a && !a.out && a.name).sort((a, b) => String(a[1].at).localeCompare(String(b[1].at))); }
+// Reservierte Plätze (Runde aus „Hat jemand …?“) zählen mit, bis sie bestätigt, abgesagt oder abgelaufen sind.
+const resLive = (a) => !!(a && a.res && !a.out && !(a.until && a.until < new Date().toISOString()));
+const myRes = (p) => !!(me && me.id && resLive((p.attendees || {})['d' + me.id]));
+function whoIn(p) { return Object.entries(p.attendees || {}).filter(([, a]) => a && !a.out && a.name && (!a.res || resLive(a))).sort((a, b) => String(a[1].at).localeCompare(String(b[1].at))); }
 function partyGame(p) { return p.guest ? null : byId[p.gameId]; }
 function partyName(p) { const g = partyGame(p); return g ? name(g) : String(p.game || '?'); }
 function dayLabel(iso) {
@@ -1975,18 +1979,20 @@ function partyCard(x, past) {
   const th = thumbHtml(p, g, nm);
   const dots = Array.from({ length: Math.min(seats, 30) }, (_, i) => '<span class="seat' + (i < taken ? ' on' : '') + '"></span>').join('');
   let actions = '';
-  if (!past) {
+  if (!past && myRes(p)) actions += '<button type="button" class="btn btn-primary" data-pconfirm="' + esc(x.id) + '">' + esc(t.ptConfirm) + '</button>';
+  else if (!past) {
     if (my && my.att && p.attendees && p.attendees[my.att] && !p.attendees[my.att].out) actions += '<button type="button" class="btn btn-quiet" data-pleave="' + esc(x.id) + '">' + esc(t.ptLeave) + '</button>';
-    else if (free > 0 && joinOpen !== x.id && !(my && my.host)) actions += '<button type="button" class="btn btn-primary" data-pjoin="' + esc(x.id) + '">' + esc(t.ptJoin) + '</button>';
+    else if (free > 0 && joinOpen !== x.id && !(my && my.host) && !isMine('parties', x.id)) actions += '<button type="button" class="btn btn-primary" data-pjoin="' + esc(x.id) + '">' + esc(t.ptJoin) + '</button>';
   }
   if (String(p.date) <= todayIso()) actions += p.playId ? '<span class="done">' + esc(t.ptLogged) + '</span>' : '<button type="button" class="btn ' + (past ? 'btn-primary' : 'btn-outline') + '" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
   const own = isMine('parties', x.id);
   if (own && !past && !p.playId) actions += '<button type="button" class="btn btn-quiet" data-pedit="' + esc(x.id) + '">' + esc(t.edit) + '</button>';
+  if (!past && (canEdit || own) && Object.values(p.attendees || {}).some(resLive)) actions += '<button type="button" class="btn btn-quiet" data-prelease="' + esc(x.id) + '">' + esc(t.ptRelease) + '</button>';
   if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   const join = joinOpen === x.id ? '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
   return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + (!past && membersOnlyJoin(p) ? '<span class="src mem">' + esc(t.ptMemOnly) + '</span>' : '') + '</div></div>' +
     '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
-    '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => '<span class="pill">' + esc(a.name) + '</span>').join('') + '</div>' +
+    '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => a.res ? '<span class="pill res" title="' + esc(t.ptResTag) + '">⏳ ' + esc(a.name) + ' · ' + esc(t.ptResTag) + '</span>' : '<span class="pill">' + esc(a.name) + '</span>').join('') + '</div>' +
     (p.note ? '<span class="meta">' + esc(partyNote(p.note)) + '</span>' : '') + join + '<div class="actions">' + actions + '</div></div></article>';
 }
 // Vom Bot angelegte Mitbring-Runden speichern den Hinweis auf Deutsch; auf Englisch übersetzt anzeigen.
@@ -2015,6 +2021,12 @@ $('viewParties').addEventListener('click', async (e) => {
   const t = T(); let b;
   if ((b = e.target.closest('[data-pjoin]'))) { joinOpen = b.dataset.pjoin; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
   if (e.target.closest('[data-pjoincancel]')) { joinOpen = null; renderParties(); return; }
+  if ((b = e.target.closest('[data-pconfirm]'))) {
+    const id = b.dataset.pconfirm; b.disabled = true;
+    try { const r = await api('POST', '/parties/' + id + '/join', { key: rid(), name: (me && me.name) || '?' }); const m = mine(); m[id] = Object.assign(m[id] || {}, { att: r.key }); setMine(m); } catch (y) {}
+    refreshAll(); return;
+  }
+  if ((b = e.target.closest('[data-prelease]'))) { b.disabled = true; try { await api('POST', '/parties/' + b.dataset.prelease + '/release'); } catch (y) {} refreshAll(); return; }
   if ((b = e.target.closest('[data-pleave]'))) {
     const id = b.dataset.pleave, m = mine(), my = m[id]; if (!my) return;
     try { await api('POST', '/parties/' + id + '/leave', { key: my.att }); delete my.att; setMine(m); refreshAll(); } catch (x) {} return;
@@ -2486,6 +2498,8 @@ $('wtHitBtn').onclick = () => { if (wtHitAct) wtHitAct(); };
 function openWanted() {
   wtGame = null; wtResults = []; wtActive = -1; $('wtQ').value = ''; $('wtNote').value = '';
   $('wtMsg').textContent = ''; $('wtMsg').className = ''; $('wtSend').disabled = false;
+  // Angemeldet, aber keine Mitgliederrolle: gleich sagen, dass Suchen nur Mitglieder anlegen (Server prüft das auch).
+  if (me && !me.member) { $('wtMsg').className = 'err'; $('wtMsg').textContent = T().wtMembersOnly; $('wtSend').disabled = true; }
   renderWtPick(); renderAuth(); $('wtDlg').showModal(); $('wtQ').focus();
 }
 $('wtNew').onclick = openWanted;
@@ -2502,7 +2516,7 @@ $('wtForm').addEventListener('submit', async (e) => {
     msg.textContent = t.wtSent; setTimeout(() => { if ($('wtDlg').open) $('wtDlg').close(); }, 2500); refreshAll();
   } catch (x) {
     msg.className = 'err'; $('wtSend').disabled = false; const c = x && x.code;
-    msg.textContent = c === 'in_club' ? t.wtInClub : c === 'in_members' ? fill(t.wtInMem, { o: '…' }) : c === 'already_wanted' ? t.wtDup : c === 'day_limit' ? fill(t.wtErrLimit, { u: x.data.used, m: x.data.max }) : c === 'discord_off' || c === 'discord_error' ? t.brErrOff : codeErr(x);
+    msg.textContent = c === 'in_club' ? t.wtInClub : c === 'in_members' ? fill(t.wtInMem, { o: '…' }) : c === 'already_wanted' ? t.wtDup : c === 'day_limit' ? fill(t.wtErrLimit, { u: x.data.used, m: x.data.max }) : c === 'members_only' ? t.wtMembersOnly : c === 'discord_off' || c === 'discord_error' ? t.brErrOff : codeErr(x);
     if (c === 'already_wanted' || c === 'in_members') refreshAll();
   }
 });
@@ -2592,7 +2606,7 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []) }; }
+  try { const r = await api('GET', '/my'); me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); loginFailed(e.code); } }
   renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted();
 }

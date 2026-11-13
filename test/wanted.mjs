@@ -89,18 +89,37 @@ const party = (await (await fetch(W + '/parties')).json())[0];
 assert.equal(party.host, 'Fritz'); assert.equal(party.date, wed); assert.equal(party.time, '19:30');
 // Gast hat keine Mitgliederrolle und Mittwoch ist kein Stammtisch: nicht eingetragen, aber erwähnt
 assert.deepEqual(Object.values(party.attendees).map((a) => a.name).sort(), ['Eva vom Server', 'Hans']);
-m = msgs.at(-1); assert.equal(m.ch, 'CH1'); assert.match(m.content, /<@555> <@558>, Fritz hat/); assert.match(m.content, /<@557> ihr wolltet auch/);
+m = msgs.filter((q) => q.ch === 'CH1').at(-1); assert.equal(m.ch, 'CH1'); assert.match(m.content, /<@555> <@558>, Fritz hat/); assert.match(m.content, /<@557> ihr wolltet auch/);
+// Reservierungen: Suchende bis zur Bestätigung, „Will auch“ 24 Stunden; Bestätigen per „Ich bin dabei“, Gastgeber gibt frei
+const att0 = party.attendees; assert.equal(att0.d555.res, 1); assert.equal(att0.d555.until, null); assert.equal(att0.d558.res, 1); assert.ok(att0.d558.until > new Date(Date.now() + 23 * 3600e3).toISOString());
+assert.match(m.content, /Platz reserviert/); assert.match(JSON.stringify(m.embeds), /reserviert/);
+x = await interact({ type: 3, ...as('558'), data: { custom_id: `join:${party.id}` } }); assert.equal(x.type, 7);
+let pa = (await (await fetch(W + '/parties')).json()).find((q) => q.id === party.id).attendees; assert.ok(!pa.d558.res, 'hans confirmed');
+// abgelaufene Reservierung zählt nicht mehr: Eva künstlich ablaufen lassen, Ida tritt bei
+sql(`UPDATE parties SET attendees = json_set(attendees, '$.d555.until', '2020-01-01T00:00:00.000Z') WHERE id = '${party.id}'`);
+x = await interact({ type: 3, ...as('559'), data: { custom_id: `join:${party.id}` } }); assert.equal(x.type, 7);
+pa = (await (await fetch(W + '/parties')).json()).find((q) => q.id === party.id).attendees; assert.equal(pa.d555.out, 1, 'expired -> out'); assert.ok(pa.d559);
+// Gastgeber gibt frei (Discord: Verwalten -> Reservierungen freigeben), Webseite bestätigt
+sql(`UPDATE parties SET attendees = json_set(attendees, '$.d555', json('{"name":"Eva vom Server","at":"x","res":1,"until":null}')) WHERE id = '${party.id}'`);
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `manage:${party.id}` } }); assert.ok(JSON.stringify(x).includes('release:'));
+r = await call('POST', `/parties/${party.id}/join`, eva, { key: 'evakey1', name: 'Eva' }); assert.equal((await r.json()).key, 'd555');
+pa = (await (await fetch(W + '/parties')).json()).find((q) => q.id === party.id).attendees; assert.ok(!pa.d555.res && !pa.d555.out, 'eva confirmed on web');
+sql(`UPDATE parties SET attendees = json_set(attendees, '$.d555', json('{"name":"Eva vom Server","at":"x","res":1,"until":null}')) WHERE id = '${party.id}'`);
+r = await call('POST', `/parties/${party.id}/release`, hans); assert.equal(r.status, 403);
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `release:${party.id}` } }); assert.match(x.data.content, /freigegeben/);
+pa = (await (await fetch(W + '/parties')).json()).find((q) => q.id === party.id).attendees; assert.equal(pa.d555.out, 1, 'released');
+console.log('reservations ok');
 x = await interact({ type: 3, ...as('558'), data: { custom_id: `wanth:${w1.id}` } }); assert.match(x.data.content, /Fritz hat das Spiel schon/);
 assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
 console.log('found with round ok');
 
-// Nicht-Mitglied sucht: Runde nur an Stammtisch-Tagen
-r = await call('POST', '/wanted', gast, { game: 'Gastspiel Y' }); const w2 = await r.json(); assert.equal(r.status, 200);
-x = await submit({ datum: wedTxt, uhrzeit: '18:00', plaetze: '4' }, '556', w2.id); assert.match(x.data.content, /keine Mitgliederrolle/);
+// Suchen anlegen nur für Mitglieder
+r = await call('POST', '/wanted', gast, { game: 'Gastspiel Y' }); assert.equal(r.status, 403); assert.equal((await r.json()).error, 'members_only');
+r = await call('POST', '/wanted', hans, { game: 'Gastspiel Y' }); const w2 = await r.json(); assert.equal(r.status, 200);
 // Hab ich ohne Runde
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wanth:${w2.id}` } }); assert.equal(x.type, 7); assert.match(x.data.content, /Fritz\*\* hat \*\*Gastspiel Y/);
-assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/557');
-await wait(); assert.equal(msgs.at(-1).ch, 'CH2'); assert.match(msgs.at(-1).content, /^<@557> Fritz \(<@556>\) hat/);
+assert.equal(x.data.components[0].components[0].url, 'https://discord.com/users/558');
+await wait(); assert.equal(msgs.at(-1).ch, 'CH2'); assert.match(msgs.at(-1).content, /^<@558> Fritz \(<@556>\) hat/);
 console.log('found without round ok');
 
 // Zurückziehen: nur selbst (oder Verwaltung)
@@ -112,8 +131,6 @@ await wait(); assert.match(msgs.filter((q) => q.patch).at(-1).content, /Zurückg
 r = await call('POST', '/wanted', eva, { game: 'Noch eins' }); assert.equal(r.status, 200); const w4 = await r.json();
 for (let k = 4; k <= 10; k++) { r = await call('POST', '/wanted', eva, { game: 'Mitgliedersuche ' + k }); assert.equal(r.status, 200, 'eva ' + k); }
 r = await call('POST', '/wanted', eva, { game: 'Zu viel' }); assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: 'day_limit', used: 10, max: 10 });
-for (const g of ['Gast 2', 'Gast 3']) { r = await call('POST', '/wanted', gast, { game: g }); assert.equal(r.status, 200, g); }
-r = await call('POST', '/wanted', gast, { game: 'Gast 4' }); assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: 'day_limit', used: 3, max: 3 });
 x = await interact({ type: 3, ...as('556'), data: { custom_id: `wantx:${w4.id}` } }); assert.match(x.data.content, /Nur wer gesucht hat/);
 console.log('withdraw + rate limit ok');
 

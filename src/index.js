@@ -4,7 +4,7 @@ import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
-import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations } from './discord.js';
 
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -126,7 +126,7 @@ async function route(req, env, ctx, url) {
     const p3 = await env.DB.prepare('SELECT id, src FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
     const bggUser = p3.results.some((r) => r.src === 'bgg') ? ((await env.DB.prepare('SELECT bgg_user FROM members WHERE discord_id = ?1').bind(u.member.discord_id).first().catch(() => null)) || {}).bgg_user || '' : '';
     const wd = await myWanted(env, u.member.discord_id);
-    return json({ name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
+    return json({ id: u.member.discord_id, name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();
@@ -236,11 +236,29 @@ async function route(req, env, ctx, url) {
     // Angemeldet (Discord oder /code)? Dann die Discord-ID mitspeichern, damit der Bot die Person zum Thread der Runde hinzufügt.
     let did = null;
     if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (!u.err) did = u.member.discord_id; }
+    // Reservierter Platz (Runde aus „Hat jemand …?“): angemeldet bestätigen, auch wenn sonst alles belegt ist.
+    const cur = await expireReservations(env, await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first());
+    const mine = did && cur ? (JSON.parse(cur.attendees || '{}'))['d' + did] : null;
+    if (mine && mine.res && !mine.out) {
+      await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2)) WHERE id = ?3`).bind('d' + did, JSON.stringify({ name: mine.name || name, at: new Date().toISOString(), did }), g[1]).run();
+      if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
+      return json({ ok: true, key: 'd' + did, confirmed: true });
+    }
     const r = await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2))
       WHERE id = ?3 AND date >= ?4 AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0) + 1 < seats`)
       .bind(key, JSON.stringify(did ? { name, at: new Date().toISOString(), did } : { name, at: new Date().toISOString() }), g[1], new Date(Date.now() - 864e5).toISOString().slice(0, 10)).run();
     if (!r.meta.changes) return fail(409, 'full_or_gone');
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
+    return json({ ok: true });
+  }
+  if ((g = path.match(/^\/parties\/([\w-]+)\/release$/)) && m === 'POST') {
+    // Gastgeber (oder Verwaltung) gibt alle reservierten Plätze frei.
+    await ensureCols(env);
+    const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first();
+    if (!row) return fail(404, 'not_found');
+    const who = await ownerOrAdmin(req, env, ip, row.host_discord); if (who.err) return fail(status(who.err), who.err);
+    await expireReservations(env, row, true);
+    if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
     return json({ ok: true });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)\/leave$/)) && m === 'POST') {
@@ -451,6 +469,7 @@ export default {
     // Häufiger Zeitplan: nur fehlende Spieldaten von Mitgliederspielen nachholen (kostet nichts, wenn alles da ist).
     if (event.cron !== '17 3 * * *') {
       ctx.waitUntil((async () => { try { await ensureCols(env); await backfillMemberGames(env, 2); } catch (e) { console.log('member games backfill failed', e.code || e.message); } })());
+      ctx.waitUntil((async () => { try { await ensureCols(env); const n = await sweepReservations(env); if (n) console.log('reservations expired', n); } catch (e) { console.log('reservation sweep failed', e.code || e.message); } })());
       return;
     }
     ctx.waitUntil((async () => {
