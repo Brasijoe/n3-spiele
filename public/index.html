@@ -89,6 +89,17 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .chip { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font-weight: 600; cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .bar { border-top: 1px solid var(--line); padding-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.rate-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.rate-box .group-label { min-width: 0; }
+.rate-val { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; min-width: 84px; }
+.dual { position: relative; flex: 1 1 260px; max-width: 520px; height: 32px; }
+.dual-track { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: var(--line); }
+.dual-fill { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 3px; }
+.dual input[type=range] { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.dual input[type=range]::-webkit-slider-runnable-track { background: none; }
+.dual input[type=range]::-moz-range-track { background: none; }
+.dual input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); cursor: pointer; }
+.dual input[type=range]::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); cursor: pointer; }
 .adv { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 28px; background: var(--surface-2); border-radius: 8px; padding: 22px; }
 .adv .wide { grid-column: 1 / -1; }
 .note { font-size: 12px; font-weight: 400; color: var(--muted); }
@@ -464,6 +475,9 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <button type="button" class="btn btn-quiet" id="reset" data-t="reset"></button>
     </div>
     <div id="quick" hidden></div>
+    <div class="rate-box" id="rateBox" hidden><span class="group-label" id="rateL"></span>
+      <div class="dual"><div class="dual-track"><div class="dual-fill" id="rateFill"></div></div><input type="range" id="rMin" min="0" max="10" step="0.1" value="0"><input type="range" id="rMax" min="0" max="10" step="0.1" value="10"></div>
+      <span class="rate-val" id="rateV"></span></div>
     <div class="bar">
       <span class="row" style="gap:8px"><button type="button" class="btn btn-outline" id="fltBtn" aria-expanded="false" aria-controls="quick"></button>
       <button type="button" class="btn btn-outline" id="advBtn" hidden aria-expanded="false" aria-controls="adv"></button>
@@ -477,7 +491,6 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
         <label class="field" style="font-weight: 400"><span id="recPctL"></span><input type="range" id="recPct" min="50" max="95" step="5" value="70"></label>
         <span class="note" data-t="recNote"></span>
       </div>
-      <label class="field"><span id="minRatingL"></span><input type="range" id="minRating" min="0" max="9" step="0.1" value="0"></label>
       <label class="field"><span data-t="minVotes"></span><select id="minVotes"></select></label>
       <label class="field"><span data-t="rank"></span><select id="rankMax"></select></label>
       <div class="field"><span id="weightL"></span>
@@ -870,7 +883,7 @@ const TXT = {
     sorts: ['BGG-Bewertung', 'BGG-Rang', 'Name (A–Z)', 'Komplexität (leicht zuerst)', 'Spieldauer (kurz zuerst)', 'Erscheinungsjahr (neu zuerst)', 'Im Club gespielt (häufig zuerst)'],
     typeNames: { S: 'Strategie', T: 'Thematisch', F: 'Familie', P: 'Party', A: 'Abstrakt', K: 'Kinder', W: 'Konflikt', C: 'Sammelkarten' },
     years: 'Jahre', min: 'Min', players: 'Spieler', pl: 'Sp.', bestWith: 'Am besten mit', exp1: '+ Erweiterung: ', expN: '+ Erweiterungen: ', expMore: '+ {n} weitere …', expTitle: 'Erweiterungen: {n}', of: 'von', games: 'Spielen',
-    more: 'Weitere Spiele anzeigen ({n})', recPct: 'Empfohlen von mind. {p} % der BGG-Stimmen', minRating: 'BGG-Bewertung mindestens: {v}', weightRange: 'Komplexität (BGG-Gewicht) {a} – {b}',
+    more: 'Weitere Spiele anzeigen ({n})', recPct: 'Empfohlen von mind. {p} % der BGG-Stimmen', rateL: 'BGG-Wertung', rateAria: ['BGG-Wertung mindestens', 'BGG-Wertung höchstens'], weightRange: 'Komplexität (BGG-Gewicht) {a} – {b}',
     maxTime: 'Spieldauer höchstens: {v}', win: 'Sieg: ', jump: 'Zu {n} springen', current: '{n}, aktuelles Highlight', onBgg: '{n} auf BoardGameGeek öffnen', cover: 'Cover von {n}', playedN: '{n}× im Club gespielt',
     admin: 'Verwaltung', adminNote: 'Nur für Personen mit Bearbeitungsrechten sichtbar.',
     admHl: 'Highlights und Kurzbeschreibungen', admHlNote: 'Reihenfolge, Auswahl und Texte gelten für alle Besucher, sobald du speicherst. Ohne gespeicherte Auswahl zeigt der Slider die Top 15 nach BGG-Wertung.',
@@ -970,7 +983,7 @@ const TXT = {
     sorts: ['BGG rating', 'BGG rank', 'Name (A–Z)', 'Complexity (lightest first)', 'Play time (shortest first)', 'Year (newest first)', 'Played at the club (most first)'],
     typeNames: { S: 'Strategy', T: 'Thematic', F: 'Family', P: 'Party', A: 'Abstract', K: "Children's", W: 'Wargame', C: 'Customizable' },
     years: 'years', min: 'min', players: 'players', pl: 'pl.', bestWith: 'Best with', exp1: '+ Expansion: ', expN: '+ Expansions: ', expMore: '+ {n} more …', expTitle: 'Expansions: {n}', of: 'of', games: 'games',
-    more: 'Show more games ({n})', recPct: 'Recommended by at least {p} % of BGG votes', minRating: 'Minimum BGG rating: {v}', weightRange: 'Complexity (BGG weight) {a} – {b}',
+    more: 'Show more games ({n})', recPct: 'Recommended by at least {p} % of BGG votes', rateL: 'BGG rating', rateAria: ['Minimum BGG rating', 'Maximum BGG rating'], weightRange: 'Complexity (BGG weight) {a} – {b}',
     maxTime: 'Maximum play time: {v}', win: 'Winner: ', jump: 'Jump to {n}', current: '{n}, current highlight', onBgg: 'Open {n} on BoardGameGeek', cover: 'Cover of {n}', playedN: 'Played {n}× at the club',
     admin: 'Administration', adminNote: 'Only visible to people with edit access.',
     admHl: 'Highlights and short descriptions', admHlNote: 'Order, selection and texts apply to every visitor once you save. Without a saved selection the slider shows the top 15 by BGG rating.',
@@ -1175,7 +1188,7 @@ function applyHl() {
   highlights = list.length ? list : defaultHl;
 }
 
-const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
+const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, rMin: 0, rMax: 10, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
 try { const l = localStorage.getItem('n3-lang'); if (l === 'de' || l === 'en') S.lang = l; } catch (e) {}
 { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'de' || ql === 'en') S.lang = ql; }
 let clubTime = {};
@@ -1250,7 +1263,8 @@ function match(g) {
   if (S.types.length && !S.types.some((k) => g.types.includes(k))) return false;
   if (S.play.length && !S.play.includes(g.mode)) return false;
   if (S.feel.length && !S.feel.some((f) => g.feel.includes(f))) return false;
-  if (g.r < S.minRating) return false;
+  // BGG-Wertung wie angezeigt (auf eine Nachkommastelle gerundet).
+  if (S.rMin > 0 || S.rMax < 10) { const rr = Math.round(g.r * 10) / 10; if (rr < S.rMin || rr > S.rMax) return false; }
   if (S.minVotes && g.u < S.minVotes) return false;
   if (S.rankMax && !(g.rank && g.rank <= S.rankMax)) return false;
   if (g.w && (g.w < S.wMin || g.w > S.wMax)) return false;
@@ -1312,12 +1326,14 @@ function renderFilters() {
   $('cats').innerHTML = chips('cats', topCats.map((c) => [c.idx, (de() ? D.catsDe : D.cats)[c.idx] + ' (' + c.n + ')']));
   $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
   const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'play', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
-    [S.pMode !== 'box', S.minRating > 0, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0].filter(Boolean).length;
+    [S.pMode !== 'box', S.rMin > 0 || S.rMax < 10, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0].filter(Boolean).length;
   $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt;
   $('advBtn').hidden = !S.flt;
   $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !(S.flt && S.adv);
   $('recPctL').textContent = fill(t.recPct, { p: S.recPct });
-  $('minRatingL').textContent = fill(t.minRating, { v: S.minRating ? S.minRating.toFixed(1) : t.any });
+  $('rateBox').hidden = !S.flt; $('rateL').textContent = t.rateL; $('rateV').textContent = S.rMin.toFixed(1) + ' – ' + S.rMax.toFixed(1);
+  $('rMin').setAttribute('aria-label', t.rateAria[0]); $('rMax').setAttribute('aria-label', t.rateAria[1]);
+  $('rateFill').style.left = S.rMin * 10 + '%'; $('rateFill').style.right = (100 - S.rMax * 10) + '%';
   $('weightL').textContent = fill(t.weightRange, { a: S.wMin.toFixed(1), b: S.wMax.toFixed(1) });
   $('maxTimeL').textContent = fill(t.maxTime, { v: S.maxTime >= 240 ? t.any : S.maxTime + ' ' + t.min });
 }
@@ -1853,11 +1869,17 @@ $('advBtn').onclick = () => { S.adv = !S.adv; renderFilters(); };
 $('fltBtn').onclick = () => { S.flt = !S.flt; renderFilters(); };
 $('q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = PAGE; renderGrid(); });
 $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
+// Doppelregler BGG-Wertung: die Griffe können sich nicht überholen.
+['rMin', 'rMax'].forEach((id) => $(id).addEventListener('input', (e) => {
+  let v = Math.round(Number(e.target.value) * 10) / 10;
+  if (id === 'rMin' && v > S.rMax) v = S.rMax; if (id === 'rMax' && v < S.rMin) v = S.rMin;
+  S[id] = v; e.target.value = v; S.limit = PAGE; renderFilters(); renderGrid();
+}));
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
-[['recPct', 'recPct'], ['minRating', 'minRating'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
+[['recPct', 'recPct'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
 $('reset').onclick = () => {
-  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
-  $('q').value = ''; ['recPct', 'minRating', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
+  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, rMin: 0, rMax: 10, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  $('q').value = ''; ['recPct', 'rMin', 'rMax', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
   renderAll();
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
