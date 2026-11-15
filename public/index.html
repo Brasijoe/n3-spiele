@@ -499,6 +499,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <label class="field"><span id="maxTimeL"></span><input type="range" id="maxTime" min="15" max="240" step="15" value="240"></label>
       <label class="field"><span data-t="age"></span><select id="maxAge"></select></label>
       <label class="field"><span data-t="yearFrom"></span><select id="yearFrom"></select></label>
+      <label class="field"><span data-t="playedF"></span><select id="playedF"></select></label>
       <div class="field wide"><span data-t="cats"></span><div class="group" id="cats"></div></div>
       <div class="field wide"><span data-t="mechs"></span><div class="group" id="mechs"></div></div>
     </div>
@@ -861,7 +862,7 @@ const TXT = {
     search: 'Spiel suchen', searchPh: 'Name, z. B. Azul', sortBy: 'Sortieren nach', reset: 'Filter zurücksetzen', match: 'passen zu deiner Auswahl',
     fltOpen: 'Filter anzeigen', fltClose: 'Filter ausblenden', advOpen: 'Erweiterte Filter', advClose: 'Erweiterte Filter schließen', pModeLabel: 'Spielerzahl gilt …',
     recNote: 'Die Prozent-Schwelle wirkt erst mit der BGG-API (vollständige Umfragedaten).', minVotes: 'Mindestanzahl Bewertungen', rank: 'BGG-Rang', any: 'egal',
-    age: 'Geeignet ab Alter', yearFrom: 'Erschienen ab', cats: 'Kategorien', mechs: 'Mechaniken', allGames: 'Alle Spiele',
+    age: 'Geeignet ab Alter', yearFrom: 'Erschienen ab', playedF: 'Im Club gespielt', playedOpts: ['Egal', 'Noch nie gespielt', 'Schon gespielt'], cats: 'Kategorien', mechs: 'Mechaniken', allGames: 'Alle Spiele',
     recent: 'Zuletzt im Club gespielt', recTab: 'Zuletzt gespielt', lastPlayed: 'Zuletzt gespielt am {d}', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
@@ -961,7 +962,7 @@ const TXT = {
     search: 'Search games', searchPh: 'Name, e.g. Azul', sortBy: 'Sort by', reset: 'Reset filters', match: 'match your selection',
     fltOpen: 'Show filters', fltClose: 'Hide filters', advOpen: 'Advanced filters', advClose: 'Close advanced filters', pModeLabel: 'Player count based on …',
     recNote: 'The percentage threshold only works once the BGG API (full poll data) is connected.', minVotes: 'Minimum number of ratings', rank: 'BGG rank', any: 'any',
-    age: 'Suitable from age', yearFrom: 'Published from', cats: 'Categories', mechs: 'Mechanics', allGames: 'All games',
+    age: 'Suitable from age', yearFrom: 'Published from', playedF: 'Played at the club', playedOpts: ['Any', 'Never played', 'Played before'], cats: 'Categories', mechs: 'Mechanics', allGames: 'All games',
     recent: 'Recently played at the club', recTab: 'Recently played', lastPlayed: 'Last played on {d}', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
@@ -1188,7 +1189,7 @@ function applyHl() {
   highlights = list.length ? list : defaultHl;
 }
 
-const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, rMin: 0, rMax: 10, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
+const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, rMin: 0, rMax: 10, played: '', minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
 try { const l = localStorage.getItem('n3-lang'); if (l === 'de' || l === 'en') S.lang = l; } catch (e) {}
 { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'de' || ql === 'en') S.lang = ql; }
 let clubTime = {};
@@ -1204,7 +1205,7 @@ function calcClubTime() {
   });
 }
 const clubTimeTxt = (g) => { const c = clubTime[g.id]; return c ? fill(T().clubTime, { m: c.m, p: c.p }) : ''; };
-let plays = [], playCount = {}, db = null, dbState = 'loading', logGame = null;
+let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), db = null, dbState = 'loading', logGame = null;
 
 const T = () => TXT[S.lang];
 const de = () => S.lang === 'de';
@@ -1271,6 +1272,7 @@ function match(g) {
   if (S.maxTime < 240 && g.t > S.maxTime) return false;
   if (S.maxAge && g.a > S.maxAge) return false;
   if (S.yearFrom && g.y < S.yearFrom) return false;
+  if (S.played) { const pl = (g.id && playedIds.has(Number(g.id))) || [g.nDe, g.nEn].some((n) => n && playedNames.has(String(n).trim().toLowerCase())); if (S.played === 'never' ? pl : !pl) return false; }
   if (S.cats.length && !S.cats.some((c) => g.cats.includes(c))) return false;
   if (S.mechs.length && !S.mechs.some((m) => g.mechs.includes(m))) return false;
   return true;
@@ -1307,6 +1309,7 @@ function renderStatic() {
   $('rankMax').innerHTML = [[0, t.any], [100, 'Top 100'], [500, 'Top 500'], [1000, 'Top 1.000'], [2500, 'Top 2.500']].map(([v, l]) => '<option value="' + v + '">' + esc(l) + '</option>').join(''); $('rankMax').value = S.rankMax;
   $('maxAge').innerHTML = '<option value="0">' + esc(t.any) + '</option>' + [6, 8, 10, 12, 14].map((v) => '<option value="' + v + '">' + v + ' ' + esc(t.years) + '</option>').join(''); $('maxAge').value = S.maxAge;
   $('yearFrom').innerHTML = '<option value="0">' + esc(t.any) + '</option>' + [2000, 2010, 2015, 2020, 2023].map((v) => '<option value="' + v + '">' + v + '</option>').join(''); $('yearFrom').value = S.yearFrom;
+  $('playedF').innerHTML = [['', 0], ['never', 1], ['yes', 2]].map(([v, i]) => '<option value="' + v + '">' + esc(t.playedOpts[i]) + '</option>').join(''); $('playedF').value = S.played;
 }
 
 function renderFilters() {
@@ -1326,7 +1329,7 @@ function renderFilters() {
   $('cats').innerHTML = chips('cats', topCats.map((c) => [c.idx, (de() ? D.catsDe : D.cats)[c.idx] + ' (' + c.n + ')']));
   $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
   const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'play', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
-    [S.pMode !== 'box', S.rMin > 0 || S.rMax < 10, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0].filter(Boolean).length;
+    [S.pMode !== 'box', S.rMin > 0 || S.rMax < 10, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0, !!S.played].filter(Boolean).length;
   $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt;
   $('advBtn').hidden = !S.flt;
   $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !(S.flt && S.adv);
@@ -1868,6 +1871,7 @@ document.querySelector('.filters').addEventListener('click', (e) => {
 $('advBtn').onclick = () => { S.adv = !S.adv; renderFilters(); };
 $('fltBtn').onclick = () => { S.flt = !S.flt; renderFilters(); };
 $('q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = PAGE; renderGrid(); });
+$('playedF').onchange = (e) => { S.played = e.target.value; S.limit = PAGE; renderFilters(); renderGrid(); };
 $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 // Doppelregler BGG-Wertung: die Griffe können sich nicht überholen.
 ['rMin', 'rMax'].forEach((id) => $(id).addEventListener('input', (e) => {
@@ -1878,8 +1882,8 @@ $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
 [['recPct', 'recPct'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
 $('reset').onclick = () => {
-  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, rMin: 0, rMax: 10, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
-  $('q').value = ''; ['recPct', 'rMin', 'rMax', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
+  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, rMin: 0, rMax: 10, played: '', minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  $('q').value = ''; $('playedF').value = ''; ['recPct', 'rMin', 'rMax', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
   renderAll();
 };
 $('moreBtn').onclick = () => { S.limit += PAGE; renderGrid(); };
@@ -3077,6 +3081,8 @@ watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); part
 watch('/plays', (rows) => {
   playDocs = rows.map((p) => ({ id: p.id, p })); plays = rows; playCount = {};
   plays.forEach((p) => { if (!p.guest) playCount[p.gameId] = (playCount[p.gameId] || 0) + 1; });
+  // „Im Club gespielt“: jede eingetragene Partie zählt, auch Gastspiele (per BGG-ID oder Name).
+  playedIds = new Set(plays.map((p) => Number(p.gameId)).filter(Boolean)); playedNames = new Set(plays.map((p) => String(p.game || '').trim().toLowerCase()).filter(Boolean));
   calcClubTime();
   dbState = 'ready'; renderPlays(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
