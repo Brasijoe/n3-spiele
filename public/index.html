@@ -361,6 +361,50 @@ dialog.info form.pe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 1
 dialog.info form.pe .wide { grid-column: 1 / -1; }
 .gl-list { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 720px) { .st-panel, .st-filters { padding-inline: 18px; } .months { gap: 3px; } .mlabels { gap: 3px; font-size: 10px; } }
+/* Zufallsspiel: Würfel, Mischen, Enthüllung */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.rnd-btn { display: inline-flex; align-items: center; gap: 8px; }
+.rnd-btn:hover svg { animation: rnd-wiggle .5s ease; }
+@keyframes rnd-wiggle { 25% { transform: rotate(-18deg); } 75% { transform: rotate(14deg); } }
+dialog.rnd-dlg { position: fixed; overflow: hidden auto; max-height: calc(100dvh - 32px); padding-top: 18px; }
+dialog.rnd-dlg[open] { animation: rnd-in .25s ease-out; }
+@keyframes rnd-in { from { opacity: 0; transform: scale(.94); } }
+dialog.rnd-dlg h3 { padding-right: 44px; }
+.rnd-x { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 3; }
+.rnd-x:hover { border-color: var(--accent); }
+.rnd-roll { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 0 6px; }
+.dice-scene { width: 84px; height: 84px; perspective: 500px; animation: dice-hop .55s ease-in-out infinite; }
+.rnd-roll.done .dice-scene { animation: none; }
+@keyframes dice-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-26px); } }
+.dice { position: relative; width: 84px; height: 84px; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,1.4,.4,1); }
+.dice.spin { animation: dice-spin .7s linear infinite; transition: none; }
+@keyframes dice-spin { from { transform: rotateX(0) rotateY(0) rotateZ(0); } to { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg); } }
+.dice .face { position: absolute; inset: 0; border-radius: 14px; background: linear-gradient(145deg, #fff, #f1e6d2); border: 2px solid var(--accent); box-shadow: inset 0 0 12px rgba(0,0,0,.12); display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 12px; box-sizing: border-box; backface-visibility: hidden; }
+.dice .face i { width: 14px; height: 14px; border-radius: 50%; background: #1b1b1b; place-self: center; }
+.dice .face .p1 { grid-area: 1/1; } .dice .face .p3 { grid-area: 1/3; } .dice .face .p4 { grid-area: 2/1; } .dice .face .p5 { grid-area: 2/2; background: #c0392b; } .dice .face .p6 { grid-area: 2/3; } .dice .face .p7 { grid-area: 3/1; } .dice .face .p9 { grid-area: 3/3; }
+.dice .f1 { transform: translateZ(42px); } .dice .f6 { transform: rotateY(180deg) translateZ(42px); } .dice .f2 { transform: rotateY(90deg) translateZ(42px); } .dice .f5 { transform: rotateY(-90deg) translateZ(42px); } .dice .f3 { transform: rotateX(90deg) translateZ(42px); } .dice .f4 { transform: rotateX(-90deg) translateZ(42px); }
+.dice-shadow { width: 70px; height: 10px; border-radius: 50%; background: rgba(0,0,0,.25); filter: blur(3px); animation: dice-sh .55s ease-in-out infinite; }
+.rnd-roll.done .dice-shadow { animation: none; }
+@keyframes dice-sh { 50% { transform: scaleX(.6); opacity: .5; } }
+.rnd-flick { min-height: 26px; font-family: var(--font-display); font-size: 17px; color: var(--muted); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rnd-res { position: relative; display: grid; grid-template-columns: 170px 1fr; gap: 16px 20px; align-items: start; padding-top: 8px; }
+.rnd-res.pop { animation: rnd-pop .55s cubic-bezier(.2,1.5,.4,1); }
+@keyframes rnd-pop { from { opacity: 0; transform: scale(.6) rotate(-3deg); } }
+.rnd-cv { position: relative; aspect-ratio: 1; border-radius: 10px; background: var(--cover); display: flex; align-items: center; justify-content: center; }
+.rnd-cv::before { content: ''; position: absolute; inset: -40%; background: repeating-conic-gradient(from 0deg, rgba(240,155,25,.35) 0 10deg, transparent 10deg 30deg); border-radius: 50%; animation: rnd-rays 9s linear infinite; z-index: 0; mask: radial-gradient(circle, #000 30%, transparent 70%); -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); }
+@keyframes rnd-rays { to { transform: rotate(360deg); } }
+.rnd-cv img { position: relative; z-index: 1; max-width: 92%; max-height: 92%; object-fit: contain; border-radius: 4px; box-shadow: 0 10px 28px rgba(0,0,0,.35); }
+.rnd-cv .badge { z-index: 2; right: -8px; top: -8px; }
+.rnd-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rnd-info h4 { margin: 0; font-family: var(--font-display); font-size: 24px; line-height: 1.2; color: var(--fg); text-wrap: balance; }
+.rnd-info .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.rnd-info .bgg { align-self: flex-start; }
+.rnd-conf { position: absolute; left: 50%; top: 40%; width: 0; height: 0; pointer-events: none; z-index: 4; }
+.rnd-conf i { position: absolute; width: 8px; height: 12px; border-radius: 2px; opacity: 0; animation: rnd-conf 1.1s cubic-bezier(.15,.7,.4,1) forwards; }
+@keyframes rnd-conf { 0% { opacity: 1; transform: translate(0,0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
+@media (max-width: 520px) { .rnd-res { grid-template-columns: 1fr; } .rnd-cv { max-width: 220px; width: 100%; justify-self: center; } .rnd-info { align-items: center; text-align: center; } .rnd-info .pills { justify-content: center; } .rnd-info .bgg { align-self: center; } }
+#rndEmpty { margin: 12px 0 0; }
+@media (prefers-reduced-motion: reduce) { .dice-scene, .dice-shadow, .dice.spin, .rnd-cv::before, .rnd-res.pop, dialog.rnd-dlg[open], .rnd-btn:hover svg { animation: none; } .rnd-conf { display: none; } }
 </style>
 
 <div class="band">
@@ -419,7 +463,8 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
     <div id="quick" hidden></div>
     <div class="bar">
       <span class="row" style="gap:8px"><button type="button" class="btn btn-outline" id="fltBtn" aria-expanded="false" aria-controls="quick"></button>
-      <button type="button" class="btn btn-outline" id="advBtn" hidden aria-expanded="false" aria-controls="adv"></button></span>
+      <button type="button" class="btn btn-outline" id="advBtn" hidden aria-expanded="false" aria-controls="adv"></button>
+      <button type="button" class="btn btn-primary rnd-btn" id="rndBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8" cy="8" r="1.4" fill="currentColor"></circle><circle cx="16" cy="8" r="1.4" fill="currentColor"></circle><circle cx="12" cy="12" r="1.4" fill="currentColor"></circle><circle cx="8" cy="16" r="1.4" fill="currentColor"></circle><circle cx="16" cy="16" r="1.4" fill="currentColor"></circle></svg><span data-t="rndBtn"></span></button></span>
       <span><strong id="count" style="color: var(--fg)"></strong> <span data-t="match"></span></span>
     </div>
     <div class="adv" id="adv" hidden>
@@ -665,6 +710,15 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
   </form>
 </div>
 
+<dialog class="info wide rnd-dlg" id="rndDlg" aria-labelledby="rndT">
+  <button type="button" class="rnd-x" id="rndX"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+  <h3 id="rndT"></h3>
+  <div class="rnd-roll" id="rndRoll" aria-hidden="true"><div class="dice-scene"><div class="dice" id="rndDice"><div class="face f1"><i class="p5"></i></div><div class="face f2"><i class="p1"></i><i class="p9"></i></div><div class="face f3"><i class="p1"></i><i class="p5"></i><i class="p9"></i></div><div class="face f4"><i class="p1"></i><i class="p3"></i><i class="p7"></i><i class="p9"></i></div><div class="face f5"><i class="p1"></i><i class="p3"></i><i class="p5"></i><i class="p7"></i><i class="p9"></i></div><div class="face f6"><i class="p1"></i><i class="p3"></i><i class="p4"></i><i class="p6"></i><i class="p7"></i><i class="p9"></i></div></div></div><div class="dice-shadow"></div><div class="rnd-flick" id="rndFlick"></div></div>
+  <div class="rnd-res" id="rndRes" hidden></div>
+  <p class="meta" id="rndEmpty" hidden></p>
+  <div class="acts" id="rndActs"><button type="button" class="btn btn-outline" id="rndAgain"></button><button type="button" class="btn btn-primary" id="rndGo"></button></div>
+  <span class="sr-only" role="status" id="rndLive"></span>
+</dialog>
 <dialog class="info" id="peDlg" aria-labelledby="peT">
   <h3 id="peT"></h3>
   <form class="pe" id="peForm">
@@ -775,7 +829,8 @@ dialog.info form.pe .wide { grid-column: 1 / -1; }
 <script>
 (async function () {
 const TXT = {
-  de: { dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
+  de: { rndBtn: 'Zufallsspiel', rndBtnT: 'Ein zufälliges Spiel aus den gefilterten Spielen würfeln', rndRolling: 'Es wird gewürfelt …', rndTitle: 'Der Würfel ist gefallen!', rndFrom: 'Gewürfelt aus {n} Spielen, die zu deinen Filtern passen.', rndFrom1: 'Nur ein Spiel passt zu deinen Filtern.', rndAgain: 'Nochmal würfeln', rndGo: 'Mitspieler suchen', rndClose: 'Schließen', rndEmptyT: 'Nichts zu würfeln', rndEmpty: 'Kein Spiel passt zu den aktiven Filtern. Setz ein paar Filter zurück und würfle dann noch einmal.', rndPicked: 'Gewürfelt: {n}',
+    dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Discord-Kanal #mitspieler-gesucht angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Discord-Kanal #spiele-gesucht Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
     whDone: 'Danke! {r} bekommt im Discord-Kanal #spiele-gesucht Bescheid.', whRoundDone: 'Runde angelegt ✓ Sie steht unter „Mitspieler finden“.', whErrReq: '{r} hat keine Mitgliederrolle und kann nur an Stammtisch-Tagen mitspielen ({x}).', whErrGone: 'Zu spät: jemand anderes hat schon geantwortet.', wtSeeDc: 'In Discord ansehen',
@@ -874,7 +929,8 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
+  en: { rndBtn: 'Random game', rndBtnT: 'Roll a random game from the filtered games', rndRolling: 'Rolling the dice …', rndTitle: 'The die is cast!', rndFrom: 'Rolled from {n} games that match your filters.', rndFrom1: 'Only one game matches your filters.', rndAgain: 'Roll again', rndGo: 'Find players', rndClose: 'Close', rndEmptyT: 'Nothing to roll', rndEmpty: 'No game matches the active filters. Reset a few filters, then roll again.', rndPicked: 'Rolled: {n}',
+    dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the Discord channel #mitspieler-gesucht. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the Discord channel #spiele-gesucht that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
     whDone: 'Thanks! {r} will be notified in the Discord channel #spiele-gesucht.', whRoundDone: 'Game created ✓ You will find it under “Find players”.', whErrReq: '{r} has no member role and can only play on regular club nights ({x}).', whErrGone: 'Too late: someone else has already answered.', wtSeeDc: 'View in Discord',
@@ -1220,6 +1276,7 @@ function renderStatic() {
   document.querySelectorAll('#langGroup button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
   $('langGroup').setAttribute('aria-label', de() ? 'Sprache' : 'Language'); setDcLink();
   $('prev').setAttribute('aria-label', t.prev); $('next').setAttribute('aria-label', t.next);
+  $('rndBtn').title = t.rndBtnT; $('rndX').setAttribute('aria-label', t.rndClose); $('rndAgain').textContent = t.rndAgain;
   $('q').placeholder = t.searchPh; $('gQ').placeholder = t.bggPh; $('pQ').placeholder = t.bggPh;
   $('tabs').setAttribute('aria-label', de() ? 'Bereiche' : 'Sections');
   $('fWinner').placeholder = t.winnerPh; $('fNote').placeholder = t.notePh; $('fCode').placeholder = t.codePh; $('pCode').placeholder = t.codePh; $('evCode').placeholder = t.admEvCodePh; $('pEvToggle').textContent = evMode ? t.evUsePersonal : t.evUseEvent;
@@ -1377,7 +1434,8 @@ function memCard(g) {
     '<div class="actions">' + (g.owners.every((o) => isMine('memberGames', o.id)) ? '<button type="button" class="btn btn-primary" data-offer="' + esc(g.key) + '">' + esc(t.ptNew) + '</button>'
       : '<button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>') + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
 }
-function renderGrid() {
+// Aktuell gefilterte und sortierte Liste der Übersicht (auch Grundlage für das Zufallsspiel).
+function gridList() {
   const t = T();
   const pool = S.src === 'mem' ? memGames : games;
   let list = pool.filter(match);
@@ -1399,6 +1457,11 @@ function renderGrid() {
     secs.push({ h: t.secMostly, note: t.secMostlyNote, list: rest.filter((g) => g.ld === 1) });
     list = [].concat(...secs.map((x) => x.list));
   }
+  return { pool, list, secs };
+}
+function renderGrid() {
+  const t = T();
+  const { pool, list, secs } = gridList();
   $('count').textContent = list.length + ' ' + t.of + ' ' + pool.length + ' ' + t.games;
   document.querySelectorAll('#srcTabs [data-src]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.src === S.src)));
   $('memHow').hidden = S.src !== 'mem'; $('ownerF').hidden = S.src !== 'mem';
@@ -1803,6 +1866,91 @@ $('grid').addEventListener('click', (e) => {
   renderPPick(); $('pTime').focus();
 });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-log]'); if (!b) return; const g = all.find((x) => x.key === b.dataset.log); if (g) openLog(g); });
+
+/* ---------- Zufallsspiel: würfelt aus der aktuell gefilterten Liste (Suche, Filter, Sprache, Sammlung/Mitglieder) ---------- */
+let rndGame = null, rndTimers = [], rndSpin = { x: 0, y: 0 };
+// Drehung, die die jeweilige Würfelseite nach vorne bringt.
+const DICE_FACE = { 1: [0, 0], 6: [0, 180], 2: [0, -90], 5: [0, 90], 3: [-90, 0], 4: [90, 0] };
+function rndClear() { rndTimers.forEach(clearTimeout); rndTimers = []; }
+function rndDice(x, y, ms) { const d = $('rndDice'); d.style.transition = ms ? 'transform ' + ms + 'ms ' + (ms > 300 ? 'cubic-bezier(.2,1.4,.4,1)' : 'linear') : 'none'; d.style.transform = 'rotateX(' + x + 'deg) rotateY(' + y + 'deg)'; }
+function rndMine(g) { return g.mem && g.owners.every((o) => isMine('memberGames', o.id)); }
+function rndInfo(g) {
+  const t = T(), n = name(g), pc = g.mem ? 0 : playCount[g.id] || 0;
+  const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '') +
+    (g.langs || []).map((l) => '<span class="pill lg" title="' + esc(t.langNames[l]) + '">' + l.toUpperCase() + '</span>').join('');
+  const meta = [g.y || '', catNames(g).filter(Boolean).slice(0, 3).join(', ')].filter(Boolean).join(' · ');
+  return '<div class="rnd-cv">' + (g.cover ? '<img src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 48) : '') + '</div>' +
+    '<div class="rnd-info"><div class="row" style="gap:6px">' + (g.mem ? '<span class="src mem">' + esc(t.memTag) + '</span>' : g.types.length ? '<span class="type" style="position:static;max-width:none">' + esc(typeTxt(g)) + '</span>' : '') + lnIcon(g) + '</div>' +
+    '<h4>' + esc(n) + '</h4>' + (meta ? '<span class="meta">' + esc(meta) + '</span>' : '') + (pills ? '<div class="pills">' + pills + '</div>' : '') +
+    (g.bestR.length || g.p2 ? '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' : '') + expHtml(g, 'played') +
+    (pc ? '<span class="meta">' + esc(fill(t.playedN, { n: pc })) + '</span>' : '') +
+    (g.mem ? '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(g.owners.map((o) => o.name).join(', ')) + '</span>' : '') +
+    (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div>';
+}
+function rndConfetti() {
+  const cols = ['#f09b19', '#f0b418', '#2c6aa0', '#7b5cc4', '#2b7a40', '#c0392b'];
+  let h = '';
+  for (let i = 0; i < 44; i++) {
+    const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 190;
+    h += '<i style="background:' + cols[i % cols.length] + ';--dx:' + Math.round(Math.cos(a) * d) + 'px;--dy:' + Math.round(Math.sin(a) * d - 40) + 'px;--r:' + Math.round(Math.random() * 720 - 360) + 'deg;animation-delay:' + Math.round(Math.random() * 120) + 'ms"></i>';
+  }
+  return '<div class="rnd-conf">' + h + '</div>';
+}
+function rndReveal(g, nPool, fx) {
+  const t = T();
+  $('rndRoll').hidden = true; $('rndT').textContent = t.rndTitle;
+  const r = $('rndRes'); r.innerHTML = rndInfo(g) + (fx ? rndConfetti() : ''); r.hidden = false;
+  r.classList.remove('pop'); if (fx) { void r.offsetWidth; r.classList.add('pop'); }
+  $('rndEmpty').hidden = false; $('rndEmpty').textContent = nPool > 1 ? fill(t.rndFrom, { n: nPool }) : t.rndFrom1;
+  $('rndGo').textContent = g.mem && !rndMine(g) ? t.brAsk : t.rndGo;
+  $('rndGo').hidden = false; $('rndAgain').hidden = nPool < 2; $('rndGo').disabled = false; $('rndAgain').disabled = false;
+  $('rndLive').textContent = fill(t.rndPicked, { n: name(g) });
+  rndTimers.push(setTimeout(() => { const c = r.querySelector('.rnd-conf'); if (c) c.remove(); }, 1600));
+}
+function rndRoll() {
+  const t = T(), list = gridList().list;
+  rndClear();
+  $('rndRes').hidden = true; $('rndEmpty').hidden = true;
+  if (!list.length) {
+    rndGame = null; $('rndRoll').hidden = true; $('rndT').textContent = t.rndEmptyT;
+    $('rndEmpty').textContent = t.rndEmpty; $('rndEmpty').hidden = false; $('rndGo').hidden = true; $('rndAgain').hidden = false; $('rndAgain').disabled = false; return;
+  }
+  let g = list[Math.floor(Math.random() * list.length)];
+  for (let i = 0; i < 6 && list.length > 1 && rndGame && g.key === rndGame.key; i++) g = list[Math.floor(Math.random() * list.length)];
+  rndGame = g;
+  if (reduceMotionQ()) { rndReveal(g, list.length, false); return; }
+  $('rndT').textContent = t.rndRolling; $('rndRoll').hidden = false; $('rndRoll').classList.remove('done');
+  $('rndGo').textContent = g.mem && !rndMine(g) ? t.brAsk : t.rndGo; $('rndGo').hidden = false; $('rndGo').disabled = true; $('rndAgain').hidden = false; $('rndAgain').disabled = true;
+  // Würfel taumelt, darunter flackern Spielnamen immer langsamer vorbei.
+  let at = 0;
+  for (let i = 0; i < 9; i++) { at += 170; rndTimers.push(setTimeout(() => { rndSpin.x += 90 + Math.random() * 180; rndSpin.y += 120 + Math.random() * 200; rndDice(rndSpin.x, rndSpin.y, 170); }, at - 170)); }
+  let ft = 0, step = 55;
+  while (ft < 1500) { const x = list[Math.floor(Math.random() * list.length)]; rndTimers.push(setTimeout(() => { $('rndFlick').textContent = name(x); }, ft)); ft += step; step = Math.round(step * 1.13); }
+  rndTimers.push(setTimeout(() => { $('rndFlick').textContent = name(g); }, ft));
+  rndTimers.push(setTimeout(() => {
+    const f = DICE_FACE[1 + Math.floor(Math.random() * 6)], k = Math.ceil(rndSpin.x / 360) + 1, m = Math.ceil(rndSpin.y / 360) + 1;
+    rndSpin = { x: k * 360 + f[0], y: m * 360 + f[1] }; rndDice(rndSpin.x, rndSpin.y, 600); $('rndRoll').classList.add('done');
+  }, at));
+  rndTimers.push(setTimeout(() => rndReveal(g, list.length, true), Math.max(at, ft) + 650));
+}
+function openRnd() { rndGame = null; $('rndFlick').textContent = ''; if (!$('rndDlg').open) $('rndDlg').showModal(); rndRoll(); }
+function closeRnd() { rndClear(); if ($('rndDlg').open) $('rndDlg').close(); }
+$('rndBtn').onclick = openRnd;
+$('rndAgain').onclick = rndRoll;
+$('rndX').onclick = closeRnd;
+$('rndDlg').addEventListener('close', rndClear);
+$('rndDlg').addEventListener('click', (e) => { if (e.target === $('rndDlg')) closeRnd(); });
+// „Mitspieler suchen“: Runde anbieten mit dem Spiel vorausgewählt (Regeln für Mitglieder/Stammtisch gelten wie immer);
+// fremdes Mitgliederspiel: Mitbringen anfragen.
+$('rndGo').onclick = () => {
+  const g = rndGame; if (!g) return; closeRnd();
+  if (g.mem && !rndMine(g)) { openBring(g.key); return; }
+  try { history.replaceState(null, '', '#partys'); } catch (x) { location.hash = 'partys'; }
+  renderView(); renderParties(); window.scrollTo(0, 0); openParty();
+  pGame = g.mem ? { n: g.nDe || g.nEn, gameId: g.id || null, guest: true, y: g.y || null } : { n: name(g), gameId: g.id, guest: false, y: g.y };
+  if (g.p2) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
+  renderPPick(); $('pTime').focus();
+};
 
 /* ---------- Gastspiele: BGG-Suche ---------- */
 const GUEST_PENDING = { guest: true, pending: true, p1: 1, p2: 30 };
