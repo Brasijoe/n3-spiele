@@ -4,7 +4,7 @@ import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
 import { wantedButton, wantedSubmit } from './wanted.js';
-import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP } from './booking.js';
+import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP, guestsPaused, pauseText } from './booking.js';
 
 const enc = new TextEncoder();
 const hex = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
@@ -192,6 +192,7 @@ async function cmdParty(i, env, ctx) {
   const seats = Number(opt(i, 'plaetze') || 4); if (!(seats >= 2 && seats <= 30)) return say('Plätze: 2 bis 30.');
   const note = str(opt(i, 'hinweis'), 500);
   if (!isMember(rule, roles)) {
+    if (guestsPaused(rule, berlinToday())) return say(pauseText(rule));
     if (date < berlinToday()) return say('Das Datum liegt in der Vergangenheit.');
     if (!isStammtisch(date, rule)) return say(stammtischOnly(rule));
     if (!introOk(note)) return say(INTRO_HELP + ' Bitte `/party` noch einmal mit `hinweis` ausfüllen.');
