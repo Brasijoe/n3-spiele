@@ -158,6 +158,7 @@ Tests: `npm test` (unit), `test/discord-e2e.mjs`, `test/discord-sync.mjs`, `test
 - **Everyone else** only on **Stammtisch days** (club nights; default every Tuesday and the first Saturday of the month). Other days are greyed out in the date picker. When offering, the note must contain a short introduction (at least 40 characters).
 - **Rounds on Stammtisch days and event rounds** are open for everyone to join. Rounds on other days are members only.
 - **Event codes** are exempt from the Stammtisch rule; only the event days apply.
+- **Pause for non-members:** in the same admin section, "Neue Runden von Nicht-Mitgliedern vorübergehend sperren" (temporarily stop new rounds from non-members) blocks new rounds from people without the member role on the web, via `/party` and via "Hab ich: Runde anlegen". Optional end date (inclusive) and a note shown to non-members. Members, event-code rounds and existing rounds are not affected.
 
 Settings in the admin view under "Runden: Mitglieder und Stammtisch-Tage": member role ID, weekly and monthly days, extra days and cancelled days (stored in `config`, key `booking`). Until something is saved there, `DISCORD_MEMBER_ROLE_ID` from `wrangler.toml` is the role. Empty role ID = no restriction.
 

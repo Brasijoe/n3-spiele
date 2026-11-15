@@ -100,6 +100,8 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .dual input[type=range]::-moz-range-track { background: none; }
 .dual input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); cursor: pointer; }
 .dual input[type=range]::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); cursor: pointer; }
+.pause-note { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--guest-soft); color: var(--guest-ink); border-left: 4px solid var(--guest); font-size: 14px; line-height: 1.45; }
+.bk-pause { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; }
 .adv { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 28px; background: var(--surface-2); border-radius: 8px; padding: 22px; }
 .adv .wide { grid-column: 1 / -1; }
 .note { font-size: 12px; font-weight: 400; color: var(--muted); }
@@ -571,6 +573,14 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
         <label class="field" style="flex:1 1 240px"><span data-t="admBkExtra"></span><input type="text" id="bkExtra" placeholder="24.12.2026, 31.12.2026"></label>
         <label class="field" style="flex:1 1 240px"><span data-t="admBkSkip"></span><input type="text" id="bkSkip" placeholder="29.12.2026"></label>
       </div>
+      <div class="bk-pause">
+        <label style="display:flex;align-items:center;gap:10px;min-height:40px;font-weight:700;color:var(--fg)"><input type="checkbox" id="bkPause" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="admBkPause"></span></label>
+        <div class="row">
+          <label class="field" style="flex:0 1 200px"><span data-t="admBkPauseUntil"></span><input type="date" id="bkPauseUntil"></label>
+          <label class="field" style="flex:1 1 300px"><span data-t="admBkPauseNote"></span><input type="text" id="bkPauseNote" maxlength="200"></label>
+        </div>
+        <span class="note" data-t="admBkPauseHelp"></span>
+      </div>
       <div class="row" style="align-items:center"><button type="button" class="btn btn-primary" id="bkSave" data-t="admBkSave"></button><span id="bkMsg" role="status" class="note"></span></div>
     </div>
     <div class="adm-block">
@@ -710,6 +720,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <label class="field"><span data-t="ptGame"></span><input type="search" id="pQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pRes"></label>
       <ul class="gres" id="pRes" role="listbox"></ul>
     </div>
+    <p class="pause-note" id="pPause" role="status" hidden></p>
     <div class="field"><span data-t="date"></span><input type="hidden" id="pDate"><div class="cal" id="pCal"></div><span class="note" id="pDateNote"></span></div>
     <label class="field"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label>
     <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
@@ -872,6 +883,7 @@ const TXT = {
     ciTitle: 'Anmelden', ciP1: 'Zum Anlegen von Spielrunden und Eintragen von Partien meldest du dich einmal an, am einfachsten mit „Mit Discord anmelden“. Dein Browser bleibt angemeldet; deine eigenen Partien und Runden kannst du danach bearbeiten und löschen.', ciP2: 'Voraussetzung: Du bist auf dem N3-Discord-Server und kannst dort den Brettspiel-Kanal sehen (Brettspiel-Rolle). Wer den Server verlässt, wird abgemeldet.', ciP3: 'Ohne Discord-Anmeldung im Browser geht es auch mit einem Code: Tippe im Discord-Kanal #mitspieler-gesucht /code, der Bot schickt ihn dir (nur für dich sichtbar). Gib ihn hier einmal ein. Partien ohne Discord kannst du über den QR-Code im Club eintragen.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
     code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Im Discord-Kanal #mitspieler-gesucht auf dem N3-Discord mit /code abholen. Nur einmal nötig.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
     admQr: 'Eintragen per QR-Code', admQrNote: 'Wer den QR-Code im Club scannt, kann Partien ohne Discord eintragen (mit Namen). Ein neuer Schlüssel macht alte Ausdrucke sofort ungültig.', admQrPrint: 'Aushang drucken', admQrCopy: 'Link kopieren', admQrCopied: 'Link kopiert.', admQrMake: 'Schlüssel erzeugen', admQrRenew: 'Neuen Schlüssel erzeugen', admQrRenewSure: 'Alte Ausdrucke werden ungültig – wirklich?', admQrNone: 'Noch kein Schlüssel. Erst erzeugen, dann drucken.', admQrRenewed: 'Neuer Schlüssel aktiv. Bitte den neuen Aushang drucken.', admQrErr: 'Das hat nicht geklappt.', byTag: 'von {n}',
+    admBkPause: 'Neue Runden von Nicht-Mitgliedern vorübergehend sperren', admBkPauseUntil: 'Gesperrt bis einschließlich (optional)', admBkPauseNote: 'Hinweis für Nicht-Mitglieder (optional)', admBkPauseHelp: 'Gilt für „Runde anbieten“ auf der Webseite, /party in Discord und „Hab ich: Runde anlegen“. Mitglieder und Runden mit Event-Code sind nicht betroffen, bestehende Runden bleiben. Ohne Datum gilt die Sperre, bis du den Haken entfernst. Speichern nicht vergessen.', admBkPaused: 'Gesperrt', pausedT: 'Neue Runden von Nicht-Mitgliedern sind gerade pausiert{u}.', pausedU: ' (bis einschließlich {d})', pausedEv: 'Mit einem Event-Code geht es weiterhin. Mitglieder (mit der Mitgliederrolle) können wie immer Runden anbieten; melde dich dafür mit Discord an.',
     admBk: 'Runden: Mitglieder und Stammtisch-Tage', admBkNote: 'Mitglieder (Discord-Rolle unten) können Runden an jedem Tag anbieten. Alle anderen nur an Stammtisch-Tagen und mit einer kurzen Vorstellung im Hinweis; Runden mit Event-Code sind davon ausgenommen. Rollen-ID leer = keine Einschränkung. Rollen-ID: in Discord Entwicklermodus an, Rechtsklick auf die Rolle → „Rollen-ID kopieren“.', admBkRole: 'Discord-Rollen-ID der Mitglieder', admBkWeekly: 'Jede Woche', admBkMonthly: 'Jeden Monat', admBkExtra: 'Zusätzliche Tage', admBkSkip: 'Fällt aus', admBkSave: 'Speichern', admBkOk: 'Gespeichert. Nächste Stammtische: {n}', admBkBad: 'Bitte Daten als TT.MM.JJJJ eingeben, durch Komma getrennt.', admBkLast: 'letzter',
     admEv: 'Event-Codes', admEvNote: 'Mit einem Event-Code kann jede Person ohne Discord eine Runde anbieten (mit Namen), bis einschließlich „Code gültig bis“ und nur an den Eventtagen. In Discord steht dann der Eventname dabei. Code leer lassen = er wird automatisch erzeugt.', admEvName: 'Eventname', admEvCode: 'Code (optional, mind. 6 Zeichen)', admEvCodePh: 'leer = automatisch', admEvFrom: 'Event von', admEvTo: 'Event bis', admEvUntil: 'Code gültig bis', admEvAdd: 'Event-Code anlegen', admEvNone: 'Noch keine Event-Codes.', admEvValid: 'gültig bis {d}', admEvExpired: 'abgelaufen ({d})', admEvCopy: 'Link kopieren', admEvCopied: 'Link kopiert.', admEvDel: 'Löschen', admEvTaken: 'Diesen Code gibt es schon.', admEvShort: 'Der Code braucht mindestens 6 Buchstaben oder Ziffern.', admEvBad: 'Bitte Name und alle drei Daten ausfüllen („bis“ nicht vor „von“).', admEvMade: 'Event-Code {c} ist aktiv.',
     evUseEvent: 'Ich habe einen Event-Code', evUsePersonal: 'Doch mit persönlichem Code', evCode: 'Event-Code', evHint: 'Den Code bekommst du vom Orga-Team des Events.', evInfo: 'Event „{n}“ · {d}', evBad: 'Diesen Event-Code gibt es nicht.', evExpired: 'Dieser Event-Code ist abgelaufen.', evDateErr: 'Bitte einen Tag des Events wählen ({d}).', evOver: 'Die Eventtage sind schon vorbei.',
@@ -972,6 +984,7 @@ const TXT = {
     ciTitle: 'Sign in', ciP1: 'To create game rounds and log plays, sign in once, easiest with “Sign in with Discord”. Your browser stays signed in; afterwards you can edit and delete your own plays and rounds.', ciP2: 'Requirement: you are on the N3 Discord server and can see the board game channel there (board game role). Leaving the server signs you out.', ciP3: 'If Discord sign-in doesn’t work in your browser, use a code: type /code in the Discord channel #mitspieler-gesucht, the bot sends it to you (only visible to you). Enter it here once. Without Discord you can log plays via the QR code at the club.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
     code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it with /code in the Discord channel #mitspieler-gesucht on the N3 Discord. Only needed once.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
     admQr: 'Logging via QR code', admQrNote: 'Anyone who scans the QR code at the club can log plays without Discord (with their name). A new key instantly invalidates old printouts.', admQrPrint: 'Print poster', admQrCopy: 'Copy link', admQrCopied: 'Link copied.', admQrMake: 'Create key', admQrRenew: 'Create new key', admQrRenewSure: 'Old printouts stop working – sure?', admQrNone: 'No key yet. Create one, then print.', admQrRenewed: 'New key active. Please print the new poster.', admQrErr: 'That didn’t work.', byTag: 'by {n}',
+    admBkPause: 'Temporarily stop new games from non-members', admBkPauseUntil: 'Stopped up to and including (optional)', admBkPauseNote: 'Note for non-members (optional)', admBkPauseHelp: 'Applies to “Offer a game” on the website, /party in Discord and “I have it: set up a game”. Members and games with an event code are not affected, existing games stay. Without a date the stop lasts until you untick it. Don’t forget to save.', admBkPaused: 'Stopped', pausedT: 'New games from non-members are paused right now{u}.', pausedU: ' (up to and including {d})', pausedEv: 'You can still use an event code. Members (with the member role) can offer games as usual; sign in with Discord for that.',
     admBk: 'Games: members and game nights', admBkNote: 'Members (Discord role below) can offer games on any day. Everyone else only on game nights and with a short introduction in the note; games with an event code are exempt. Empty role ID = no restriction. Role ID: turn on developer mode in Discord, right-click the role → “Copy Role ID”.', admBkRole: 'Discord role ID of members', admBkWeekly: 'Every week', admBkMonthly: 'Every month', admBkExtra: 'Extra days', admBkSkip: 'Cancelled', admBkSave: 'Save', admBkOk: 'Saved. Next game nights: {n}', admBkBad: 'Please enter dates as DD.MM.YYYY, separated by commas.', admBkLast: 'last',
     admEv: 'Event codes', admEvNote: 'With an event code anyone can offer a game without Discord (with their name), up to and including “Code valid until”, and only on the event days. Discord then shows the event name. Leave the code empty to generate one.', admEvName: 'Event name', admEvCode: 'Code (optional, min. 6 characters)', admEvCodePh: 'empty = automatic', admEvFrom: 'Event from', admEvTo: 'Event to', admEvUntil: 'Code valid until', admEvAdd: 'Create event code', admEvNone: 'No event codes yet.', admEvValid: 'valid until {d}', admEvExpired: 'expired ({d})', admEvCopy: 'Copy link', admEvCopied: 'Link copied.', admEvDel: 'Delete', admEvTaken: 'This code already exists.', admEvShort: 'The code needs at least 6 letters or digits.', admEvBad: 'Please fill in the name and all three dates (“to” not before “from”).', admEvMade: 'Event code {c} is active.',
     evUseEvent: 'I have an event code', evUsePersonal: 'Use my personal code instead', evCode: 'Event code', evHint: 'You get the code from the event’s organisers.', evInfo: 'Event “{n}” · {d}', evBad: 'This event code doesn’t exist.', evExpired: 'This event code has expired.', evDateErr: 'Please pick a day of the event ({d}).', evOver: 'The event days are already over.',
@@ -2320,7 +2333,9 @@ function renderCal() {
   const pick = v ? fill(t.calPicked, { d: new Date(v + 'T12:00:00').toLocaleDateString(S.lang === 'de' ? 'de-DE' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) }) + '. ' : '';
   $('pDateNote').textContent = pick + (evMode ? '' : restricted() ? (me ? t.calNonMember : t.calGuest) : bk ? t.calStm : '');
 }
+const pauseMsg = () => { const t = T(); return fill(t.pausedT, { u: bk && bk.pauseUntil ? fill(t.pausedU, { d: dmy(bk.pauseUntil) }) : '' }) + (bk && bk.pauseNote ? ' ' + bk.pauseNote : '') + ' ' + t.pausedEv; };
 function renderNoteRule() {
+  const pz = !!(bk && bk.paused) && restricted() && !pEditId; $('pPause').hidden = !pz; if (pz) $('pPause').textContent = pauseMsg();
   const t = T(), on = needsIntro();
   $('pNoteLbl').textContent = on ? t.noteIntro : t.note; $('pNote').required = on; $('pNote').rows = on ? 4 : 2;
   $('pNoteHelp').hidden = !on; if (on) $('pNoteHelp').textContent = fill(t.noteIntroHelp, { n: introMin(), c: $('pNote').value.trim().length });
@@ -2331,13 +2346,13 @@ $('pCal').addEventListener('click', (e) => {
   if (b.dataset.cal) { const d = new Date(+calMonth.slice(0, 4), +calMonth.slice(5, 7) - 1 + Number(b.dataset.cal), 1); calMonth = isoDay(d).slice(0, 7); renderCal(); return; }
   if (b.dataset.day) { $('pDate').value = b.dataset.day; renderCal(); }
 });
-const bookErr = (e) => { const t = T(), c = e && e.code; return c === 'stammtisch_only' ? fill(t.errStammtisch, { r: ruleTxt() }) : c === 'intro_missing' ? fill(t.errIntro, { n: introMin() }) : ''; };
+const bookErr = (e) => { const t = T(), c = e && e.code; return c === 'guests_paused' ? pauseMsg() : c === 'stammtisch_only' ? fill(t.errStammtisch, { r: ruleTxt() }) : c === 'intro_missing' ? fill(t.errIntro, { n: introMin() }) : ''; };
 function renderPtHow() {
   const t = T(), el = $('ptHow'); if (!el) return;
   const url = (bk && bk.discordUrl) || '', next = bk ? nextStm(todayIso(), 4).map((d) => t.wdMin[(new Date(d + 'T12:00:00').getDay() + 6) % 7] + ' ' + (+d.slice(8, 10)) + '.' + (+d.slice(5, 7)) + '.').join(', ') : '…';
   const li = (x) => '<li>' + esc(x) + '</li>';
   const open = el.querySelector('details') && el.querySelector('details').open;
-  el.innerHTML = '<details' + (open ? ' open' : '') + '><summary>' + esc(t.ptHowSum) + '</summary><div class="pt-how-body"><h3>' + esc(t.ptHowT) + '</h3><ul>' + (!bk || bk.memberRule ? li(t.ptHowMember) : '') + li(fill(t.ptHowAll, { r: ruleTxt() || '…', n: next })) + li(t.ptHowEv) + '</ul>' +
+  el.innerHTML = (bk && bk.paused && !(me && me.member) ? '<p class="pause-note" style="margin-bottom:10px">' + esc(pauseMsg()) + '</p>' : '') + '<details' + (open ? ' open' : '') + '><summary>' + esc(t.ptHowSum) + '</summary><div class="pt-how-body"><h3>' + esc(t.ptHowT) + '</h3><ul>' + (!bk || bk.memberRule ? li(t.ptHowMember) : '') + li(fill(t.ptHowAll, { r: ruleTxt() || '…', n: next })) + li(t.ptHowEv) + '</ul>' +
     (!bk || bk.memberRule ? '<h3>' + esc(t.ptHowJoinT) + '</h3><ul>' + li(t.ptHowJoinAll) + li(t.ptHowJoinMem) + '</ul>' : '') +
     '<h3>' + esc(t.ptHowDcT) + '</h3><ol>' + [t.ptHowDc1, t.ptHowDc2, t.ptHowDc3, t.ptHowDc4].map(li).join('') + '</ol>' +
     (url ? '<a class="btn btn-discord" href="' + esc(url) + '" target="_blank" rel="noopener">' + DC_ICON + esc(t.ptHowJoin) + '</a>' : '') + '</div></details>';
@@ -2735,7 +2750,7 @@ $('whForm').addEventListener('submit', async (e) => {
     refreshAll(); renderWanted(); setTimeout(() => { if ($('whDlg').open) $('whDlg').close(); }, 1800);
   } catch (x) {
     msg.className = 'err'; $('whSend').disabled = false; const c = x && x.code;
-    msg.textContent = c === 'gone' ? t.whErrGone : c === 'own' || c === 'own_request' ? t.wtErrOwn : c === 'stammtisch_only' ? fill(t.errStammtisch, { r: ruleTxt() }) : c === 'intro_missing' ? fill(t.errIntro, { n: introMin() })
+    msg.textContent = c === 'guests_paused' ? pauseMsg() : c === 'gone' ? t.whErrGone : c === 'own' || c === 'own_request' ? t.wtErrOwn : c === 'stammtisch_only' ? fill(t.errStammtisch, { r: ruleTxt() }) : c === 'intro_missing' ? fill(t.errIntro, { n: introMin() })
       : c === 'req_stammtisch_only' ? fill(t.whErrReq, { r: w.by, x: ruleTxt() }) : c === 'past' || c === 'bad_date' ? t.brErrDates : codeErr(x);
     if (c === 'gone') refreshAll();
   }
@@ -2839,6 +2854,7 @@ function renderAuth() {
   $('meLink').hidden = !me; if (me) $('meLink').textContent = fill(T().logoutN, { n: me.name });
   $('mgAuth').hidden = !!me; $('brAuth').hidden = !!me; $('bgAuth').hidden = !!me; if (typeof renderMgConsent === 'function') renderMgConsent();
   if (typeof applyEvDates === 'function' && !$('pModal').hidden) applyEvDates();
+  if (typeof renderPtHow === 'function') renderPtHow();
 }
 function startLogin() {
   const n = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, '0')).join('');
@@ -2976,6 +2992,7 @@ function parseDates(v) {
 function renderBkAdm() {
   const t = T(), r = bkAdm; if (!r) return;
   $('bkRole').value = r.memberRole || ''; $('bkExtra').value = toDmy(r.extra); $('bkSkip').value = toDmy(r.skip);
+  $('bkPause').checked = !!r.pause; $('bkPauseUntil').value = r.pauseUntil || ''; $('bkPauseNote').value = r.pauseNote || '';
   const order = [1, 2, 3, 4, 5, 6, 0];
   $('bkWeekly').innerHTML = order.map((w) => '<label class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:14px"><input type="checkbox" data-bkw="' + w + '" style="width:18px;height:18px;padding:0"' + (r.weekdays.includes(w) ? ' checked' : '') + '> ' + esc(t.wdLong[w]) + '</label>').join(' ');
   const nths = [1, 2, 3, 4, -1], has = (n, w) => r.monthly.some((x) => x.nth === n && x.wd === w);
@@ -2989,7 +3006,7 @@ $('bkSave').onclick = async () => {
   const weekdays = Array.from(document.querySelectorAll('[data-bkw]:checked'), (x) => Number(x.dataset.bkw));
   const monthly = Array.from(document.querySelectorAll('[data-bkn]:checked'), (x) => ({ nth: Number(x.dataset.bkn), wd: Number(x.dataset.bkd) }));
   try {
-    bkAdm = await api('PUT', '/admin/booking', { memberRole: $('bkRole').value, weekdays, monthly, extra, skip }); renderBkAdm();
+    bkAdm = await api('PUT', '/admin/booking', { memberRole: $('bkRole').value, weekdays, monthly, extra, skip, pause: $('bkPause').checked, pauseUntil: $('bkPauseUntil').value, pauseNote: $('bkPauseNote').value }); renderBkAdm();
     msg.className = 'note ok'; msg.textContent = fill(t.admBkOk, { n: bkAdm.next.slice(0, 5).map(dmy).join(', ') });
     api('GET', '/booking?' + Date.now()).then((r) => { bk = r; renderPtHow(); }).catch(() => {});
   } catch (e) { msg.className = 'err'; msg.textContent = t.admLangErr; }

@@ -6,7 +6,8 @@
 // Startwert der Rolle: DISCORD_MEMBER_ROLE_ID aus wrangler.toml; sobald in der Verwaltung gespeichert wurde, gilt nur noch die Verwaltung.
 // Einstellungen: config-Schlüssel 'booking' = { memberRole, weekdays:[0–6], monthly:[{nth:1–4|-1, wd:0–6}], extra:[ISO], skip:[ISO] }.
 
-export const DEFAULT_BOOKING = { memberRole: '', weekdays: [2], monthly: [{ nth: 1, wd: 6 }], extra: [], skip: [] };
+// pause / pauseUntil / pauseNote: Admin kann neue Runden von Nicht-Mitgliedern vorübergehend sperren (Event-Code-Runden ausgenommen).
+export const DEFAULT_BOOKING = { memberRole: '', weekdays: [2], monthly: [{ nth: 1, wd: 6 }], extra: [], skip: [], pause: false, pauseUntil: '', pauseNote: '' };
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const isIso = (s) => ISO.test(s) && !isNaN(Date.parse(s));
 const wdOf = (iso) => new Date(iso + 'T12:00:00Z').getUTCDay();
@@ -26,6 +27,9 @@ export function cleanBooking(b) {
       .filter((x) => [1, 2, 3, 4, -1].includes(x.nth) && wd(x.wd)).slice(0, 10),
     extra: dates(b.extra),
     skip: dates(b.skip),
+    pause: !!b.pause,
+    pauseUntil: isIso(String(b.pauseUntil || '')) ? String(b.pauseUntil) : '',
+    pauseNote: String(b.pauseNote || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200),
   };
 }
 
@@ -59,6 +63,11 @@ export function isMember(rule, roles) {
   if (typeof roles === 'string') { try { roles = JSON.parse(roles); } catch { roles = null; } }
   return Array.isArray(roles) && roles.includes(rule.memberRole);
 }
+
+// Sind neue Runden von Nicht-Mitgliedern gerade gesperrt? Mit pauseUntil endet die Sperre nach diesem Tag von selbst.
+export const guestsPaused = (rule, today) => !!rule.memberRole && !!rule.pause && (!rule.pauseUntil || today <= rule.pauseUntil);
+const fmtD = (iso) => iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4);
+export const pauseText = (rule) => 'Neue Runden von Nicht-Mitgliedern sind gerade pausiert' + (rule.pauseUntil ? ' (bis einschließlich ' + fmtD(rule.pauseUntil) + ')' : '') + '.' + (rule.pauseNote ? ' ' + rule.pauseNote : '') + ' Mit einem Event-Code geht es weiterhin.';
 
 // Darf jemand ohne Mitgliederrolle an diesem Tag? Gibt null oder einen Fehlercode zurück.
 export function checkBookingDate(rule, roles, date) {

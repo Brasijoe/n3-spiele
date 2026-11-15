@@ -2,7 +2,7 @@
 // Wer es hat, antwortet in Discord mit „Hab ich“ (optional gleich mit einer Runde). Andere können „Will auch mitspielen“ drücken.
 // Offene Suchen stehen auf der Webseite im Tab „Mitspieler-/Spielesuche“, Unterseite „Hat jemand …?“ (#suche), und laufen nach 3 Monaten ohne Zusage ab.
 import { discord, openPartyThread, channelIds, wantedChannel, discordOn, fmtDate, wdName, who, say, reply, berlinToday, parseDate, nextStammtischDate, headline, view } from './discord.js';
-import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText } from './booking.js';
+import { getBooking, isMember, isStammtisch, canJoin, introOk, INTRO_HELP, nextStammtische, ruleText, guestsPaused, pauseText } from './booking.js';
 import { listMemberGames } from './membergames.js';
 import { inClub } from './games.js';
 const DAY_MAX_MEMBER = 10;
@@ -209,6 +209,7 @@ const ERR = {
   past: () => 'Das Datum liegt in der Vergangenheit.',
   bad_time: () => 'Uhrzeit bitte als HH:MM, z. B. 18:00.',
   bad_seats: () => 'Plätze: 2 bis 30 (inkl. dir).',
+  guests_paused: (x) => x.pause,
   stammtisch_only: (x) => `Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anlegen (${x.rule}). Nächste Termine: ${x.next}.`,
   intro_missing: () => INTRO_HELP,
   req_stammtisch_only: (x, r) => `${r.req_name} hat keine Mitgliederrolle und kann deshalb nur an Stammtisch-Tagen mitspielen (${x.rule}). Nächste Termine: ${x.next}.`,
@@ -231,6 +232,7 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
     const rule = await getBooking(env), info = { rule: ruleText(rule), next: nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ') };
     // Gleiche Regeln wie bei /party: ohne Mitgliederrolle nur Stammtisch-Tage und mit kurzer Vorstellung.
     if (!finder.member) {
+      if (guestsPaused(rule, berlinToday())) return { err: 'guests_paused', pause: pauseText(rule) };
       if (!isStammtisch(date, rule)) return { err: 'stammtisch_only', ...info };
       if (!introOk(hint)) return { err: 'intro_missing' };
     }

@@ -3,7 +3,7 @@ import { syncExtras, listExtras, coverResponse } from './games.js';
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
-import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN } from './booking.js';
+import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations } from './discord.js';
 
 const enc = new TextEncoder();
@@ -204,6 +204,7 @@ async function route(req, env, ctx, url) {
     if (!ev) {
       const rule = await getBooking(env);
       if (!isMember(rule, auth.member.roles)) {
+        if (guestsPaused(rule, berlinToday())) return fail(403, 'guests_paused');
         if (date < berlinToday()) return fail(400, 'invalid');
         const bad = checkBookingDate(rule, auth.member.roles, date); if (bad) return fail(400, bad);
         if (!introOk(note)) return fail(400, 'intro_missing');
@@ -361,7 +362,7 @@ async function route(req, env, ctx, url) {
   // Runden-Regeln: Stammtisch-Tage (öffentlich, für den Kalender im Dialog) und Mitgliederrolle (nur Admin sieht die ID).
   if (path === '/booking' && m === 'GET') {
     const rule = await getBooking(env), today = berlinToday();
-    const r = json({ memberRule: !!rule.memberRole, weekdays: rule.weekdays, monthly: rule.monthly, extra: rule.extra, skip: rule.skip, next: nextStammtische(today, rule, 6), today, introMin: INTRO_MIN, discordUrl: env.DISCORD_URL || '' });
+    const r = json({ memberRule: !!rule.memberRole, weekdays: rule.weekdays, monthly: rule.monthly, extra: rule.extra, skip: rule.skip, next: nextStammtische(today, rule, 6), today, introMin: INTRO_MIN, paused: guestsPaused(rule, today), pauseUntil: rule.pauseUntil, pauseNote: rule.pauseNote, discordUrl: env.DISCORD_URL || '' });
     r.headers.set('cache-control', 'public, max-age=60'); return r;
   }
   if (path === '/admin/booking' && (m === 'GET' || m === 'PUT')) {
