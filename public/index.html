@@ -1072,6 +1072,7 @@ if (X && Array.isArray(X.games)) {
     if (e.base) EXPB[e.id] = e.base;
   }
 }
+const MODE_FIX = { 10547: 'semi', 120217: 'semi' };
 function mkGame(x) {
   const [id, nDe, y, p1, p2, t1, t2, a, r, br, u, w, rank, best, rec, lang, cats, mechs, des, own, exp, nEnRaw] = x;
   const suffix = (nDe.match(/ \((deutsch|englisch, KS)\)$/) || [''])[0];
@@ -1080,7 +1081,8 @@ function mkGame(x) {
   const mechN = mechs.map((m) => D.mechs[m]), catN = cats.map((c) => D.cats[c]);
   const feel = [];
   // Spielweise: kooperativ, semi-kooperativ (inkl. kooperativ mit Verräter) oder kompetitiv; ohne BGG-Mechaniken unbekannt.
-  const mode = !mechN.length ? '' : mechN.includes('Semi-Cooperative Game') || (mechN.includes('Cooperative Game') && mechN.includes('Traitor Game')) ? 'semi' : mechN.includes('Cooperative Game') ? 'coop' : 'comp';
+  // Von Hand korrigiert, wo BGG die Spielweise anders führt (Betrayal at House on the Hill, City of Horror).
+  const mode = MODE_FIX[id] || (!mechN.length ? '' : mechN.includes('Semi-Cooperative Game') || (mechN.includes('Cooperative Game') && mechN.includes('Traitor Game')) ? 'semi' : mechN.includes('Cooperative Game') ? 'coop' : 'comp');
   if (catN.includes('Party Game')) feel.push('party');
   if (catN.includes('Deduction') || mechN.includes('Hidden Roles') || catN.includes('Bluffing')) feel.push('deduct');
   if (mechN.includes('Scenario / Mission / Campaign Game') || mechN.includes('Legacy Game')) feel.push('camp');
