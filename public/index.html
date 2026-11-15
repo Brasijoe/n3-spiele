@@ -103,6 +103,9 @@ dialog.info .acts { display: flex; gap: 10px; justify-content: flex-end; flex-wr
 .meta { font-size: 13px; color: var(--muted); }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
 .pill { background: var(--surface-2); color: var(--fg); padding: 3px 8px; border-radius: 4px; }
+.pill.coop { background: #e3f1e6; color: #1e5a2d; font-weight: 600; }
+:root[data-theme="dark"] .pill.coop { background: #1f3a26; color: #a9dcb5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.coop { background: #1f3a26; color: #a9dcb5; } }
 .pill.lg { font-weight: 700; letter-spacing: .03em; }
 .cv-info { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; font-size: 13px; background: rgba(20, 20, 20, .86); color: #fff; opacity: 0; transform: translateY(6px); transition: opacity .15s, transform .15s; pointer-events: none; }
 .cv-info b { font-weight: 700; }
@@ -862,7 +865,7 @@ const TXT = {
     errLen: 'Bitte deinen persönlichen Code eingeben (8 Zeichen).', errCode: 'Der Code stimmt nicht. Hol dir mit /code auf dem Discord-Server einen neuen.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
     gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
     weights: ['Einsteiger', 'Leicht', 'Mittel', 'Anspruchsvoll', 'Sehr komplex'], times: ['bis 30 Min', '30–60 Min', '1–2 Std', 'über 2 Std'],
-    feels: ['Kooperativ', 'Party', 'Bluffen & Verraten', 'Kampagne / Legacy', 'Solo spielbar', 'Top zu zweit'], modes: ['laut Schachtel', 'empfohlen (Community)', 'am besten (Community)'],
+    gPlay: 'Spielweise', playNames: { coop: 'Kooperativ', semi: 'Semi-kooperativ', comp: 'Kompetitiv' }, feels: ['Party', 'Bluffen & Verraten', 'Kampagne / Legacy', 'Solo spielbar', 'Top zu zweit'], modes: ['laut Schachtel', 'empfohlen (Community)', 'am besten (Community)'],
     bestFor: 'Am besten für {n} Spieler', bestForSolo: 'Am besten solo',
     sorts: ['BGG-Bewertung', 'BGG-Rang', 'Name (A–Z)', 'Komplexität (leicht zuerst)', 'Spieldauer (kurz zuerst)', 'Erscheinungsjahr (neu zuerst)', 'Im Club gespielt (häufig zuerst)'],
     typeNames: { S: 'Strategie', T: 'Thematisch', F: 'Familie', P: 'Party', A: 'Abstrakt', K: 'Kinder', W: 'Konflikt', C: 'Sammelkarten' },
@@ -962,7 +965,7 @@ const TXT = {
     errLen: 'Please enter your personal code (8 characters).', errCode: 'Wrong code. Get a new one with /code on the Discord server.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
     gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
     weights: ['Beginner', 'Light', 'Medium', 'Demanding', 'Very complex'], times: ['up to 30 min', '30–60 min', '1–2 h', 'over 2 h'],
-    feels: ['Cooperative', 'Party', 'Bluff & betrayal', 'Campaign / legacy', 'Solo-friendly', 'Great with two'], modes: ['per box', 'recommended (community)', 'best (community)'],
+    gPlay: 'Coop or competitive', playNames: { coop: 'Cooperative', semi: 'Semi-cooperative', comp: 'Competitive' }, feels: ['Party', 'Bluff & betrayal', 'Campaign / legacy', 'Solo-friendly', 'Great with two'], modes: ['per box', 'recommended (community)', 'best (community)'],
     bestFor: 'Best for {n} players', bestForSolo: 'Best solo',
     sorts: ['BGG rating', 'BGG rank', 'Name (A–Z)', 'Complexity (lightest first)', 'Play time (shortest first)', 'Year (newest first)', 'Played at the club (most first)'],
     typeNames: { S: 'Strategy', T: 'Thematic', F: 'Family', P: 'Party', A: 'Abstract', K: "Children's", W: 'Wargame', C: 'Customizable' },
@@ -1069,6 +1072,7 @@ if (X && Array.isArray(X.games)) {
     if (e.base) EXPB[e.id] = e.base;
   }
 }
+const MODE_FIX = { 10547: 'semi', 120217: 'semi' };
 function mkGame(x) {
   const [id, nDe, y, p1, p2, t1, t2, a, r, br, u, w, rank, best, rec, lang, cats, mechs, des, own, exp, nEnRaw] = x;
   const suffix = (nDe.match(/ \((deutsch|englisch, KS)\)$/) || [''])[0];
@@ -1076,14 +1080,16 @@ function mkGame(x) {
   const bestR = rg(best), recR = rg(rec), t = t2 || t1;
   const mechN = mechs.map((m) => D.mechs[m]), catN = cats.map((c) => D.cats[c]);
   const feel = [];
-  if (mechN.includes('Cooperative Game')) feel.push('coop');
+  // Spielweise: kooperativ, semi-kooperativ (inkl. kooperativ mit Verräter) oder kompetitiv; ohne BGG-Mechaniken unbekannt.
+  // Von Hand korrigiert, wo BGG die Spielweise anders führt (Betrayal at House on the Hill, City of Horror).
+  const mode = MODE_FIX[id] || (!mechN.length ? '' : mechN.includes('Semi-Cooperative Game') || (mechN.includes('Cooperative Game') && mechN.includes('Traitor Game')) ? 'semi' : mechN.includes('Cooperative Game') ? 'coop' : 'comp');
   if (catN.includes('Party Game')) feel.push('party');
   if (catN.includes('Deduction') || mechN.includes('Hidden Roles') || catN.includes('Bluffing')) feel.push('deduct');
   if (mechN.includes('Scenario / Mission / Campaign Game') || mechN.includes('Legacy Game')) feel.push('camp');
   if (p1 === 1) feel.push('solo');
   if (bestR.some(([lo, hi]) => lo <= 2 && 2 <= hi)) feel.push('duo');
   const desc = D.desc[id];
-  return { key: id + (suffix ? suffix : ''), id, nDe, nEn, ldBgg: typeof lang === 'number' ? lang : -1, ld: -1, langs: [], ownFlag: own === 'J' ? 'Johannes' : '?', ownDef: '', owner: '', added: '', y, p1, p2, t1, t2, t, a, r, br, u, w, rank, bestR, recR, cats, mechs, exp, feel,
+  return { key: id + (suffix ? suffix : ''), id, nDe, nEn, ldBgg: typeof lang === 'number' ? lang : -1, ld: -1, langs: [], ownFlag: own === 'J' ? 'Johannes' : '?', ownDef: '', owner: '', added: '', y, p1, p2, t1, t2, t, a, r, br, u, w, rank, bestR, recR, cats, mechs, exp, feel, mode,
     types: String(D.sd[id] || '').split('').filter(Boolean), descDe: desc ? desc[0] : '', descEn: desc ? desc[1] : '',
     wl: w ? (w < 1.8 ? 0 : w < 2.4 ? 1 : w < 3.2 ? 2 : w < 4 ? 3 : 4) : 1, tl: t <= 30 ? 0 : t <= 60 ? 1 : t <= 120 ? 2 : 3,
     cover: D.cov[id] ? (String(D.cov[id])[0] === '/' ? D.cov[id] : 'covers/' + D.cov[id]) : '', link: 'https://boardgamegeek.com/boardgame/' + id, expList: [] };
@@ -1127,7 +1133,7 @@ function buildMemGames() {
     let g;
     if (id && byId[id]) g = Object.assign({}, byId[id], { expList: [], langs: [], owner: '', added: '' });
     else if (r0.data && r0.data.id) { g = mkGame(extraRow(r0.data)); g.cover = id ? '/api/cover/' + id : ''; }
-    else g = { id, nDe: r0.game, nEn: r0.game, y: r0.year || 0, p1: 0, p2: 0, t1: 0, t2: 0, t: 0, a: 0, r: 0, br: 0, u: 0, w: 0, rank: 0, bestR: [], recR: [], cats: [], mechs: [], exp: 0, feel: [], types: [], wl: 1, tl: 0, ld: -1, langs: [], expList: [],
+    else g = { id, nDe: r0.game, nEn: r0.game, y: r0.year || 0, p1: 0, p2: 0, t1: 0, t2: 0, t: 0, a: 0, r: 0, br: 0, u: 0, w: 0, rank: 0, bestR: [], recR: [], cats: [], mechs: [], exp: 0, feel: [], mode: '', types: [], wl: 1, tl: 0, ld: -1, langs: [], expList: [],
       cover: id ? '/api/cover/' + id : '', link: id ? 'https://boardgamegeek.com/boardgame/' + id : '' };
     if (!(id && byId[id]) && r0.game) { g.nDe = r0.game; g.nEn = r0.game; }
     g.key = k; g.mem = true; g.owners = rs.map((r) => ({ id: r.id, name: r.owner, note: r.note || '' }));
@@ -1169,7 +1175,7 @@ function applyHl() {
   highlights = list.length ? list : defaultHl;
 }
 
-const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
+const S = { lang: 'de', slide: 0, src: 'club', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', sort: 'rating', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE, adv: false };
 try { const l = localStorage.getItem('n3-lang'); if (l === 'de' || l === 'en') S.lang = l; } catch (e) {}
 { const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'de' || ql === 'en') S.lang = ql; }
 let clubTime = {};
@@ -1192,6 +1198,7 @@ const de = () => S.lang === 'de';
 const name = (g) => (de() ? g.nDe : g.nEn);
 const typeTxt = (g) => g.types.map((k) => T().typeNames[k] || k).join(' · ');
 const badge = (g, size) => { const c = g.r >= 8 ? '#1e6b35' : g.r >= 7 ? '#2b7a40' : g.r >= 6 ? '#2c6aa0' : g.r >= 5 ? '#5a5f8a' : '#8a3b3b'; return '<span class="badge" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size / 2.9) + 'px;background:' + c + '">' + (g.r ? g.r.toFixed(1) : '–') + '</span>'; };
+const modePill = (g) => (g.mode === 'coop' || g.mode === 'semi' ? '<span class="pill coop">' + esc(T().playNames[g.mode]) + '</span>' : '');
 const tTxt = (g) => (g.t1 === g.t2 || !g.t2 ? g.t : g.t1 + '–' + g.t2) + ' ' + T().min;
 const bestTxt = (g) => (g.bestR.length ? g.bestR.map(([lo, hi]) => fmt(lo, hi)).join(', ') : fmt(g.p1, g.p2));
 // Erweiterungen als Liste, ein Punkt pro Erweiterung. Der Grundspielname wird vorne abgeschnitten,
@@ -1241,6 +1248,7 @@ function match(g) {
   if (S.weight.length && !S.weight.includes(g.wl)) return false;
   if (S.time.length && !S.time.includes(g.tl)) return false;
   if (S.types.length && !S.types.some((k) => g.types.includes(k))) return false;
+  if (S.play.length && !S.play.includes(g.mode)) return false;
   if (S.feel.length && !S.feel.some((f) => g.feel.includes(f))) return false;
   if (g.r < S.minRating) return false;
   if (S.minVotes && g.u < S.minVotes) return false;
@@ -1294,7 +1302,8 @@ function renderFilters() {
     [t.gWeight, chips('weight', t.weights.map((w, i) => [i, w]))],
     [t.gTime, chips('time', t.times.map((w, i) => [i, w]))],
     [t.gType, chips('types', ['S', 'T', 'F', 'P', 'A', 'K', 'W'].map((k) => [k, t.typeNames[k]]))],
-    [t.gFeel, chips('feel', ['coop', 'party', 'deduct', 'camp', 'solo', 'duo'].map((k, i) => [k, t.feels[i]]))],
+    [t.gPlay, chips('play', ['coop', 'semi', 'comp'].map((k) => [k, t.playNames[k]]))],
+    [t.gFeel, chips('feel', ['party', 'deduct', 'camp', 'solo', 'duo'].map((k, i) => [k, t.feels[i]]))],
     // Sprachfilter nur für die Sammlung (bei Mitgliederspielen kennen wir die Sprache des Exemplars nicht).
     ...(S.src === 'mem' ? [] : [[t.gLang, chips('langs', LANGS.map((l) => [l, t.langNames[l]]).concat([['neutral', t.langNeutral]])) + '<span class="note lang-note">' + esc(t.langNote) + '</span>']]),
   ];
@@ -1302,7 +1311,7 @@ function renderFilters() {
   $('modes').innerHTML = ['box', 'rec', 'best'].map((v, i) => '<button type="button" class="chip" data-mode="' + v + '" aria-pressed="' + (S.pMode === v) + '">' + esc(t.modes[i]) + '</button>').join('');
   $('cats').innerHTML = chips('cats', topCats.map((c) => [c.idx, (de() ? D.catsDe : D.cats)[c.idx] + ' (' + c.n + ')']));
   $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
-  const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
+  const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'play', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
     [S.pMode !== 'box', S.minRating > 0, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0].filter(Boolean).length;
   $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt;
   $('advBtn').hidden = !S.flt;
@@ -1425,7 +1434,7 @@ window.addEventListener('resize', () => { renderSlider(); });
 function memCard(g) {
   const t = T(), n = name(g), own = g.owners.map((o) => o.name).join(', ');
   const notes = g.owners.filter((o) => o.note).map((o) => (g.owners.length > 1 ? o.name + ': ' : '') + o.note).join(' · ');
-  const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '');
+  const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '') + modePill(g);
   return '<article class="card mem' + (g.inClub ? ' dup' : '') + '" tabindex="-1"><div class="cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 44) : '') +
     '<div class="cv-tl"><span class="src mem">' + esc(t.memTag) + '</span>' + lnIcon(g) + '</div></div><div class="body">' +
     '<h3>' + esc(n) + '</h3><span class="meta">' + esc([g.y || '', catNames(g).slice(0, 2).join(', ')].filter(Boolean).join(' · ')) + '</span>' +
@@ -1478,7 +1487,7 @@ function renderGrid() {
     return '<article class="card" tabindex="-1"><div class="cv" data-cvinfo>' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + badge(g, 44) +
       '<div class="cv-tl">' + (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + lnIcon(g) + '</div>' + info + '</div><div class="body">' +
       '<h3>' + esc(n) + '</h3><span class="meta">' + g.y + ' · ' + esc(catNames(g).slice(0, 2).join(', ')) + '</span>' +
-      '<div class="pills"><span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span><span class="pill">' + esc(tTxt(g)) + '</span><span class="pill">' + esc(t.weights[g.wl]) + '</span>' +
+      '<div class="pills"><span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span><span class="pill">' + esc(tTxt(g)) + '</span><span class="pill">' + esc(t.weights[g.wl]) + '</span>' + modePill(g) +
       g.langs.map((l) => '<span class="pill lg" title="' + esc(t.langNames[l]) + '">' + l.toUpperCase() + '</span>').join('') +
 '</div>' +
       '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' +
@@ -1847,7 +1856,7 @@ $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
 const num = (id, key) => $(id).addEventListener('input', (e) => { S[key] = Number(e.target.value); S.limit = PAGE; renderFilters(); renderGrid(); });
 [['recPct', 'recPct'], ['minRating', 'minRating'], ['wMin', 'wMin'], ['wMax', 'wMax'], ['maxTime', 'maxTime'], ['minVotes', 'minVotes'], ['rankMax', 'rankMax'], ['maxAge', 'maxAge'], ['yearFrom', 'yearFrom']].forEach(([id, k]) => num(id, k));
 $('reset').onclick = () => {
-  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
+  Object.assign(S, { owner: '', langs: [], players: [], weight: [], time: [], types: [], feel: [], play: [], cats: [], mechs: [], q: '', pMode: 'box', recPct: 70, minRating: 0, minVotes: 0, rankMax: 0, wMin: 1, wMax: 5, maxTime: 240, maxAge: 0, yearFrom: 0, limit: PAGE });
   $('q').value = ''; ['recPct', 'minRating', 'wMin', 'wMax', 'maxTime'].forEach((id) => { $(id).value = S[id]; });
   renderAll();
 };
@@ -1876,7 +1885,7 @@ function rndDice(x, y, ms) { const d = $('rndDice'); d.style.transition = ms ? '
 function rndMine(g) { return g.mem && g.owners.every((o) => isMine('memberGames', o.id)); }
 function rndInfo(g) {
   const t = T(), n = name(g), pc = g.mem ? 0 : playCount[g.id] || 0;
-  const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '') +
+  const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '') + modePill(g) +
     (g.langs || []).map((l) => '<span class="pill lg" title="' + esc(t.langNames[l]) + '">' + l.toUpperCase() + '</span>').join('');
   const meta = [g.y || '', catNames(g).filter(Boolean).slice(0, 3).join(', ')].filter(Boolean).join(' · ');
   return '<div class="rnd-cv">' + (g.cover ? '<img src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 48) : '') + '</div>' +
