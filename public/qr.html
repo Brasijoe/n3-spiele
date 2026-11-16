@@ -31,12 +31,22 @@ li { background: #f5f5f5; border-radius: calc(4mm * var(--s)); padding: calc(3.5
 li b { display: block; font: 700 calc(8mm * var(--s)) Rubik, sans-serif; color: var(--accent); }
 .thanks { font: 700 calc(6mm * var(--s)) Rubik, sans-serif; margin: auto 0 0; }
 .fitting .sheet { height: calc(278mm * var(--s)) !important; } /* Messen mit Reserve: falls ein Browser eigene Ränder/Kopfzeilen druckt */
+/* 2×A5 auf einem A4-Blatt (quer): zwei gleiche Aushänge nebeneinander, Schnittlinie in der Mitte, Schnittmarken an den Kanten */
+.pair { position: relative; width: 297mm; height: 210mm; margin: 0 auto 24px; display: flex; background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.15); }
+.pair .sheet { width: 148.5mm; height: 210mm; margin: 0; box-shadow: none; }
+.fitting .pair .sheet { height: 197mm !important; }
+.pair::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: .35mm dashed #777; }
+.pair::after { content: "✂"; position: absolute; left: 50%; top: 2mm; transform: translateX(-50%) rotate(90deg); font-size: 4.5mm; line-height: 1; color: #555; background: #fff; padding: .6mm 0; }
+.pair i { position: absolute; left: 50%; width: 0; height: 7mm; border-left: .35mm solid #000; }
+.pair i.t { top: 0; } .pair i.b { bottom: 0; }
 .err { max-width: 520px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; font-size: 18px; }
-@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; height: calc(296mm * var(--s)); page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; } }
+@media print { html, body { background: #fff; } .bar { display: none; } .sheet { box-shadow: none; margin: 0; height: calc(296mm * var(--s)); page-break-after: always; break-after: page; } .sheet:last-child { page-break-after: auto; break-after: auto; }
+  .pair { box-shadow: none; margin: 0; page-break-after: always; break-after: page; } .pair:last-child { page-break-after: auto; break-after: auto; }
+  .pair .sheet { height: 210mm; page-break-after: auto; break-after: auto; } }
 </style>
 </head>
 <body>
-<div class="bar"><span class="fmt" role="group" aria-label="Format"><button type="button" data-f="A4">A4</button><button type="button" data-f="A5">A5</button><button type="button" data-f="A6">A6</button></span><button type="button" onclick="window.print()">Drucken</button><span id="hint"></span></div>
+<div class="bar"><span class="fmt" role="group" aria-label="Format"><button type="button" data-f="A4">A4</button><button type="button" data-f="A5">A5</button><button type="button" data-f="A6">A6</button><button type="button" data-f="A5x2" title="Zwei A5-Aushänge auf einem A4-Blatt, mit Schnittlinie">2× A5 auf A4</button></span><button type="button" onclick="window.print()">Drucken</button><span id="hint"></span></div>
 <div id="root"></div>
 <script src="vendor/qrcode.js"></script>
 <script>
@@ -63,17 +73,24 @@ li b { display: block; font: 700 calc(8mm * var(--s)) Rubik, sans-serif; color: 
       '<ol>' + t.s.map(function (x, i) { return '<li><b>' + (i + 1) + '</b>' + x + '</li>'; }).join('') + '</ol>' +
       '<p class="thanks">' + t.thanks + '</p></section>';
   }
-  root.innerHTML = sheet(T.de) + sheet(T.en);
+  function render(two) {
+    root.innerHTML = two
+      ? [T.de, T.en].map(function (t) { return '<div class="pair">' + sheet(t) + sheet(t) + '<i class="t"></i><i class="b"></i></div>'; }).join('')
+      : sheet(T.de) + sheet(T.en);
+  }
 
   // Format: alles ist in mm gesetzt und wird über --s skaliert (A5 = A4 × 0,707, A6 = A4 × 0,5). Gewähltes Format wird gemerkt.
-  var F = { A4: 1, A5: 0.7071, A6: 0.5 };
-  var SZ = { A4: '210mm 297mm', A5: '148mm 210mm', A6: '105mm 148mm' }; // als Maße, weil nicht jeder Browser „A6“ als Namen kennt
+  var F = { A4: 1, A5: 0.7071, A6: 0.5, A5x2: 0.7071 };
+  var SZ = { A4: '210mm 297mm', A5: '148mm 210mm', A6: '105mm 148mm', A5x2: '297mm 210mm' }; // als Maße, weil nicht jeder Browser „A6“ als Namen kennt
   function setFmt(f) {
     if (!F[f]) f = 'A4';
+    var two = f === 'A5x2'; render(two);
     document.documentElement.style.setProperty('--s', F[f]);
     document.getElementById('page').textContent = '@page { size: ' + SZ[f] + '; margin: 0; }'; fit();
     document.querySelectorAll('.fmt button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.f === f ? 'true' : 'false'); });
-    document.getElementById('hint').textContent = '2 Seiten ' + f + ': vorne Deutsch, hinten Englisch – beidseitig drucken. Im Druckdialog: Papierformat ' + f + ', Skalierung 100 % („Tatsächliche Größe“), Kopf- und Fußzeilen aus.';
+    document.getElementById('hint').textContent = two
+      ? '2 Seiten A4 quer mit je zwei A5-Aushängen: vorne Deutsch, hinten Englisch – beidseitig drucken (Wenden an der kurzen Kante). Im Druckdialog: Papierformat A4, Querformat, Skalierung 100 % („Tatsächliche Größe“), Kopf- und Fußzeilen aus. Danach an der gestrichelten Linie schneiden.'
+      : '2 Seiten ' + f + ': vorne Deutsch, hinten Englisch – beidseitig drucken. Im Druckdialog: Papierformat ' + f + ', Skalierung 100 % („Tatsächliche Größe“), Kopf- und Fußzeilen aus.';
     try { localStorage.setItem('n3-qr-format', f); } catch (e) {}
   }
   // Passt alles auf die Seite? Sonst den QR-Code schrittweise verkleinern (z. B. wenn Schriften anders laufen als erwartet).
