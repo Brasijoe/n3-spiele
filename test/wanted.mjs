@@ -159,7 +159,7 @@ assert.ok(w4.expiresAt > new Date(Date.now() + 88 * 864e5).toISOString().slice(0
 sql(`UPDATE wanted SET expires_at = '2020-01-01' WHERE status = 'open'`);
 assert.equal((await (await fetch(W + '/wanted')).json()).length, 0);
 await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(3000);
-assert.match(msgs.filter((q) => q.patch).at(-1).content, /Abgelaufen/);
+assert.match(msgs.filter((q) => q.patch && !(q.embeds && q.embeds[0] && q.embeds[0].title === "📋 Offene Runden")).at(-1).content, /Abgelaufen/);
 console.log('expire ok');
 console.log('ALL OK');
 process.exit(0);

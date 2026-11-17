@@ -4,7 +4,7 @@ import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
-import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations, refreshOverview, tidyChannel } from './discord.js';
 
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -470,7 +470,11 @@ export default {
     // Häufiger Zeitplan: nur fehlende Spieldaten von Mitgliederspielen nachholen (kostet nichts, wenn alles da ist).
     if (event.cron !== '17 3 * * *') {
       ctx.waitUntil((async () => { try { await ensureCols(env); await backfillMemberGames(env, 2); } catch (e) { console.log('member games backfill failed', e.code || e.message); } })());
-      ctx.waitUntil((async () => { try { await ensureCols(env); const n = await sweepReservations(env); if (n) console.log('reservations expired', n); } catch (e) { console.log('reservation sweep failed', e.code || e.message); } })());
+      ctx.waitUntil((async () => {
+        try { await ensureCols(env); const n = await sweepReservations(env); if (n) console.log('reservations expired', n); } catch (e) { console.log('reservation sweep failed', e.code || e.message); }
+        // Übersicht offener Runden aktuell halten (bearbeitet nur, wenn sich etwas geändert hat, z. B. nach Mitternacht).
+        if (discordOn(env)) { try { await refreshOverview(env); } catch (e) { console.log('overview refresh failed', e.code || e.message); } }
+      })());
       return;
     }
     ctx.waitUntil((async () => {
@@ -480,6 +484,10 @@ export default {
       try { await backfillMemberGames(env); } catch (e) { console.log('member games backfill failed', e.code || e.message); }
       try { const n = await expireWanted(env); if (n) console.log('wanted expired', n); } catch (e) { console.log('wanted expire failed', e.code || e.message); }
       try { await ensureCols(env); const n = await archiveOldThreads(env); if (n) console.log('party threads archived', n); } catch (e) { console.log('thread archive failed', e.code || e.message); }
+      if (discordOn(env)) {
+        try { const n = await tidyChannel(env); if (n) console.log('channel tidied', n); } catch (e) { console.log('channel tidy failed', e.code || e.message); }
+        try { await refreshOverview(env); } catch (e) { console.log('overview refresh failed', e.code || e.message); }
+      }
     })());
   },
 };

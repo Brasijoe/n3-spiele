@@ -13,7 +13,7 @@ assert.equal(parseDate('17.11.', new Date('2026-11-09T12:00:00Z')), '2026-11-17'
 assert.equal(parseDate('01.01.', new Date('2026-11-09T12:00:00Z')), '2027-01-01');
 assert.equal(parseDate('morgen', new Date('2026-11-09T12:00:00Z')), '2026-11-10');
 assert.equal(parseDate('quatsch'), null);
-assert.equal(COMMANDS.length, 3);
+assert.equal(COMMANDS.length, 4);
 import { nextEventDate } from '../src/discord.js';
 assert.equal(nextEventDate(new Date('2026-12-01T19:00:00Z')), '2026-12-05');
 assert.equal(nextEventDate(new Date('2026-11-04T10:00:00Z')), '2026-11-07');

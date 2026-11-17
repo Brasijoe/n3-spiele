@@ -284,11 +284,14 @@ async function button(i, env, ctx) {
   } else if (act === 'cancelyes') {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde stornieren.');
     await env.DB.prepare('DELETE FROM parties WHERE id = ?1').bind(id).run();
-    await cancelPartyMessage(env, row, true);
-    return done('Runde storniert ✓');
+    // Im Hintergrund (Löschen, Direktnachrichten), damit die Antwort innerhalb von 3 Sekunden bleibt.
+    const c = cancelPartyMessage(env, row, true).catch((e) => console.log('cancel failed', e && e.message));
+    if (ctx) ctx.waitUntil(c); else await c;
+    return done('Runde storniert ✓ Der Post wurde entfernt, Mitspielende bekommen eine Direktnachricht.');
   } else return say('Unbekannte Aktion.');
   const fresh = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   if (fresh && fresh.discord_thread && ctx) ctx.waitUntil(syncThread(env, fresh));
+  if (ctx) ctx.waitUntil(refreshOverview(env).catch((e) => console.log('overview failed', e && e.message)));
   return reply({ type: 7, data: view(fresh, env) });
 }
 
@@ -352,7 +355,7 @@ export async function handleInteraction(req, env, ctx) {
   try {
     await ensureCols(env);
     if (i.type === 4) return await autocomplete(i, env, ctx);
-    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env, ctx) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : say('Unbekannter Befehl.');
+    if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env, ctx) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : i.data.name === 'runden' ? reply({ type: 4, data: { ...(await overviewMessage(env)), flags: 64 } }) : say('Unbekannter Befehl.');
     const cid = String((i.data && i.data.custom_id) || '');
     if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env, ctx);
     if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
@@ -363,6 +366,7 @@ export async function handleInteraction(req, env, ctx) {
 const GAME = { type: 3, name: 'spiel', description: 'Spielname (Vorschläge von BoardGameGeek)', required: true, autocomplete: true };
 export const COMMANDS = [
   { name: 'code', description: 'Persönlichen Code für die Webseite abholen (nur für dich sichtbar)' },
+  { name: 'runden', description: 'Übersicht der offenen Spielrunden und freien Plätze (nur für dich sichtbar)' },
   { name: 'party', description: 'Spielrunde anlegen und Mitspielende suchen', options: [
     GAME,
     { type: 3, name: 'datum', description: 'Standard: nächster Stammtisch. Format 2026-11-17, 17.11., heute, morgen' },
@@ -465,7 +469,7 @@ export async function announceParty(env, id, channelId, fromWeb = false, ctx = n
   const msg = await discord(env, 'POST', `/channels/${channelId}/messages`, { content: headline(row), ...view(row, env) });
   await env.DB.prepare('UPDATE parties SET discord_channel = ?1, discord_msg = ?2 WHERE id = ?3').bind(channelId, msg.id, id).run();
   // Aus einem Discord-Befehl im Hintergrund, damit die Antwort innerhalb von 3 Sekunden bleibt.
-  const th = openPartyThread(env, row, channelId, msg.id);
+  const th = openPartyThread(env, row, channelId, msg.id).then(() => refreshOverview(env, channelId === channelIds(env)[0])).catch((e) => console.log('overview failed', e && e.message));
   if (ctx) ctx.waitUntil(th); else await th;
   return msg.id;
 }
@@ -530,12 +534,98 @@ export async function syncParty(env, id, internal = false) {
   if (!row || !row.discord_msg) return;
   await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: headline(row), ...view(row, env) });
   await syncThread(env, row);
+  await refreshOverview(env).catch((e) => console.log('overview failed', e && e.message));
 }
+// Absage: Runden-Post und Thread löschen (kein „storniert“-Rest im Kanal), Mitspielende per Direktnachricht informieren.
+// Eigene Nachrichten darf der Bot ohne Zusatzrecht löschen; den Thread löschen braucht „Threads verwalten“ (wie schon fürs Archivieren).
 export async function cancelPartyMessage(env, row, internal = false) {
-  if (!row || !row.discord_msg) return;
+  if (!row || !env.DISCORD_BOT_TOKEN) return;
+  if (!row.discord_msg) { await refreshOverview(env).catch(() => {}); return; }
   if (!internal && !(await budget(env, 'upd-h', 60, 3600))) { console.log('discord: update limit reached, skipped'); return; }
-  await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] });
-  await closeThread(env, row, `❌ Die Runde wurde abgesagt. Dieser Thread ist jetzt geschlossen.`);
+  if (row.discord_thread) { try { await discord(env, 'DELETE', `/channels/${row.discord_thread}`); } catch (e) { console.log('party thread delete failed', e && e.message); } }
+  try { await discord(env, 'DELETE', `/channels/${row.discord_channel}/messages/${row.discord_msg}`); }
+  catch (e) {
+    // Fallback (z. B. Nachricht nicht mehr löschbar): wie früher als storniert markieren.
+    console.log('party message delete failed', e && e.message);
+    try { await discord(env, 'PATCH', `/channels/${row.discord_channel}/messages/${row.discord_msg}`, { content: `~~${row.game}~~ – die Runde von **${row.host}** wurde storniert.`, embeds: [], components: [] }); } catch { /* egal */ }
+  }
+  await notifyCancel(env, row);
+  await refreshOverview(env).catch((e) => console.log('overview failed', e && e.message));
+}
+// Direktnachricht an alle Mitspielenden mit Discord (ohne Gastgeber). Fehler (DMs gesperrt) werden ignoriert.
+async function notifyCancel(env, row) {
+  const ids = partyDiscordIds(row).filter((x) => x !== String(row.host_discord || '')).slice(0, 30);
+  const text = `❌ Die Runde **${row.game}** am ${wdName(row.date)}, ${fmtDate(row.date)}${row.time ? ` um ${row.time} Uhr` : ''} von **${row.host}** wurde abgesagt.`;
+  for (const id of ids) {
+    try { const dm = await discord(env, 'POST', '/users/@me/channels', { recipient_id: id }); await discord(env, 'POST', `/channels/${dm.id}/messages`, { content: text, allowed_mentions: { parse: [] } }); }
+    catch (e) { console.log('cancel dm failed', e && e.message); }
+  }
+}
+
+// ---------- Übersicht offener Runden ----------
+// Eine Nachricht des Bots im Runden-Kanal (erster DISCORD_CHANNEL_ID), die sich selbst aktualisiert. Bei jeder neuen Runde
+// wird sie gelöscht und neu gepostet, damit sie unten bleibt. Gespeichert in config 'dc_overview' = {ch, msg, h}.
+// Kein Anheften: das erzeugt eine zusätzliche Systemnachricht im Kanal.
+export function seatInfo(r, now = new Date().toISOString()) {
+  let att = {}; try { att = JSON.parse(r.attendees || '{}'); } catch { /* leer */ }
+  const taken = Object.values(att).filter((a) => a && !a.out && !resExpired(a, now)).length + 1;
+  return { taken, free: Math.max(0, r.seats - taken) };
+}
+const msgLink = (env, r) => (r.discord_msg && env.DISCORD_GUILD_ID ? `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${r.discord_channel}/${r.discord_msg}` : '');
+export async function overviewMessage(env) {
+  const { results } = await env.DB.prepare('SELECT * FROM parties WHERE date >= ?1 AND play_id IS NULL ORDER BY date, time LIMIT 60').bind(berlinToday()).all();
+  const lines = [];
+  let day = '';
+  for (const r of results) {
+    if (r.date !== day) { day = r.date; lines.push(`\n**📅 ${wdName(r.date)}, ${fmtDate(r.date)}**`); }
+    const { taken, free } = seatInfo(r), l = msgLink(env, r);
+    const game = r.game.replace(/[[\]*_~`|]/g, '');
+    lines.push(`${r.time ? r.time + ' · ' : ''}${l ? `[${game}](${l})` : `**${game}**`} · 👑 ${r.host.replace(/[*_~`|]/g, '')} · ${taken}/${r.seats} dabei · ${free ? `**noch ${free} frei**` : '🔒 voll'}`);
+  }
+  let desc = '';
+  for (const x of lines) { if ((desc + '\n' + x).length > 3700) { desc += '\n… weitere auf der Webseite'; break; } desc += (desc ? '\n' : '') + x; }
+  if (!results.length) desc = 'Gerade ist keine Runde geplant. Leg eine an: `/party` oder auf der Webseite.';
+  const free = results.reduce((n, r) => n + seatInfo(r).free, 0);
+  let wanted = 0;
+  try { wanted = (await env.DB.prepare("SELECT count(*) AS n FROM wanted WHERE status = 'open' AND expires_at >= ?1").bind(berlinToday()).first()).n; } catch { /* Tabelle fehlt noch */ }
+  const wc = wantedChannel(env);
+  if (wanted) desc += `\n\n🔎 ${wanted} offene Spielesuche${wanted === 1 ? '' : 'n'}${wc && wc !== channelIds(env)[0] ? ` in <#${wc}>` : ''}`;
+  const embed = { title: '📋 Offene Runden', description: desc.trim(), color: 0xe8a33d, footer: { text: `${results.length} Runde${results.length === 1 ? '' : 'n'} · ${free} freie Plätze · Neue Runde: /party` } };
+  const web = env.PUBLIC_URL ? env.PUBLIC_URL.replace(/\/$/, '') + '/#partys' : '';
+  const components = web ? [{ type: 1, components: [{ type: 2, style: 5, label: 'Auf der Webseite ansehen', url: web }] }] : [];
+  return { content: '', embeds: [embed], components, allowed_mentions: { parse: [] } };
+}
+async function getOv(env) { const r = await env.DB.prepare("SELECT value FROM config WHERE key = 'dc_overview'").first(); try { return r ? JSON.parse(r.value) : {}; } catch { return {}; } }
+const setOv = (env, v) => env.DB.prepare("INSERT INTO config(key, value) VALUES('dc_overview', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(v)).run();
+// bump = neu unten posten (nach einer neuen Runde). Sonst nur bearbeiten, wenn sich der Inhalt geändert hat.
+export async function refreshOverview(env, bump = false) {
+  const ch = channelIds(env)[0];
+  if (!env.DISCORD_BOT_TOKEN || !ch) return;
+  const body = await overviewMessage(env), h = JSON.stringify(body);
+  const ov = await getOv(env), same = ov.ch === ch && ov.msg;
+  if (same && !bump) {
+    if (ov.h === h) return;
+    try { await discord(env, 'PATCH', `/channels/${ch}/messages/${ov.msg}`, body); await setOv(env, { ch, msg: ov.msg, h }); return; }
+    catch (e) { if (!/discord 404/.test(e.message)) throw e; } // gelöscht: neu posten
+  }
+  const msg = await discord(env, 'POST', `/channels/${ch}/messages`, body);
+  await setOv(env, { ch, msg: msg.id, h });
+  if (ov.msg && ov.msg !== msg.id) { try { await discord(env, 'DELETE', `/channels/${ov.ch}/messages/${ov.msg}`); } catch { /* schon weg */ } }
+}
+// Nächtlich: alte „storniert“-Reste und doppelte Übersichten des Bots aus den letzten 100 Nachrichten entfernen.
+export async function tidyChannel(env) {
+  const ch = channelIds(env)[0];
+  if (!env.DISCORD_BOT_TOKEN || !ch || !env.DISCORD_APP_ID) return 0;
+  const ov = await getOv(env);
+  const list = await discord(env, 'GET', `/channels/${ch}/messages?limit=100`);
+  let n = 0;
+  for (const m of Array.isArray(list) ? list : []) {
+    if (!m.author || m.author.id !== env.DISCORD_APP_ID || m.id === ov.msg) continue;
+    const old = /wurde storniert\.$/.test(m.content || '') && !(m.embeds || []).length;
+    const dup = (m.embeds || []).some((e) => e.title === '📋 Offene Runden');
+    if (old || dup) { try { await discord(env, 'DELETE', `/channels/${ch}/messages/${m.id}`); n++; } catch (e) { console.log('tidy delete failed', e && e.message); } }
+  }
+  return n;
 }
 
 // Prüft (höchstens alle 10 Minuten pro Person), ob jemand noch auf dem Server ist. Wer ihn verlassen hat, verliert den Code.

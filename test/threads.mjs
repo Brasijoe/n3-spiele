@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const W = 'http://localhost:8799/api';
 const USERS = { 555: { username: 'eva_x', global_name: 'Eva', nick: 'Eva vom Server', roles: ['777'] }, 556: { username: 'fritz', global_name: 'Fritz', nick: null, roles: ['777'] }, 557: { username: 'gast', global_name: 'Gast', nick: null, roles: [] }, 558: { username: 'hans', global_name: 'Hans', nick: null, roles: ['777'] }, 559: { username: 'ida', global_name: 'Ida', nick: null, roles: ['777'] } };
-const msgs = [], calls = []; let cur = '555', n = 0;
+const msgs = [], calls = [], history = []; let cur = '555', n = 0;
 http.createServer((req, res) => {
   let b = ''; req.on('data', (c) => (b += c)); req.on('end', () => {
     const u = new URL(req.url, 'http://x'), out = (d, s = 200) => { res.writeHead(s, { 'content-type': 'application/json' }); res.end(JSON.stringify(d)); };
@@ -16,7 +16,9 @@ http.createServer((req, res) => {
     if ((m = u.pathname.match(/^\/guilds\/g1\/members\/(\d+)$/))) { const x = USERS[m[1]]; return x ? out({ user: { id: m[1], username: x.username, global_name: x.global_name }, nick: x.nick, roles: x.roles }) : out({}, 404); }
     if (u.pathname === '/guilds/g1/roles') return out([{ id: 'g1', permissions: '1024' }, { id: '777', permissions: '0' }]);
     if (u.pathname === '/channels/CH1') return out({ id: 'CH1', permission_overwrites: [] });
+    if (u.pathname === '/users/@me/channels') { calls.push({ m: req.method, p: u.pathname, b: JSON.parse(b) }); return out({ id: 'DM' + JSON.parse(b).recipient_id }); }
     if (u.pathname.startsWith('/channels/')) {
+      if (req.method === 'GET' && u.pathname === '/channels/CH1/messages') return out(history);
       const j = b ? JSON.parse(b) : null; calls.push({ m: req.method, p: u.pathname, b: j });
       if (req.method === 'POST' && (m = u.pathname.match(/^\/channels\/(\w+)\/messages\/(\w+)\/threads$/))) return out({ id: 'T' + m[2] });
       if (req.method === 'POST' && (m = u.pathname.match(/^\/channels\/(\w+)\/messages$/))) { const id = 'msg' + (++n); msgs.push({ id, ch: m[1], ...j }); return out({ id }); }
@@ -78,9 +80,35 @@ const nd = (() => { const d = new Date(tue + 'T12:00:00Z'); d.setUTCDate(d.getUT
 r = await call('PUT', `/parties/${p1}`, eva, { game: 'Terraforming Mars', gameId: 167791, date: nd, time: '19:00', seats: 4, note: '' }); assert.equal(r.status, 200); await wait(1000);
 assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T}` && c.b.name === `Terraforming Mars · Di ${dTxt(nd)}`), 'renamed');
 r = await call('DELETE', `/parties/${p1}`, eva); assert.equal(r.status, 200); await wait(1000);
-assert.ok(msgs.some((q) => q.ch === T && /abgesagt/.test(q.content)), 'cancel message');
-assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T}` && c.b.archived === true && c.b.locked === true), 'archived on cancel');
+assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === `/channels/${T}`), 'thread deleted on cancel');
+assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === `/channels/CH1/messages/${ann.id}`), 'round post deleted on cancel');
+assert.ok(!calls.some((c) => c.m === 'PATCH' && c.p === `/channels/CH1/messages/${ann.id}` && /storniert/.test(c.b.content || '')), 'no storniert edit');
+assert.ok(calls.some((c) => c.p === '/users/@me/channels' && c.b.recipient_id === '558'), 'joiner DM');
+assert.ok(!calls.some((c) => c.p === '/users/@me/channels' && c.b.recipient_id === '555'), 'no DM to host');
+assert.ok(msgs.some((q) => q.ch === 'DM558' && /abgesagt/.test(q.content)), 'DM text');
 console.log('thread rename + cancel ok');
+
+// Übersicht: nach der neuen Runde unten neu gepostet, alte gelöscht; Beitritt bearbeitet sie; Absage nimmt die Runde heraus.
+const ovs = () => msgs.filter((q) => q.ch === 'CH1' && q.embeds && q.embeds[0] && q.embeds[0].title === '📋 Offene Runden');
+assert.ok(ovs().length >= 1, 'overview posted');
+const ovDel = calls.filter((c) => c.m === 'DELETE' && ovs().some((o) => c.p === `/channels/CH1/messages/${o.id}`)).length;
+assert.equal(ovs().length - ovDel, 1, 'exactly one overview left');
+{ let r3 = await call('POST', '/parties', eva, { game: 'Azul', gameId: 230802, date: tue, time: '18:30', seats: 3, note: '' }); const p3 = (await r3.json()).id; await wait(1500);
+  const azul = msgs.find((q) => q.ch === 'CH1' && JSON.stringify(q).includes('Azul') && !(q.embeds[0].title || '').startsWith('📋'));
+  const last = ovs().at(-1); assert.ok(msgs.indexOf(last) > msgs.indexOf(azul), 'overview below new round');
+  assert.match(last.embeds[0].description, /Azul\]\(https:\/\/discord\.com\/channels\/g1\/CH1\/msg\d+\) · 👑 Eva vom Server · 1\/3 dabei · \*\*noch 2 frei\*\*/);
+  assert.ok(calls.some((c) => c.m === 'DELETE' && ovs().slice(0, -1).some((o) => c.p.endsWith('/' + o.id))), 'old overview deleted');
+  await interact({ type: 3, ...as('556'), data: { custom_id: `join:${p3}` } }); await wait(1000);
+  assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/CH1/messages/${last.id}` && /2\/3 dabei/.test(c.b.embeds[0].description)), 'overview edited on join');
+  const sl = await interact({ type: 2, ...as('557'), data: { name: 'runden' } });
+  assert.equal(sl.data.flags, 64); assert.match(sl.data.embeds[0].description, /Azul/);
+  await interact({ type: 3, ...as('555'), data: { custom_id: `cancelyes:${p3}` } }); await wait(1200);
+  assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === `/channels/CH1/messages/${azul.id}`), 'discord cancel deletes post');
+  assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/CH1/messages/${last.id}` && !/Azul/.test(c.b.embeds[0].description)), 'overview without cancelled round');
+  // Nächtliches Aufräumen: alte „storniert“-Reste des Bots werden gelöscht, fremde Nachrichten nicht.
+  history.push({ id: 'old1', author: { id: '1569483072687050792' }, content: '~~Catan~~ – die Runde von **X** wurde storniert.', embeds: [] }, { id: 'usr1', author: { id: '555' }, content: 'wurde storniert.', embeds: [] });
+}
+console.log('overview ok');
 
 r = await call('POST', '/parties', hans, { game: 'Spirit Island', gameId: 162886, date: tue, time: '19:00', seats: 4, note: '' }); const p2 = (await r.json()).id; await wait(1500);
 const T2 = 'T' + msgs.find((q) => q.ch === 'CH1' && JSON.stringify(q).includes('Spirit Island')).id;
@@ -89,6 +117,8 @@ await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(400
 assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T2}` && c.b.archived === true), 'archived nightly');
 const before = calls.length; await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(3000);
 assert.ok(!calls.slice(before).some((c) => c.p === `/channels/${T2}`), 'not archived twice');
+assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === '/channels/CH1/messages/old1'), 'tidy removes old storniert post');
+assert.ok(!calls.some((c) => c.m === 'DELETE' && c.p === '/channels/CH1/messages/usr1'), 'tidy keeps user messages');
 console.log('thread nightly archive ok');
 console.log('ALL OK');
 process.exit(0);
