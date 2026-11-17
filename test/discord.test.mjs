@@ -26,3 +26,10 @@ assert.equal(hasStarted({ date: '2026-11-10', time: '18:00' }, new Date('2026-11
 assert.equal(hasStarted({ date: '2026-11-11', time: '18:00' }, new Date('2026-11-10T12:00:00Z')), false);
 assert.equal(hasStarted({ date: '2026-11-09', time: '18:00' }, new Date('2026-11-10T08:00:00Z')), true);
 console.log('hasStarted ok');
+
+import { threadName } from '../src/discord.js';
+assert.equal(threadName({ date: '2026-11-17', game: 'Tidal Blades 2' }, '2026-11-17'), 'Dienstag - Tidal Blades 2');
+assert.equal(threadName({ date: '2026-11-23', game: 'Azul' }, '2026-11-17'), 'Montag - Azul');
+assert.equal(threadName({ date: '2026-11-24', game: 'Azul' }, '2026-11-17'), '24.11. - Azul');
+assert.equal(threadName({ date: '2026-11-10', game: 'Azul' }, '2026-11-17'), '10.11. - Azul');
+console.log('thread names ok');

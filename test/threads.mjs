@@ -56,12 +56,13 @@ const eva = await login('555'), fritz = await login('556'), hans = await login('
 const thr = (pid) => calls.filter((c) => c.p.includes(pid));
 const tue = (() => { const d = new Date(Date.now() + 864e5); while (d.getUTCDay() !== 2) d.setUTCDate(d.getUTCDate() + 1); return berlinIso(d); })();
 const dTxt = (iso) => iso.split('-').reverse().join('.');
+const dName = (iso) => { const t = berlinIso(new Date()), days = Math.round((Date.parse(iso) - Date.parse(t)) / 864e5); return days < 7 ? 'Dienstag' : iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.'; };
 let r = await call('POST', '/parties', eva, { game: 'Terraforming Mars', gameId: 167791, date: tue, time: '18:00', seats: 4, note: '' });
 assert.equal(r.status, 200); const p1 = (await r.json()).id; await wait(1500);
 const ann = msgs.find((q) => q.ch === 'CH1' && JSON.stringify(q).includes('Terraforming Mars')); assert.ok(ann, 'announced');
 const T = 'T' + ann.id;
 const mk = calls.find((c) => c.p === `/channels/CH1/messages/${ann.id}/threads`); assert.ok(mk, 'thread created');
-assert.equal(mk.b.name, `Terraforming Mars · Di ${dTxt(tue)}`);
+assert.equal(mk.b.name, `${dName(tue)} - Terraforming Mars`);
 assert.ok(msgs.some((q) => q.ch === T && /Absprachen zur Runde hier/.test(q.content)), 'first message');
 assert.ok(calls.some((c) => c.m === 'PUT' && c.p === `/channels/${T}/thread-members/555`), 'host added');
 console.log('thread created ok');
@@ -78,7 +79,7 @@ console.log('thread members ok');
 
 const nd = (() => { const d = new Date(tue + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 7); return d.toISOString().slice(0, 10); })();
 r = await call('PUT', `/parties/${p1}`, eva, { game: 'Terraforming Mars', gameId: 167791, date: nd, time: '19:00', seats: 4, note: '' }); assert.equal(r.status, 200); await wait(1000);
-assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T}` && c.b.name === `Terraforming Mars · Di ${dTxt(nd)}`), 'renamed');
+assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T}` && c.b.name === `${dName(nd)} - Terraforming Mars`), 'renamed');
 r = await call('DELETE', `/parties/${p1}`, eva); assert.equal(r.status, 200); await wait(1000);
 assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === `/channels/${T}`), 'thread deleted on cancel');
 assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === `/channels/CH1/messages/${ann.id}`), 'round post deleted on cancel');
@@ -118,6 +119,13 @@ assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T2}` && c.b.
 const before = calls.length; await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(3000);
 assert.ok(!calls.slice(before).some((c) => c.p === `/channels/${T2}`), 'not archived twice');
 assert.ok(calls.some((c) => c.m === 'DELETE' && c.p === '/channels/CH1/messages/old1'), 'tidy removes old storniert post');
+{ const r4 = await call('POST', '/parties', hans, { game: 'Tidal Blades 2', date: nd, time: '19:00', seats: 4, note: '' }); const p4 = (await r4.json()).id; await wait(1500);
+  const T4 = 'T' + msgs.find((q) => q.ch === 'CH1' && JSON.stringify(q).includes('Tidal Blades')).id;
+  const far = (() => { const d = new Date(nd + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 14); return d.toISOString().slice(0, 10); })();
+  sql(`UPDATE parties SET date = '${berlinIso(new Date())}', thread_state = json_set(thread_state, '$.n', '${far.slice(8, 10)}.${far.slice(5, 7)}. - Tidal Blades 2') WHERE id = '${p4}'`);
+  await fetch('http://localhost:8799/__scheduled?cron=17+3+*+*+*'); await wait(3000);
+  const wd = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][new Date(berlinIso(new Date()) + 'T12:00:00Z').getUTCDay()];
+  assert.ok(calls.some((c) => c.m === 'PATCH' && c.p === `/channels/${T4}` && c.b.name === `${wd} - Tidal Blades 2`), 'nightly rename to weekday'); }
 assert.ok(!calls.some((c) => c.m === 'DELETE' && c.p === '/channels/CH1/messages/usr1'), 'tidy keeps user messages');
 console.log('thread nightly archive ok');
 console.log('ALL OK');

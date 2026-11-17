@@ -478,7 +478,15 @@ export async function announceParty(env, id, channelId, fromWeb = false, ctx = n
 // Öffentlicher Thread am Runden-Post: Ersteller und alle Mitspielenden (mit Discord) werden hinzugefügt, wer austritt, wird entfernt.
 // Nach dem Spieltag (nächtlich) oder bei Absage wird er archiviert und gesperrt. Braucht die Bot-Rechte
 // „Öffentliche Threads erstellen“, „Nachrichten in Threads senden“ und „Threads verwalten“. Fehler hier stören die Runde nie.
-const threadName = (row) => `${row.game} · ${wdName(row.date)} ${fmtDate(row.date)}`.slice(0, 100);
+// Name: „Dienstag - Spiel“, wenn die Runde in weniger als einer Woche ist (heute bis +6 Tage), sonst „24.11. - Spiel“.
+// Wird nächtlich angepasst, sobald der Tag näher rückt.
+const WD_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+export function threadName(row, today = berlinToday()) {
+  const days = Math.round((Date.parse(row.date + 'T12:00:00Z') - Date.parse(today + 'T12:00:00Z')) / 864e5);
+  const [, m, d] = row.date.split('-');
+  const day = days >= 0 && days < 7 ? WD_LONG[new Date(row.date + 'T12:00:00Z').getUTCDay()] : `${d}.${m}.`;
+  return `${day} - ${row.game}`.slice(0, 100);
+}
 const tState = (row) => { try { return JSON.parse(row.thread_state || '{}') || {}; } catch { return {}; } };
 export function partyDiscordIds(row) {
   const ids = new Set(row.host_discord ? [row.host_discord] : []);
@@ -523,6 +531,13 @@ export async function closeThread(env, row, text) {
   try { await env.DB.prepare('UPDATE parties SET thread_state = ?1 WHERE id = ?2').bind(JSON.stringify(st), row.id).run(); } catch { /* Runde schon gelöscht */ }
 }
 // Nächtlich: Threads von Runden, deren Spieltag vorbei ist, archivieren (höchstens 40 pro Lauf).
+// Nächtlich: Namen offener Threads anpassen (Datum → Wochentag, sobald die Runde weniger als eine Woche entfernt ist).
+export async function renameThreads(env) {
+  const { results } = await env.DB.prepare("SELECT * FROM parties WHERE discord_thread IS NOT NULL AND date >= ?1 AND coalesce(json_extract(thread_state, '$.a'), 0) = 0 ORDER BY date LIMIT 40").bind(berlinToday()).all();
+  let n = 0;
+  for (const r of results) if (tState(r).n !== threadName(r)) { await syncThread(env, r); n++; }
+  return n;
+}
 export async function archiveOldThreads(env) {
   const { results } = await env.DB.prepare("SELECT * FROM parties WHERE discord_thread IS NOT NULL AND date < ?1 AND coalesce(json_extract(thread_state, '$.a'), 0) = 0 LIMIT 40").bind(berlinToday()).all();
   for (const r of results) await closeThread(env, r, null);
