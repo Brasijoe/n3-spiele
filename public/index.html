@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Nerd Nexus Spielesammlung</title><link rel="stylesheet" href="fonts/fonts.css"></head><body>
+<!doctype html><html lang="de"><head><meta charset=utf8><meta name="robots" content="noindex,nofollow"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Nerd Nexus Spielesammlung</title><link rel="stylesheet" href="fonts/fonts.css"></head><body>
 <style>
 /* Layout: dunkles Kopfband wie nerd-nexus.de, darunter weiße Karten auf hellgrauem Grund, max. 1290px Inhalt */
 :root {
@@ -366,6 +366,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .qr-img svg { width: 100%; height: 100%; display: block; }
 .qr-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 260px; }
 .qr-url { word-break: break-all; font-weight: 600; }
+.foot-legal a { color: inherit; }
 .foot-admin .btn { min-height: 36px; font-size: 13px; }
 .auth-box { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-size: 14px; color: var(--fg); }
 .auth-box .btn-discord, #joinLink { background: #5865f2; color: #fff; border: 0; min-height: 40px; text-transform: none; letter-spacing: 0; }
@@ -676,6 +677,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 <footer class="wrap">
   <a class="bgglogo" target="_blank" rel="noopener" href="https://boardgamegeek.com"><img src="covers/logo.png" alt="Powered by BoardGameGeek"></a>
   <span data-t="footer"></span>
+  <span class="foot-legal"><a href="https://nerd-nexus.de/impressum/" target="_blank" rel="noopener" data-t="impressum"></a> · <a href="https://nerd-nexus.de/datenschutz/" target="_blank" rel="noopener" data-t="privacy"></a></span>
   <span class="foot-admin"><button type="button" class="btn btn-quiet" id="meLink" hidden></button> <button type="button" class="btn btn-quiet" id="admLink"></button></span>
   <form id="admForm" class="row" hidden style="width:100%">
     <label class="field"><span data-t="admPw"></span><input type="password" id="admPw" autocomplete="current-password"></label>
@@ -875,6 +877,8 @@ const TXT = {
     recNote: 'Die Prozent-Schwelle wirkt erst mit der BGG-API (vollständige Umfragedaten).', minVotes: 'Mindestanzahl Bewertungen', rank: 'BGG-Rang', any: 'egal',
     age: 'Geeignet ab Alter', yearFrom: 'Erschienen ab', playedF: 'Im Club gespielt', playedOpts: ['Egal', 'Noch nie gespielt', 'Schon gespielt'], cats: 'Kategorien', mechs: 'Mechaniken', allGames: 'Alle Spiele',
     recent: 'Zuletzt im Club gespielt', recTab: 'Zuletzt gespielt', lastPlayed: 'Zuletzt gespielt am {d}', recentEmpty: 'Noch keine Partien eingetragen. Über „Partie eintragen“ an jedem Spiel geht’s los.', recentOff: 'Partien können in dieser Ansicht nicht geladen werden.',
+    impressum: 'Impressum',
+    privacy: 'Datenschutz',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
     loginDiscord: 'Mit Discord anmelden', loginOr: 'oder einmalig mit deinem Code von /code:', loggedAs: 'Angemeldet als {n}', logout: 'Abmelden', logoutN: 'Abmelden ({n})', loginWait: 'Bitte im Discord-Fenster bestätigen …', loginPopup: 'Das Anmeldefenster wurde blockiert. Bitte Popups für diese Seite erlauben.',
@@ -976,6 +980,8 @@ const TXT = {
     recNote: 'The percentage threshold only works once the BGG API (full poll data) is connected.', minVotes: 'Minimum number of ratings', rank: 'BGG rank', any: 'any',
     age: 'Suitable from age', yearFrom: 'Published from', playedF: 'Played at the club', playedOpts: ['Any', 'Never played', 'Played before'], cats: 'Categories', mechs: 'Mechanics', allGames: 'All games',
     recent: 'Recently played at the club', recTab: 'Recently played', lastPlayed: 'Last played on {d}', recentEmpty: 'No plays logged yet. Start with “Log a play” on any game.', recentOff: 'Plays can’t be loaded in this view.',
+    impressum: 'Legal notice',
+    privacy: 'Privacy policy',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
     loginDiscord: 'Sign in with Discord', loginOr: 'or once with your code from /code:', loggedAs: 'Signed in as {n}', logout: 'Sign out', logoutN: 'Sign out ({n})', loginWait: 'Please confirm in the Discord window …', loginPopup: 'The sign-in window was blocked. Please allow pop-ups for this site.',
