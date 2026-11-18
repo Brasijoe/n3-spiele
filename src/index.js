@@ -86,6 +86,7 @@ async function ensurePlayCols(env) {
   if (!have.has('logged_by')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN logged_by TEXT').run();
   if (!have.has('via')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN via TEXT').run();
   if (!have.has('by_discord')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN by_discord TEXT').run();
+  if (!have.has('names')) await env.DB.prepare('ALTER TABLE plays ADD COLUMN names TEXT').run();
   playColsOk = true;
 }
 
@@ -100,7 +101,7 @@ const int = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.
 const NOTE_MAX = 500;
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 
-const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', createdAt: r.created_at });
+const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', names: r.names || '', createdAt: r.created_at });
 const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), playId: r.play_id, event: r.event_name || '', createdAt: r.created_at });
 
 // Discord-Aktualisierungen laufen im Hintergrund; Fehler dürfen die Webseite nie stören.
@@ -155,8 +156,8 @@ async function route(req, env, ctx, url) {
     if (!game || !isDate(date) || !(players >= 1 && players <= 99)) return fail(400, 'invalid');
     if (duration != null && !(duration >= 1 && duration <= 1440)) return fail(400, 'invalid');
     const id = newId();
-    await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString(), by, viaQr ? 'qr' : 'web', byId).run();
+    await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord, names) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)')
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString(), by, viaQr ? 'qr' : 'web', byId, str(b.names, 300) || null).run();
     if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
     // Ohne Runde eingetragen (z. B. per QR-Code): passende offene Runde desselben Tages als gespielt markieren.
     else bg(ctx, ensureCols(env).then(() => linkLoggedPlays(env)));
@@ -173,8 +174,9 @@ async function route(req, env, ctx, url) {
     const date = str(b.date, 10), players = int(b.players), duration = b.duration == null || b.duration === '' ? null : int(b.duration);
     if (!isDate(date) || !(players >= 1 && players <= 99)) return fail(400, 'invalid');
     if (duration != null && !(duration >= 1 && duration <= 1440)) return fail(400, 'invalid');
-    const r = await env.DB.prepare('UPDATE plays SET date = ?1, players = ?2, winner = ?3, note = ?4, duration = ?5, first_play = ?6, logged_by = ?7 WHERE id = ?8')
-      .bind(date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, str(b.loggedBy, 40) || null, g[1]).run();
+    // Mitspielernamen nur ändern, wenn mitgeschickt (die Verwaltungsliste schickt sie nicht mit).
+    const r = await env.DB.prepare('UPDATE plays SET date = ?1, players = ?2, winner = ?3, note = ?4, duration = ?5, first_play = ?6, logged_by = ?7, names = CASE WHEN ?9 THEN ?10 ELSE names END WHERE id = ?8')
+      .bind(date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, str(b.loggedBy, 40) || null, g[1], b.names === undefined ? 0 : 1, str(b.names, 300) || null).run();
     if (!r.meta.changes) return fail(404, 'not_found');
     return json({ ok: true });
   }
