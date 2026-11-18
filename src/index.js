@@ -453,9 +453,10 @@ async function route(req, env, ctx, url) {
     const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
   }
   if (path === '/games/weights' && m === 'GET') {
-    // Gemerkte Werte sofort liefern; fehlende im Hintergrund von BGG holen (nur IDs aus eingetragenen Partien).
-    ctx.waitUntil(fillGuestWeights(env).catch((e) => console.log('guest weights failed', e.code || e.message)));
-    const r = json({ weights: await listGuestWeights(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
+    // Fehlende Werte zuerst von BGG holen (nur IDs aus eingetragenen Partien, höchstens 20), dann alle gemerkten liefern.
+    // Nicht cachen: sonst bliebe eine leere erste Antwort im Browser hängen.
+    if (await allow(env, 'weights:' + ip, 30, 60)) { try { await fillGuestWeights(env); } catch (e) { console.log('guest weights failed', e.code || e.message); } }
+    const r = json({ weights: await listGuestWeights(env) }); r.headers.set('cache-control', 'no-store'); return r;
   }
   if ((g = path.match(/^\/cover\/(\d+)(-big)?(?:\.\w+)?$/)) && m === 'GET') {
     if (!(await allow(env, 'cover:' + ip, 120, 60))) return fail(429, 'rate_limited');
