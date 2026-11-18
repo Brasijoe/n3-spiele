@@ -359,6 +359,12 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .party .players { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--fg); }
 .party .players svg { width: 16px; height: 16px; flex: none; }
 .party .names { font-size: 13px; color: var(--muted); }
+.presult { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.presult div { background: var(--surface); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.presult small { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+.presult strong { font: 700 15px var(--font-display); color: var(--fg); display: flex; gap: 6px; align-items: center; min-width: 0; }
+.presult strong span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presult svg { width: 15px; height: 15px; flex: none; }
 .pchip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
 .pchip svg { width: 14px; height: 14px; flex: none; }
 .pchip.ok { background: #e2f2e5; color: #2f7d3f; } .pchip.warn { background: var(--guest-soft); color: var(--guest-ink); }
@@ -954,7 +960,7 @@ const TXT = {
     ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Geplante Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
     ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
-    ptLog: 'Als gespielt registrieren', ptPlayed: 'Gespielt', ptNotLogged: 'Noch nicht eingetragen', ptPlayers: '{n} Spieler', ptAgo: 'vor {n} Tagen', ptYesterday: 'gestern', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
+    ptLog: 'Als gespielt registrieren', ptPlayed: 'Gespielt', ptNotLogged: 'Noch nicht eingetragen', ptPlayers: '{n} Spieler', ptWon: 'Gewonnen', ptDur: 'Dauer', ptPl: 'Spieler', ptMin: '{n} Min', ptAgo: 'vor {n} Tagen', ptYesterday: 'gestern', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
     ptBringNote: '{o} bringt das Spiel mit (auf Wunsch von {r}).', ptErrFull: 'Die Runde ist leider schon voll.', ptCreated: 'Runde angelegt.', ptNoteAuto: 'Runde: {n}', ptToday: 'Heute', ptTomorrow: 'Morgen', ptHostTag: 'organisiert', tabCollection: 'Sammlung', tabStats: 'Statistik', logGuest: 'Gastspiel eintragen', guestCta: 'Jemand hat ein eigenes Spiel mitgebracht? Tragt die Partie als Gastspiel ein.',
     guestTag: 'Gastspiel', clubTag: 'Sammlung', bggSearch: 'Spiel auf BoardGameGeek suchen', bggPh: 'Name eingeben, z. B. Cascadia', change: 'Ändern',
     gHintIdx: 'Suche im BGG-Katalog ({n} Spiele, Stand {d}). Auswahl mit Pfeiltasten und Enter.', gHintNoIdx: 'Der BGG-Katalog ist noch nicht geladen. Du kannst den Namen trotzdem eintragen.',
@@ -1057,7 +1063,7 @@ const TXT = {
     ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Planned games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
     ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
-    ptLog: 'Register as played', ptPlayed: 'Played', ptNotLogged: 'Not logged yet', ptPlayers: '{n} players', ptAgo: '{n} days ago', ptYesterday: 'yesterday', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
+    ptLog: 'Register as played', ptPlayed: 'Played', ptNotLogged: 'Not logged yet', ptPlayers: '{n} players', ptWon: 'Winner', ptDur: 'Duration', ptPl: 'Players', ptMin: '{n} min', ptAgo: '{n} days ago', ptYesterday: 'yesterday', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
     ptBringNote: '{o} is bringing the game (requested by {r}).', ptErrFull: 'Sorry, this game is already full.', ptCreated: 'Game created.', ptNoteAuto: 'Players: {n}', ptToday: 'Today', ptTomorrow: 'Tomorrow', ptHostTag: 'host', tabCollection: 'Collection', tabStats: 'Statistics', logGuest: 'Log a guest game', guestCta: 'Someone brought their own game? Log the play as a guest game.',
     guestTag: 'Guest game', clubTag: 'Collection', bggSearch: 'Search BoardGameGeek', bggPh: 'Type a name, e.g. Cascadia', change: 'Change',
     gHintIdx: 'Searching the BGG catalog ({n} games, as of {d}). Use arrow keys and Enter to pick.', gHintNoIdx: 'The BGG catalog isn’t loaded yet. You can still enter the name.',
@@ -2187,6 +2193,8 @@ function dayLabel(iso) {
 }
 const ICO_PPL = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5z"/><circle cx="17" cy="9" r="2.8"/><path d="M15.5 13.6c3.6-.3 6.5 2 6.5 5.4V20h-4.4c0-2.6-.8-4.7-2.1-6.4z"/></svg>';
 const ICO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const ICO_CUP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 3h10v2h4v3c0 2.8-2.1 5-4.6 5.4A5 5 0 0 1 13 16v2h3v3H8v-3h3v-2a5 5 0 0 1-3.4-2.6C5.1 13 3 10.8 3 8V5h4zm0 4H5v1c0 1.5.9 2.8 2 3.3zm10 0v4.3c1.1-.5 2-1.8 2-3.3V7z"/></svg>';
+const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 const ICO_PEN = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 17.2V20h2.8L17.6 9.2l-2.8-2.8zM20.7 6.1a1 1 0 0 0 0-1.4l-1.4-1.4a1 1 0 0 0-1.4 0l-1.6 1.6 2.8 2.8z"/></svg>';
 // Vergangene Runde: gedimmt, „N Spieler“ statt Plätze, Status-Chip gespielt / noch nicht eingetragen.
 function pastPartyCard(x) {
@@ -2194,12 +2202,13 @@ function pastPartyCard(x) {
   const days = Math.round((new Date(todayIso() + 'T12:00:00') - new Date(String(p.date) + 'T12:00:00')) / 864e5);
   const ago = days === 1 ? t.ptYesterday : fill(t.ptAgo, { n: days });
   const names = [p.host || '?'].concat(ins.map(([, a]) => a.name));
+  const pl = p.playId ? plays.find((r) => String(r.id) === String(p.playId)) : null;
   let actions = p.playId ? '' : '<button type="button" class="btn btn-outline" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
   if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   return '<article class="party past"><div class="top">' + thumbHtml(p, g, nm) + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' }) + ' · ' + ago) + '</span><h3>' + esc(nm) + '</h3>' +
     (p.playId ? '<span class="pchip ok">' + ICO_OK + esc(t.ptPlayed) + '</span>' : '<span class="pchip warn">' + ICO_PEN + esc(t.ptNotLogged) + '</span>') + (p.event ? ' <span class="src event">' + esc(p.event) + '</span>' : '') + '</div></div>' +
-    '<div class="body"><div class="players">' + ICO_PPL + esc(fill(t.ptPlayers, { n: names.length })) + '</div><div class="names">' + esc(names.join(', ')) + '</div>' +
-    (p.note ? '<span class="meta">' + esc(partyNote(p.note)) + '</span>' : '') + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
+    '<div class="body">' + (pl ? '<div class="presult"><div><small>' + esc(t.ptWon) + '</small><strong>' + ICO_CUP + '<span>' + esc(pl.winner || '–') + '</span></strong></div><div><small>' + esc(t.ptDur) + '</small><strong>' + ICO_CLOCK + '<span>' + esc(pl.duration ? fill(t.ptMin, { n: pl.duration }) : '–') + '</span></strong></div><div><small>' + esc(t.ptPl) + '</small><strong>' + ICO_PPL + '<span>' + esc(String(pl.players || names.length)) + '</span></strong></div></div>'
+      : '<div class="players">' + ICO_PPL + esc(fill(t.ptPlayers, { n: names.length })) + '</div>') + '<div class="names">' + esc(names.join(', ')) + '</div>' + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
 }
 function partyCard(x, past) {
   if (past) return pastPartyCard(x);
@@ -3134,7 +3143,7 @@ watch('/plays', (rows) => {
   // „Im Club gespielt“: jede eingetragene Partie zählt, auch Gastspiele (per BGG-ID oder Name).
   playedIds = new Set(plays.map((p) => Number(p.gameId)).filter(Boolean)); playedNames = new Set(plays.map((p) => String(p.game || '').trim().toLowerCase()).filter(Boolean));
   calcClubTime();
-  dbState = 'ready'; renderPlays(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
+  dbState = 'ready'; renderPlays(); renderParties(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
 watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
 watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);
