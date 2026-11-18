@@ -967,7 +967,7 @@ const TXT = {
     gHintIdx: 'Suche im BGG-Katalog ({n} Spiele, Stand {d}). Auswahl mit Pfeiltasten und Enter.', gHintNoIdx: 'Der BGG-Katalog ist noch nicht geladen. Du kannst den Namen trotzdem eintragen.',
     gNone: 'Kein Treffer.', gUseName: '„{q}“ ohne BGG-Eintrag verwenden', gInColl: 'auch in der Sammlung', gNoBgg: 'ohne BGG-Eintrag', errPick: 'Bitte zuerst ein Spiel auswählen.',
     stPeriod: 'Zeitraum', stSource: 'Spiele', stPeriods: ['Gesamt', 'Dieses Jahr', 'Letzte 90 Tage'], stSources: ['Alle', 'Aus der Sammlung', 'Gastspiele'],
-    stPlays: 'Partien', stGames: 'verschiedene Spiele', stNights: 'Spieltage', stGuestShare: 'davon Gastspiele', stAvgP: 'Spieler pro Partie (Ø)',
+    stPlays: 'Partien', stGames: 'verschiedene Spiele', stNights: 'Spieltage', stGuestShare: 'davon Gastspiele', stAvgP: 'Spieler pro Partie (Ø)', stAvgW: 'Komplexität pro Partie (Ø, BGG 1–5)', stWeight: 'Komplexität {w}', stWeightTip: 'BGG-Komplexität {w} von 5 ({l})',
     stRank: 'Meistgespielt', stMonths: 'Partien pro Monat', stAsTable: 'Als Tabelle anzeigen', stMonth: 'Monat', stTotal: 'Gesamt', stLast: 'zuletzt {d}',
     stPlaysN: '{n} Partien', stPlays1: '1 Partie', stMoreRank: 'Ganze Rangliste zeigen ({n})', stEmpty: 'Für diese Auswahl gibt es noch keine Partien.',
     stNever: 'Noch nie gespielt', stNeverNote: '{n} von {m} Spielen der Sammlung wurden noch nie eingetragen. Vielleicht ist ja euer nächstes dabei:',
@@ -1070,7 +1070,7 @@ const TXT = {
     gHintIdx: 'Searching the BGG catalog ({n} games, as of {d}). Use arrow keys and Enter to pick.', gHintNoIdx: 'The BGG catalog isn’t loaded yet. You can still enter the name.',
     gNone: 'No match.', gUseName: 'Use “{q}” without a BGG entry', gInColl: 'also in our collection', gNoBgg: 'no BGG entry', errPick: 'Please pick a game first.',
     stPeriod: 'Period', stSource: 'Games', stPeriods: ['All time', 'This year', 'Last 90 days'], stSources: ['All', 'From the collection', 'Guest games'],
-    stPlays: 'plays', stGames: 'different games', stNights: 'game days', stGuestShare: 'guest games', stAvgP: 'players per play (avg.)',
+    stPlays: 'plays', stGames: 'different games', stNights: 'game days', stGuestShare: 'guest games', stAvgP: 'players per play (avg.)', stAvgW: 'complexity per play (avg., BGG 1–5)', stWeight: 'Complexity {w}', stWeightTip: 'BGG complexity {w} of 5 ({l})',
     stRank: 'Most played', stMonths: 'Plays per month', stAsTable: 'Show as table', stMonth: 'Month', stTotal: 'Total', stLast: 'last {d}',
     stPlaysN: '{n} plays', stPlays1: '1 play', stMoreRank: 'Show full ranking ({n})', stEmpty: 'No plays for this selection yet.',
     stNever: 'Never played', stNeverNote: '{n} of {m} games in the collection have never been logged. Maybe your next one is among them:',
@@ -1271,6 +1271,9 @@ document.addEventListener('click', (e) => {
   $('expDlg').showModal();
 });
 const playGame = (p) => (p.guest ? null : byId[p.gameId]);
+// BGG-Komplexität (1–5) einer Partie: Sammlungsspiel, sonst Gastspiel über BGG-ID (Sammlung oder Mitgliederspiel).
+const playWeight = (p) => { const g = playGame(p) || (Number(p.gameId) > 0 ? byId[p.gameId] || memGames.find((m) => m.id === Number(p.gameId)) : null); return g && g.w > 0 ? g.w : 0; };
+const wLevel = (w) => (w < 1.8 ? 0 : w < 2.4 ? 1 : w < 3.2 ? 2 : w < 4 ? 3 : 4);
 const playName = (p) => { const g = playGame(p); return g ? name(g) : String(p.game || '?'); };
 const srcTag = (p) => (p.guest ? '<span class="src guest">' + esc(T().guestTag) + '</span>' : '<span class="src club">' + esc(T().clubTag) + '</span>');
 // Cover für Partien/Runden: Sammlungsspiel -> eigenes Cover, Gastspiel mit BGG-ID -> Cover über den Worker (gleiche Quelle wie bei der Sammlung).
@@ -2119,9 +2122,11 @@ function renderStats() {
   ps.forEach((p) => { const k = keyOf(p); const gr = groups[k] || (groups[k] = { p, n: 0, last: '', players: 0, guest: !!p.guest }); gr.n++; if (String(p.date) > gr.last) gr.last = String(p.date); });
   const nights = new Set(ps.map((p) => p.date)).size, nGuest = ps.filter((p) => p.guest).length;
   const pl = ps.map((p) => Number(p.players)).filter((x) => x > 0), avg = pl.length ? pl.reduce((a, b) => a + b, 0) / pl.length : 0;
+  const ws = ps.map(playWeight).filter((x) => x > 0), avgW = ws.length ? ws.reduce((a, b) => a + b, 0) / ws.length : 0;
   const kpi = (v, l) => '<div class="kpi"><span class="v">' + esc(v) + '</span><span class="l">' + esc(l) + '</span></div>';
   $('stKpis').innerHTML = kpi(ps.length.toLocaleString(loc), t.stPlays) + kpi(Object.keys(groups).length.toLocaleString(loc), t.stGames) + kpi(nights.toLocaleString(loc), t.stNights) +
-    kpi(ps.length ? Math.round(nGuest / ps.length * 100) + ' %' : '–', t.stGuestShare) + kpi(avg ? avg.toLocaleString(loc, { maximumFractionDigits: 1 }) : '–', t.stAvgP);
+    kpi(ps.length ? Math.round(nGuest / ps.length * 100) + ' %' : '–', t.stGuestShare) + kpi(avg ? avg.toLocaleString(loc, { maximumFractionDigits: 1 }) : '–', t.stAvgP) +
+    kpi(avgW ? avgW.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–', t.stAvgW);
   // Rangliste
   const ranked = Object.values(groups).sort((a, b) => b.n - a.n || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0) || playName(a.p).localeCompare(playName(b.p)));
   const maxN = ranked.length ? ranked[0].n : 1;
@@ -2129,9 +2134,10 @@ function renderStats() {
   $('stRank').innerHTML = ranked.slice(0, ST.rankLimit).map((gr, i) => {
     if (gr.n !== prevN) { pos = i + 1; prevN = gr.n; }
     const g = playGame(gr.p), nm = playName(gr.p);
-    const th = thumbHtml(gr.p, g, nm);
+    const th = thumbHtml(gr.p, g, nm), w = playWeight(gr.p), wTxt = w ? w.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+    const wTag = w ? '<span class="meta" title="' + esc(fill(t.stWeightTip, { w: wTxt, l: t.weights[wLevel(w)] })) + '">' + esc(fill(t.stWeight, { w: wTxt })) + '</span>' : '';
     const link = gr.p.gameId ? '<a class="meta" target="_blank" rel="noopener" href="https://boardgamegeek.com/boardgame/' + Number(gr.p.gameId) + '" aria-label="' + esc(fill(t.onBgg, { n: nm })) + '">BGG</a>' : '';
-    return '<li><span class="pos">' + pos + '</span>' + th + '<div><div class="ln"><strong>' + esc(nm) + '</strong>' + srcTag(gr.p) + '<span class="meta">' + esc(fill(t.stLast, { d: dmy(gr.last) })) + '</span>' + link + '</div>' +
+    return '<li><span class="pos">' + pos + '</span>' + th + '<div><div class="ln"><strong>' + esc(nm) + '</strong>' + srcTag(gr.p) + '<span class="meta">' + esc(fill(t.stLast, { d: dmy(gr.last) })) + '</span>' + wTag + link + '</div>' +
       '<div class="barrow"><span class="bar" style="width:' + Math.max(2, gr.n / maxN * 70) + '%;background:var(' + (gr.guest ? '--guest' : '--club') + ')"></span><span class="cnt">' + esc(gr.n === 1 ? t.stPlays1 : fill(t.stPlaysN, { n: gr.n })) + '</span></div></div></li>';
   }).join('');
   $('stMore').hidden = ranked.length <= ST.rankLimit; $('stMore').textContent = fill(t.stMoreRank, { n: ranked.length });
