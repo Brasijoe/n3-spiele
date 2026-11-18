@@ -960,7 +960,7 @@ const TXT = {
     ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Geplante Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
     ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
-    ptLog: 'Als gespielt registrieren', ptPlayed: 'Gespielt', ptNotLogged: 'Noch nicht eingetragen', ptPlayers: '{n} Spieler', ptWon: 'Gewonnen', ptDur: 'Dauer', ptPl: 'Spieler', ptMin: '{n} Min', ptAgo: 'vor {n} Tagen', ptYesterday: 'gestern', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
+    ptLog: 'Als gespielt registrieren', ptPlayed: 'Gespielt', ptNotLogged: 'Noch nicht eingetragen', ptPlayers: '{n} Spieler', ptEditPlay: 'Ergebnis bearbeiten', ptWon: 'Gewonnen', ptDur: 'Dauer', ptPl: 'Spieler', ptMin: '{n} Min', ptAgo: 'vor {n} Tagen', ptYesterday: 'gestern', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
     ptBringNote: '{o} bringt das Spiel mit (auf Wunsch von {r}).', ptErrFull: 'Die Runde ist leider schon voll.', ptCreated: 'Runde angelegt.', ptNoteAuto: 'Runde: {n}', ptToday: 'Heute', ptTomorrow: 'Morgen', ptHostTag: 'organisiert', tabCollection: 'Sammlung', tabStats: 'Statistik', logGuest: 'Gastspiel eintragen', guestCta: 'Jemand hat ein eigenes Spiel mitgebracht? Tragt die Partie als Gastspiel ein.',
     guestTag: 'Gastspiel', clubTag: 'Sammlung', bggSearch: 'Spiel auf BoardGameGeek suchen', bggPh: 'Name eingeben, z. B. Cascadia', change: 'Ändern',
     gHintIdx: 'Suche im BGG-Katalog ({n} Spiele, Stand {d}). Auswahl mit Pfeiltasten und Enter.', gHintNoIdx: 'Der BGG-Katalog ist noch nicht geladen. Du kannst den Namen trotzdem eintragen.',
@@ -1063,7 +1063,7 @@ const TXT = {
     ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Planned games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
     ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
-    ptLog: 'Register as played', ptPlayed: 'Played', ptNotLogged: 'Not logged yet', ptPlayers: '{n} players', ptWon: 'Winner', ptDur: 'Duration', ptPl: 'Players', ptMin: '{n} min', ptAgo: '{n} days ago', ptYesterday: 'yesterday', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
+    ptLog: 'Register as played', ptPlayed: 'Played', ptNotLogged: 'Not logged yet', ptPlayers: '{n} players', ptEditPlay: 'Edit result', ptWon: 'Winner', ptDur: 'Duration', ptPl: 'Players', ptMin: '{n} min', ptAgo: '{n} days ago', ptYesterday: 'yesterday', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
     ptBringNote: '{o} is bringing the game (requested by {r}).', ptErrFull: 'Sorry, this game is already full.', ptCreated: 'Game created.', ptNoteAuto: 'Players: {n}', ptToday: 'Today', ptTomorrow: 'Tomorrow', ptHostTag: 'host', tabCollection: 'Collection', tabStats: 'Statistics', logGuest: 'Log a guest game', guestCta: 'Someone brought their own game? Log the play as a guest game.',
     guestTag: 'Guest game', clubTag: 'Collection', bggSearch: 'Search BoardGameGeek', bggPh: 'Type a name, e.g. Cascadia', change: 'Change',
     gHintIdx: 'Searching the BGG catalog ({n} games, as of {d}). Use arrow keys and Enter to pick.', gHintNoIdx: 'The BGG catalog isn’t loaded yet. You can still enter the name.',
@@ -2204,6 +2204,8 @@ function pastPartyCard(x) {
   const names = [p.host || '?'].concat(ins.map(([, a]) => a.name));
   const pl = p.playId ? plays.find((r) => String(r.id) === String(p.playId)) : null;
   let actions = p.playId ? '' : '<button type="button" class="btn btn-outline" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
+  // Eingetragene Partie korrigieren (z. B. mehr Spieler als zugesagt): Verwaltung oder wer sie eingetragen hat.
+  if (pl && (canEdit || isMine('plays', pl.id))) actions += '<button type="button" class="btn btn-quiet" data-pe="' + esc(pl.id) + '">' + esc(t.ptEditPlay) + '</button>';
   if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   return '<article class="party past"><div class="top">' + thumbHtml(p, g, nm) + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' }) + ' · ' + ago) + '</span><h3>' + esc(nm) + '</h3>' +
     (p.playId ? '<span class="pchip ok">' + ICO_OK + esc(t.ptPlayed) + '</span>' : '<span class="pchip warn">' + ICO_PEN + esc(t.ptNotLogged) + '</span>') + (p.event ? ' <span class="src event">' + esc(p.event) + '</span>' : '') + '</div></div>' +
@@ -2257,6 +2259,7 @@ function renderParties() {
 }
 $('viewParties').addEventListener('click', async (e) => {
   const t = T(); let b;
+  if ((b = e.target.closest('button[data-pe]'))) { openPlayEdit(b.dataset.pe); return; }
   if ((b = e.target.closest('[data-pjoin]'))) { joinOpen = b.dataset.pjoin; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
   if (e.target.closest('[data-pjoincancel]')) { joinOpen = null; renderParties(); return; }
   if ((b = e.target.closest('[data-pconfirm]'))) {
