@@ -1571,7 +1571,7 @@ function renderPlays() {
       // Feste Spalten: Dauer bleibt als leere Zelle stehen, Erstpartie/Sieg/Notiz teilen sich die letzte Spalte.
       '<span>' + (Number(p.duration) > 0 ? esc(p.duration + ' ' + t.min) : '') + '</span>' +
       '<span class="extra">' + (p.firstPlay ? '<span class="meta">' + esc(t.firstTag) + '</span>' : '') + (p.winner ? '<span>' + esc(t.win + p.winner) + '</span>' : '') + (p.note ? '<span class="meta">' + esc(p.note) + '</span>' : '') + '</span>' +
-      (canEdit && p.id ? '<button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button>'
+      (canEdit && p.id ? '<span class="own"><button type="button" class="btn btn-quiet" data-pe="' + esc(p.id) + '">' + esc(t.edit) + '</button><button type="button" class="btn ' + (pendingDel === p.id ? 'btn-primary' : 'btn-quiet') + '" style="min-height:32px;font-size:13px" data-hdel="' + esc(p.id) + '">' + esc(pendingDel === p.id ? t.delConfirm : t.del) + '</button></span>'
         : isMine('plays', p.id) ? '<span class="own"><button type="button" class="btn btn-quiet" data-pe="' + esc(p.id) + '">' + esc(t.edit) + '</button></span>' : '<span></span>') + '</div>';
   }).join('');
 }
