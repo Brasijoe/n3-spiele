@@ -660,3 +660,27 @@ async function cmdCode(i, env) {
     .bind(w.id, w.name, await codeHash(code), new Date().toISOString(), Date.now(), JSON.stringify((i.member && i.member.roles) || [])).run();
   return say(`**Dein persönlicher Code: \`${showCode(code)}\`**\nGib ihn auf der Webseite ein, um Spielrunden anzulegen oder Partien einzutragen. Er gehört zu deinem Discord-Konto (Name: ${w.name}). Gib ihn nicht weiter. Mit einem neuen \`/code\` wird der alte ungültig.`);
 }
+
+// ---------- Partien ohne Runden-Bezug zuordnen ----------
+// Wird eine Partie ohne Runde eingetragen (z. B. per QR-Code oder über „Partie eintragen“), gilt eine noch offene Runde
+// als gespielt, wenn dasselbe Spiel am Rundentag oder am Tag danach eingetragen wurde. Dann verschwindet sie aus der
+// Übersicht, die Seite zeigt „eingetragen“, und der Discord-Post wird aktualisiert. Jede Partie zählt nur für eine Runde.
+export async function linkLoggedPlays(env, sync = true) {
+  const today = berlinToday(), from = addDays(today, -30);
+  const { results } = await env.DB.prepare(`SELECT pa.id AS party, (
+      SELECT pl.id FROM plays pl
+      WHERE pl.date >= pa.date AND pl.date <= date(pa.date, '+1 day')
+        AND ((pl.game_id IS NOT NULL AND pl.game_id = pa.game_id) OR lower(trim(pl.game)) = lower(trim(pa.game)))
+        AND NOT EXISTS (SELECT 1 FROM parties o WHERE o.play_id = pl.id)
+      ORDER BY pl.date, pl.created_at LIMIT 1) AS play
+    FROM parties pa WHERE pa.play_id IS NULL AND pa.date >= ?1 AND pa.date <= ?2 ORDER BY pa.date, pa.time LIMIT 60`).bind(from, today).all();
+  const linked = [], used = new Set();
+  for (const r of results) {
+    if (!r.play || used.has(r.play)) continue;
+    const res = await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(r.play, r.party).run();
+    if (res.meta && res.meta.changes === 0) continue;
+    used.add(r.play); linked.push(r.party);
+  }
+  if (sync && linked.length && discordOn(env)) for (const id of linked) { try { await syncParty(env, id, true); } catch (e) { console.log('party sync after link failed', e && e.message); } }
+  return linked.length;
+}
