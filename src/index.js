@@ -1,5 +1,5 @@
 import { bggSearch, refreshGeeklist } from './bgg.js';
-import { syncExtras, listExtras, coverResponse } from './games.js';
+import { syncExtras, listExtras, coverResponse, listGuestWeights, fillGuestWeights } from './games.js';
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
@@ -452,6 +452,11 @@ async function route(req, env, ctx, url) {
   if (path === '/games/extra' && m === 'GET') {
     const r = json({ games: await listExtras(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
   }
+  if (path === '/games/weights' && m === 'GET') {
+    // Gemerkte Werte sofort liefern; fehlende im Hintergrund von BGG holen (nur IDs aus eingetragenen Partien).
+    ctx.waitUntil(fillGuestWeights(env).catch((e) => console.log('guest weights failed', e.code || e.message)));
+    const r = json({ weights: await listGuestWeights(env) }); r.headers.set('cache-control', 'public, max-age=300'); return r;
+  }
   if ((g = path.match(/^\/cover\/(\d+)(-big)?(?:\.\w+)?$/)) && m === 'GET') {
     if (!(await allow(env, 'cover:' + ip, 120, 60))) return fail(429, 'rate_limited');
     return coverResponse(env, ctx, +g[1], !!g[2]);
@@ -485,6 +490,7 @@ export default {
     ctx.waitUntil((async () => {
       await env.DB.prepare('DELETE FROM rate WHERE ts < ?1').bind(Date.now() - 864e5).run();
       try { await refreshGeeklist(env); await syncExtras(env); } catch (e) { console.log('geeklist refresh/sync failed', e.code || e.message); }
+      try { await fillGuestWeights(env, 40); } catch (e) { console.log('guest weights failed', e.code || e.message); }
       try { await ensureCols(env); const n = await pruneMemberGames(env); if (n) console.log('member games removed', n); } catch (e) { console.log('member games prune failed', e.code || e.message); }
       try { await backfillMemberGames(env); } catch (e) { console.log('member games backfill failed', e.code || e.message); }
       try { const n = await expireWanted(env); if (n) console.log('wanted expired', n); } catch (e) { console.log('wanted expire failed', e.code || e.message); }

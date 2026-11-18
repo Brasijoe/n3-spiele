@@ -1272,7 +1272,9 @@ document.addEventListener('click', (e) => {
 });
 const playGame = (p) => (p.guest ? null : byId[p.gameId]);
 // BGG-Komplexität (1–5) einer Partie: Sammlungsspiel, sonst Gastspiel über BGG-ID (Sammlung oder Mitgliederspiel).
-const playWeight = (p) => { const g = playGame(p) || (Number(p.gameId) > 0 ? byId[p.gameId] || memGames.find((m) => m.id === Number(p.gameId)) : null); return g && g.w > 0 ? g.w : 0; };
+// Gastspiele außerhalb von Sammlung/Mitgliederspielen: Werte vom Worker (/api/games/weights, von BGG gemerkt).
+let guestW = {};
+const playWeight = (p) => { const g = playGame(p) || (Number(p.gameId) > 0 ? byId[p.gameId] || memGames.find((m) => m.id === Number(p.gameId)) : null); return g && g.w > 0 ? g.w : Number(guestW[p.gameId]) || 0; };
 const wLevel = (w) => (w < 1.8 ? 0 : w < 2.4 ? 1 : w < 3.2 ? 2 : w < 4 ? 3 : 4);
 const playName = (p) => { const g = playGame(p); return g ? name(g) : String(p.game || '?'); };
 const srcTag = (p) => (p.guest ? '<span class="src guest">' + esc(T().guestTag) + '</span>' : '<span class="src club">' + esc(T().clubTag) + '</span>');
@@ -3153,6 +3155,13 @@ if (evParam && normEv(evParam).length >= 4) {
 // Stammtisch-Regel für Kalender und Beschreibung (erst hier, weil api() Konstanten von weiter unten braucht).
 api('GET', '/booking').then((r) => { bk = r; renderPtHow(); if (!$('pModal').hidden) applyEvDates(); }).catch(() => {});
 watch('/parties', (rows) => { parties = rows.map((p) => ({ id: p.id, p })); partyState = 'ready'; renderParties(); }, () => { partyState = 'off'; renderParties(); }, 15000);
+// Komplexität von Gastspielen nachladen, wenn eine Partie mit unbekanntem Wert dabei ist (höchstens alle 2 Minuten).
+let guestWAt = 0;
+function loadGuestWeights() {
+  if (!plays.some((p) => p.guest && Number(p.gameId) > 0 && !playWeight(p)) || Date.now() - guestWAt < 120000) return;
+  guestWAt = Date.now();
+  api('GET', '/games/weights').then((r) => { guestW = (r && r.weights) || {}; renderStats(); }).catch(() => {});
+}
 watch('/plays', (rows) => {
   playDocs = rows.map((p) => ({ id: p.id, p })); plays = rows; playCount = {};
   plays.forEach((p) => { if (!p.guest) playCount[p.gameId] = (playCount[p.gameId] || 0) + 1; });
@@ -3160,6 +3169,7 @@ watch('/plays', (rows) => {
   playedIds = new Set(plays.map((p) => Number(p.gameId)).filter(Boolean)); playedNames = new Set(plays.map((p) => String(p.game || '').trim().toLowerCase()).filter(Boolean));
   calcClubTime();
   dbState = 'ready'; renderPlays(); renderParties(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
+  loadGuestWeights();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
 watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
 watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);

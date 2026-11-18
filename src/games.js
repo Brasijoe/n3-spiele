@@ -132,6 +132,32 @@ export async function syncExtras(env) {
   return added;
 }
 
+// BGG-Komplexität (Gewicht 1–5) von Gastspielen, die weder in der Sammlung noch übernommen sind (für die Statistik).
+// Gemerkt in D1; 0 = BGG kennt keinen Wert (nicht erneut fragen). Fehlende werden höchstens 20 pro Aufruf nachgeholt.
+let weightsOk = false;
+async function ensureWeights(env) {
+  if (weightsOk) return;
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS game_weights (id INTEGER PRIMARY KEY, w REAL NOT NULL, updated_at TEXT NOT NULL)').run();
+  weightsOk = true;
+}
+export async function listGuestWeights(env) {
+  await ensureWeights(env);
+  const { results } = await env.DB.prepare('SELECT id, w FROM game_weights WHERE w > 0').all();
+  const out = {}; results.forEach((r) => { out[r.id] = r.w; });
+  return out;
+}
+export async function fillGuestWeights(env, max = 20) {
+  if (!env.BGG_TOKEN) return 0;
+  await ensureWeights(env); await ensureExtra(env);
+  const { results } = await env.DB.prepare('SELECT DISTINCT p.game_id AS id FROM plays p WHERE p.guest = 1 AND p.game_id > 0 AND p.game_id NOT IN (SELECT id FROM game_weights) AND p.game_id NOT IN (SELECT id FROM extra_games)').all();
+  let built = new Set(); try { built = await builtInIds(env); } catch { /* Seite nicht lesbar */ }
+  const missing = results.map((r) => r.id).filter((id) => !built.has(id)).slice(0, max);
+  if (!missing.length) return 0;
+  const games = await fetchThings(env, missing), now = new Date().toISOString(), got = new Map(games.map((g) => [g.id, g.w || 0]));
+  for (const id of missing) await env.DB.prepare('INSERT OR REPLACE INTO game_weights(id, w, updated_at) VALUES(?1, ?2, ?3)').bind(id, got.get(id) || 0, now).run();
+  return missing.length;
+}
+
 export async function listExtras(env) {
   await ensureExtra(env);
   const { results } = await env.DB.prepare('SELECT data FROM extra_games ORDER BY id').all();
