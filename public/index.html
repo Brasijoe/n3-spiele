@@ -719,8 +719,8 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <label style="display:flex;align-items:center;gap:10px;min-height:44px;font-weight:600;color:var(--fg)"><input type="checkbox" id="fFirst" style="width:20px;height:20px;accent-color:#c67c00"><span data-t="first"></span></label>
     <label class="field"><span data-t="winner"></span><input type="text" id="fWinner" maxlength="80"></label>
     <label class="field"><span data-t="note"></span><input type="text" id="fNote" maxlength="200"></label>
-    <label class="field" id="fByWrap" hidden><span data-t="byName"></span><input type="text" id="fBy" maxlength="40" autocomplete="nickname"><span class="note" data-t="byHint"></span></label>
     <div class="auth-box" id="fAuth" data-authbox></div>
+    <label class="field" id="fByWrap" hidden><span data-t="byName"></span><input type="text" id="fBy" maxlength="40" autocomplete="nickname"><span class="note" data-t="byHint"></span></label>
     <label class="field code" id="fCodeWrap"><span class="lbl"><span data-t="code"></span><button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button></span><input type="text" id="fCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false"><span class="note" data-t="codeHint"></span></label>
     <span id="fMsg" role="alert"></span>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px">
@@ -897,7 +897,7 @@ const TXT = {
     privacy: 'Datenschutz',
     footer: 'Cover, Bewertungen, Spielerzahlen, Komplexität und Kategorien stammen von BoardGameGeek.',
     date: 'Datum', nPlayers: 'Anzahl Spieler', winner: 'Gewonnen hat (optional)', note: 'Notiz (optional)', winnerPh: 'Name oder „alle (koop)“', notePh: 'z. B. Erstpartie, mit Erweiterung',
-    loginDiscord: 'Mit Discord anmelden', loginOr: 'oder einmalig mit deinem Code von /code:', loggedAs: 'Angemeldet als {n}', logout: 'Abmelden', logoutN: 'Abmelden ({n})', loginWait: 'Bitte im Discord-Fenster bestätigen …', loginPopup: 'Das Anmeldefenster wurde blockiert. Bitte Popups für diese Seite erlauben.',
+    loginDiscord: 'Mit Discord anmelden', loginOr: 'oder einmalig mit deinem Code von /code:', loginOrQr: 'Mit Discord kannst du die Partie später selbst ändern. Oder ohne Anmeldung nur mit deinem Namen:', loggedAs: 'Angemeldet als {n}', logout: 'Abmelden', logoutN: 'Abmelden ({n})', loginWait: 'Bitte im Discord-Fenster bestätigen …', loginPopup: 'Das Anmeldefenster wurde blockiert. Bitte Popups für diese Seite erlauben.',
     errLogin: 'Bitte zuerst anmelden (Discord oder Code).', errSession: 'Deine Anmeldung ist abgelaufen. Bitte neu anmelden.', errNotMember: 'Du bist nicht (mehr) auf dem N3-Discord-Server.', errNoRole: 'Dir fehlt auf dem Discord-Server die Brettspiel-Rolle.', errNoChannel: 'Du kannst den Brettspiel-Kanal auf dem Discord-Server nicht sehen.',
     edit: 'Bearbeiten', peTitle: 'Partie bearbeiten: {n}', ptEditTitle: 'Runde bearbeiten', ptSaveEdit: 'Speichern', ptSeatsTaken: 'Es sind schon mehr Leute dabei, als Plätze angegeben.', ptLoggedAlready: 'Die Runde ist schon als gespielt registriert.',
     ciTitle: 'Anmelden', ciP1: 'Zum Anlegen von Spielrunden und Eintragen von Partien meldest du dich einmal an, am einfachsten mit „Mit Discord anmelden“. Dein Browser bleibt angemeldet; deine eigenen Partien und Runden kannst du danach bearbeiten und löschen.', ciP2: 'Voraussetzung: Du bist auf dem N3-Discord-Server und kannst dort den Brettspiel-Kanal sehen (Brettspiel-Rolle). Wer den Server verlässt, wird abgemeldet.', ciP3: 'Ohne Discord-Anmeldung im Browser geht es auch mit einem Code: Tippe im Discord-Kanal #mitspieler-gesucht /code, der Bot schickt ihn dir (nur für dich sichtbar). Gib ihn hier einmal ein. Partien ohne Discord kannst du über den QR-Code im Club eintragen.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
@@ -1000,7 +1000,7 @@ const TXT = {
     privacy: 'Privacy policy',
     footer: 'Covers, ratings, player counts, complexity and categories come from BoardGameGeek.',
     date: 'Date', nPlayers: 'Number of players', winner: 'Winner (optional)', note: 'Note (optional)', winnerPh: 'Name or “everyone (co-op)”', notePh: 'e.g. first play, with expansion',
-    loginDiscord: 'Sign in with Discord', loginOr: 'or once with your code from /code:', loggedAs: 'Signed in as {n}', logout: 'Sign out', logoutN: 'Sign out ({n})', loginWait: 'Please confirm in the Discord window …', loginPopup: 'The sign-in window was blocked. Please allow pop-ups for this site.',
+    loginDiscord: 'Sign in with Discord', loginOr: 'or once with your code from /code:', loginOrQr: 'With Discord you can edit the play later yourself. Or without signing in, just with your name:', loggedAs: 'Signed in as {n}', logout: 'Sign out', logoutN: 'Sign out ({n})', loginWait: 'Please confirm in the Discord window …', loginPopup: 'The sign-in window was blocked. Please allow pop-ups for this site.',
     errLogin: 'Please sign in first (Discord or code).', errSession: 'Your sign-in has expired. Please sign in again.', errNotMember: 'You are not (or no longer) on the N3 Discord server.', errNoRole: 'You are missing the board game role on the Discord server.', errNoChannel: 'You cannot see the board game channel on the Discord server.',
     edit: 'Edit', peTitle: 'Edit play: {n}', ptEditTitle: 'Edit game', ptSaveEdit: 'Save', ptSeatsTaken: 'More people have already joined than that.', ptLoggedAlready: 'This game is already logged as played.',
     ciTitle: 'Sign in', ciP1: 'To create game rounds and log plays, sign in once, easiest with “Sign in with Discord”. Your browser stays signed in; afterwards you can edit and delete your own plays and rounds.', ciP2: 'Requirement: you are on the N3 Discord server and can see the board game channel there (board game role). Leaving the server signs you out.', ciP3: 'If Discord sign-in doesn’t work in your browser, use a code: type /code in the Discord channel #mitspieler-gesucht, the bot sends it to you (only visible to you). Enter it here once. Without Discord you can log plays via the QR code at the club.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
@@ -2854,13 +2854,13 @@ async function loadMy() {
   renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted();
 }
 function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
-function authHtml() {
+function authHtml(qr) {
   const t = T();
   if (me) return '<span>' + esc(fill(t.loggedAs, { n: me.name })) + '</span><button type="button" class="linkbtn" data-logout>' + esc(t.logout) + '</button>';
   return '<button type="button" class="btn btn-discord" data-login>' + DC_ICON + esc(t.loginDiscord) + '</button>' +
     '<button type="button" class="info-btn" data-codeinfo aria-label="Info">i</button>' +
     (loginTimer ? '<span class="note">' + esc(t.loginWait) + '</span>' : '') + (authMsg ? '<span class="err">' + esc(authMsg) + '</span>' : '') +
-    '<span class="or">' + esc(t.loginOr) + '</span>';
+    '<span class="or">' + esc(qr ? t.loginOrQr : t.loginOr) + '</span>';
 }
 // Discord-Symbol oben: Angemeldete springen direkt in den Kanal, alle anderen melden sich damit an.
 // Wer noch nicht auf dem Server ist, bekommt beim Anmelden einen Hinweis mit dem Einladungslink (joinDlg).
@@ -2893,7 +2893,9 @@ function renderAuth() {
   const html = authHtml();
   document.querySelectorAll('[data-authbox]').forEach((el) => { el.innerHTML = html; });
   const useKey = !!logKey && !me;
-  $('fAuth').hidden = useKey; $('fByWrap').hidden = !useKey; $('fCodeWrap').hidden = useKey || !!me;
+  // QR-Weg: Discord-Anmeldung trotzdem anbieten (mit Discord gehört die Partie dir und du kannst sie später ändern).
+  if (useKey) $('fAuth').innerHTML = authHtml(true);
+  $('fAuth').hidden = false; $('fByWrap').hidden = !useKey; $('fCodeWrap').hidden = useKey || !!me;
   const edit = typeof pEditId !== 'undefined' && !!pEditId, ev = typeof evMode !== 'undefined' && evMode;
   $('pAuth').hidden = edit || ev; $('pCodeWrap').hidden = edit || ev || !!me;
   $('meLink').hidden = !me; if (me) $('meLink').textContent = fill(T().logoutN, { n: me.name });
