@@ -26,6 +26,8 @@ DISCORD_GUILD_ID = "1569484372112052305"
 DISCORD_CHANNEL_ID = "1570837851422330943,1569484372757848238"
 # Kanal für „Hat jemand …?“-Suchen (#spiele-gesucht). Leer = erster DISCORD_CHANNEL_ID. Runden und Mitbring-Anfragen gehen in den ersten DISCORD_CHANNEL_ID (#mitspieler-gesucht).
 DISCORD_WANTED_CHANNEL_ID = "1570838181874503690"
+# Kanal für Kampagnen (Post pro Kampagne, daran ein privater Thread nur für die Mitspielenden). Leer = erster DISCORD_CHANNEL_ID.
+DISCORD_CAMPAIGN_CHANNEL_ID = ""
 # Optional: Rollen-ID (z. B. „Brettspiel“). Gesetzt = Anmeldung auf der Webseite nur mit dieser Rolle; leer = keine Rollenprüfung (Testserver hat keine Rollen).
 DISCORD_ROLE_ID = ""
 # Mitgliederrolle: Mitglieder dürfen Runden an jedem Tag anbieten, alle anderen nur an Stammtisch-Tagen (mit Vorstellung im Hinweis).
@@ -39,6 +41,7 @@ DISCORD_URL = "https://discord.gg/ax6H7v9UF"
 # DISCORD_GUILD_ID   = "1168441429345972285"
 # DISCORD_CHANNEL_ID = "1172228534194946148"          (#mitspieler-gesucht auf dem N3-Server, ID dort nachtragen)
 # DISCORD_WANTED_CHANNEL_ID = ""                        (#spiele-gesucht auf dem N3-Server, ID nachtragen)
+# DISCORD_CAMPAIGN_CHANNEL_ID = ""                      (optional: eigener Kampagnen-Kanal auf dem N3-Server)
 # DISCORD_URL        = "https://discord.com/invite/9BzjwUMW2T"
 # DISCORD_MEMBER_ROLE_ID = "1168456754305179718"   (Mitgliederrolle auf dem N3-Server; ggf. auch in der Verwaltung ändern)
 # Danach in der Verwaltung „Discord-Befehle registrieren“ klicken und den Bot auf den N3-Server einladen.
