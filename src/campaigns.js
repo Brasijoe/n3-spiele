@@ -25,11 +25,11 @@ export async function ensureCampaigns(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS campaigns (id TEXT PRIMARY KEY, game TEXT NOT NULL, game_id INTEGER, year INTEGER,
     host_discord TEXT NOT NULL, host_name TEXT NOT NULL, start_date TEXT NOT NULL, time TEXT NOT NULL, rule TEXT NOT NULL, sessions INTEGER NOT NULL,
     duration INTEGER, seats INTEGER NOT NULL, note TEXT NOT NULL DEFAULT '', open INTEGER NOT NULL DEFAULT 1, players TEXT NOT NULL DEFAULT '{}',
-    invited TEXT NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'active', discord_channel TEXT, discord_msg TEXT, discord_thread TEXT, thread_state TEXT, created_at TEXT NOT NULL, ended_at TEXT)`).run();
+    invited TEXT NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'active', discord_channel TEXT, discord_msg TEXT, discord_thread TEXT, thread_state TEXT, created_at TEXT NOT NULL, ended_at TEXT, outcome TEXT)`).run();
   // planned = Termin nach dem Rhythmus, date/time = tatsächlicher Termin (nach Verschieben). posted: 0 = noch nicht im Thread, 1 = gepostet, 2 = vorbei (Knöpfe entfernt).
   // prop = offener Vorschlag {kind: 'm' (verschieben) | 'x' (absagen), date, time, by, name, yes:[ids], no:[ids], msg, at}; cancelled = 1: Sitzung fällt aus (abgestimmt).; absent = IDs, die bei dieser Sitzung nicht können.
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS campaign_sessions (id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL, planned TEXT NOT NULL, date TEXT NOT NULL,
-    time TEXT NOT NULL, absent TEXT NOT NULL DEFAULT '[]', prop TEXT, discord_msg TEXT, posted INTEGER NOT NULL DEFAULT 0, cancelled INTEGER NOT NULL DEFAULT 0)`).run();
+    time TEXT NOT NULL, absent TEXT NOT NULL DEFAULT '[]', prop TEXT, discord_msg TEXT, posted INTEGER NOT NULL DEFAULT 0, cancelled INTEGER NOT NULL DEFAULT 0, play_id TEXT)`).run();
   await env.DB.prepare('CREATE INDEX IF NOT EXISTS campaign_sessions_c ON campaign_sessions(campaign_id, date)').run();
   tableOk = true;
 }
@@ -412,8 +412,9 @@ export async function tidyCampaigns(env) {
   const { results: fin } = await env.DB.prepare(`SELECT c.* FROM campaigns c WHERE c.status = 'active'
     AND c.start_date != '' AND NOT EXISTS (SELECT 1 FROM campaign_sessions s WHERE s.campaign_id = c.id AND s.cancelled = 0 AND s.date >= ?1) LIMIT 20`).bind(addDays(today, -DONE_DAYS)).all();
   for (const c of fin) {
-    await env.DB.prepare("UPDATE campaigns SET status = 'finished', ended_at = ?1 WHERE id = ?2 AND status = 'active'").bind(new Date().toISOString(), c.id).run();
-    await closeCampaignDiscord(env, c, await getSessions(env, c.id), 'Die Kampagne ist abgeschlossen. Danke fürs Mitspielen! 🎉', false);
+    await env.DB.prepare("UPDATE campaigns SET status = 'ended', ended_at = ?1, outcome = 'done' WHERE id = ?2 AND status = 'active'").bind(new Date().toISOString(), c.id).run();
+    const rows = await getSessions(env, c.id);
+    await closeCampaignDiscord(env, c, rows, 'Die Kampagne ist abgeschlossen. Danke fürs Mitspielen! 🎉\n' + statsText(await campStats(env, c, rows)), false);
   }
   return results.length + fin.length;
 }
@@ -481,6 +482,44 @@ function readInput(b, old) {
   return { game, gameId: b.gameId === undefined && old ? old.game_id : int(b.gameId), year: b.year === undefined && old ? old.year : int(b.year), start, time, rule, count, seats, duration, note: str(b.note, 500), open: b.open === undefined ? 1 : b.open ? 1 : 0 };
 }
 
+// ---------- Partien zu Sitzungen ----------
+// Eine eingetragene Partie gehört zur Sitzung (Eintragen aus der Sitzung heraus, wie bei Runden).
+export async function linkSessionPlay(env, sid, pid) {
+  await ensureCampaigns(env);
+  const r = await env.DB.prepare('UPDATE campaign_sessions SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(pid, sid).run();
+  return !!r.meta.changes;
+}
+// Ohne Bezug eingetragen (z. B. per QR-Code): Partie desselben Spiels am Sitzungstag oder am Tag danach gilt für die Sitzung.
+export async function linkCampaignPlays(env) {
+  await ensureCampaigns(env);
+  const today = berlinToday();
+  const { results } = await env.DB.prepare(`SELECT s.id AS sid, (
+      SELECT pl.id FROM plays pl WHERE pl.date >= s.date AND pl.date <= date(s.date, '+1 day')
+        AND ((pl.game_id IS NOT NULL AND pl.game_id = c.game_id) OR lower(trim(pl.game)) = lower(trim(c.game)))
+        AND NOT EXISTS (SELECT 1 FROM parties o WHERE o.play_id = pl.id) AND NOT EXISTS (SELECT 1 FROM campaign_sessions o WHERE o.play_id = pl.id)
+      ORDER BY pl.date, pl.created_at LIMIT 1) AS play
+    FROM campaign_sessions s JOIN campaigns c ON c.id = s.campaign_id
+    WHERE s.play_id IS NULL AND s.cancelled = 0 AND s.date >= ?1 AND s.date <= ?2 ORDER BY s.date LIMIT 60`).bind(addDays(today, -30), today).all();
+  let n = 0; const used = new Set();
+  for (const r of results) { if (!r.play || used.has(r.play)) continue; if (await linkSessionPlay(env, r.sid, r.play)) { used.add(r.play); n++; } }
+  return n;
+}
+// Statistik einer (beendeten) Kampagne.
+export async function campStats(env, c, rows) {
+  const today = berlinToday(), played = rows.filter((r) => r.date < today || r.play_id);
+  const cancelled = (await env.DB.prepare('SELECT COUNT(*) AS n FROM campaign_sessions WHERE campaign_id = ?1 AND cancelled = 1').bind(c.id).first()).n;
+  const ids = played.map((r) => r.play_id).filter(Boolean);
+  let plays = [];
+  if (ids.length) plays = (await env.DB.prepare(`SELECT id, duration, winner, players FROM plays WHERE id IN (${ids.map((_, i) => '?' + (i + 1)).join(',')})`).bind(...ids).all()).results;
+  const minutes = plays.reduce((a, p) => a + (Number(p.duration) || 0), 0), timed = plays.filter((p) => p.duration).length;
+  const wins = {};
+  for (const p of plays) for (const w of String(p.winner || '').split(/[,;&]| und /).map((x) => x.trim()).filter(Boolean)) wins[w] = (wins[w] || 0) + 1;
+  const att = people(c).map((x) => ({ name: x.name, n: played.filter((r) => !J(r.absent, []).includes(x.id)).length }));
+  return { played: played.length, logged: plays.length, cancelled, first: played.length ? played[0].date : null, last: played.length ? played[played.length - 1].date : null,
+    minutes, avgMinutes: timed ? Math.round(minutes / timed) : null, winners: Object.entries(wins).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, n]) => ({ name, n })), attendance: att };
+}
+const statsText = (st) => `📊 ${st.played} Sitzung${st.played === 1 ? '' : 'en'} gespielt${st.cancelled ? `, ${st.cancelled} ausgefallen` : ''}${st.first ? ` (${fmtDate(st.first)} bis ${fmtDate(st.last)})` : ''}${st.minutes ? `, zusammen ca. ${Math.round(st.minutes / 60)} Std.` : ''}.${st.winners.length ? ' Meiste Siege: ' + st.winners.slice(0, 3).map((w) => `${w.name} (${w.n})`).join(', ') + '.' : ''}`;
+
 function campOut(env, c, rows, uid, today = berlinToday()) {
   const pl = playersOf(c), name = (id) => (id === c.host_discord ? c.host_name : (pl[id] && pl[id].name) || '?');
   const ppl = people(c);
@@ -490,11 +529,12 @@ function campOut(env, c, rows, uid, today = berlinToday()) {
     phase: tbd(c) ? 'new' : phase(rows, today), tbd: tbd(c), plannedSessions: c.sessions, done: rows.filter((r) => r.date < today).length, createdAt: c.created_at, url: tLink(env, c),
     list: rows.map((s) => {
       const p = J(s.prop, null), ab = J(s.absent, []);
-      return { id: s.id, date: s.date, time: s.time, moved: s.date !== s.planned || s.time !== c.time, absent: ab.map(name),
+      return { id: s.id, date: s.date, time: s.time, playId: s.play_id || null, moved: s.date !== s.planned || s.time !== c.time, absent: ab.map(name),
         prop: p ? { cancel: p.kind === 'x', date: p.date, time: p.time, by: p.name, yes: p.yes.map(name), no: p.no.map(name), open: ppl.filter((x) => !p.yes.includes(x.id) && !p.no.includes(x.id)).map((x) => x.name) } : null,
         you: uid ? { absent: ab.includes(uid), vote: p ? (p.yes.includes(uid) ? 'y' : p.no.includes(uid) ? 'n' : '') : '', mine: !!(p && p.by === uid) } : null };
     }),
     you: uid ? { host: uid === c.host_discord, in: isIn(c, uid) } : null,
+    ended: c.status !== 'active', endedAt: c.ended_at || null, outcome: c.outcome || null,
   };
 }
 
@@ -518,9 +558,14 @@ export async function campaignRoute(req, env, ctx, path, m, ip, h) {
     let uid = null;
     if (req.headers.get('x-session')) { const u = await checkMember(req, env, ip); if (!u.err) uid = u.member.discord_id; }
     const today = berlinToday();
-    const { results } = await env.DB.prepare("SELECT * FROM campaigns WHERE status = 'active' ORDER BY start_date LIMIT 100").all();
+    // Aktive Kampagnen und die beendeten des letzten Jahres (mit Statistik).
+    const { results } = await env.DB.prepare("SELECT * FROM campaigns WHERE status = 'active' OR (status != 'active' AND ended_at >= ?1) ORDER BY start_date LIMIT 150").bind(addDays(today, -365)).all();
     const out = [];
-    for (const c of results) out.push(campOut(env, c, await getSessions(env, c.id), uid, today));
+    for (const c of results) {
+      const rows = await getSessions(env, c.id), o = campOut(env, c, rows, uid, today);
+      if (o.ended) o.stats = await campStats(env, c, rows);
+      out.push(o);
+    }
     return json(out);
   }
   if (path === '/campaigns' && m === 'POST') {
@@ -562,12 +607,25 @@ export async function campaignRoute(req, env, ctx, path, m, ip, h) {
     })());
     return json({ ok: true });
   }
+  // Beenden (Standard): bleibt mit Statistik unter „Beendete Kampagnen“. Mit ?purge=1 ganz löschen (Partien bleiben in der Statistik).
   if ((g = path.match(/^\/campaigns\/([\w-]+)$/)) && m === 'DELETE') {
-    const c = await getCamp(env, g[1]); if (!c || c.status !== 'active') return json({ ok: true });
+    const c = await getCamp(env, g[1]); if (!c) return json({ ok: true });
     const who = await ownerOrAdmin(c); if (who.res) return who.res;
-    await env.DB.prepare("UPDATE campaigns SET status = 'ended', ended_at = ?1 WHERE id = ?2").bind(new Date().toISOString(), c.id).run();
-    const rows = await getSessions(env, c.id);
-    if (env.DISCORD_BOT_TOKEN) bg(closeCampaignDiscord(env, c, rows, `Die Kampagne wurde von ${who.admin ? 'der Verwaltung' : c.host_name} beendet.`, true));
+    // outcome: 'done' = zu Ende gespielt, 'aborted' = abgebrochen (Abfrage beim Beenden).
+    const qs = new URL(req.url).searchParams, purge = qs.get('purge') === '1', today = berlinToday(), outcome = qs.get('outcome') === 'done' ? 'done' : 'aborted';
+    if (c.status === 'active') {
+      // Künftige Sitzungen fallen weg; heute und früher bleiben (für Eintragen und Statistik).
+      await env.DB.prepare('DELETE FROM campaign_sessions WHERE campaign_id = ?1 AND date > ?2 AND play_id IS NULL').bind(c.id, today).run();
+      await env.DB.prepare("UPDATE campaigns SET status = 'ended', ended_at = ?1, outcome = ?2 WHERE id = ?3").bind(new Date().toISOString(), outcome, c.id).run();
+      const rows = await getSessions(env, c.id), by = who.admin ? 'der Verwaltung' : c.host_name;
+      const txt = purge ? `Die Kampagne wurde von ${by} gelöscht.` : outcome === 'done' ? `🎉 Zu Ende gespielt! ${by} hat die Kampagne abgeschlossen. Danke fürs Mitspielen!` : `Die Kampagne wurde von ${by} abgebrochen.`;
+      const full = txt + (rows.some((r) => r.date < today) ? '\n' + statsText(await campStats(env, c, rows)) : '');
+      if (env.DISCORD_BOT_TOKEN) bg(closeCampaignDiscord(env, c, rows, full, true));
+    }
+    if (purge) {
+      await env.DB.prepare('DELETE FROM campaign_sessions WHERE campaign_id = ?1').bind(c.id).run();
+      await env.DB.prepare('DELETE FROM campaigns WHERE id = ?1').bind(c.id).run();
+    }
     return json({ ok: true });
   }
   if ((g = path.match(/^\/campaigns\/([\w-]+)\/(join|leave)$/)) && m === 'POST') {

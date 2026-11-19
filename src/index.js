@@ -3,7 +3,7 @@ import { syncExtras, listExtras, coverResponse, listGuestWeights, fillGuestWeigh
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
-import { campaignRoute, postDueSessions, tidyCampaigns } from './campaigns.js';
+import { campaignRoute, postDueSessions, tidyCampaigns, linkSessionPlay, linkCampaignPlays } from './campaigns.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations, refreshOverview, tidyChannel, renameThreads, linkLoggedPlays } from './discord.js';
 
@@ -160,9 +160,10 @@ async function route(req, env, ctx, url) {
     const id = newId();
     await env.DB.prepare('INSERT INTO plays(id, game_id, game, guest, year, date, players, winner, note, duration, first_play, created_at, logged_by, via, by_discord, names) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)')
       .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, players, str(b.winner, 80), str(b.note, 200), duration, b.firstPlay ? 1 : 0, new Date().toISOString(), by, viaQr ? 'qr' : 'web', byId, str(b.names, 300) || null).run();
-    if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
+    if (b.sessionId) await linkSessionPlay(env, str(b.sessionId, 40), id);
+    else if (b.partyId) { await env.DB.prepare('UPDATE parties SET play_id = ?1 WHERE id = ?2 AND play_id IS NULL').bind(id, str(b.partyId, 40)).run(); if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, str(b.partyId, 40)))); }
     // Ohne Runde eingetragen (z. B. per QR-Code): passende offene Runde desselben Tages als gespielt markieren.
-    else bg(ctx, ensureCols(env).then(() => linkLoggedPlays(env)));
+    else bg(ctx, ensureCols(env).then(() => linkLoggedPlays(env)).then(() => linkCampaignPlays(env)));
     return json({ id });
   }
   if ((g = path.match(/^\/plays\/([\w-]+)$/)) && m === 'PUT') {
@@ -485,6 +486,7 @@ export default {
       ctx.waitUntil((async () => {
         try { await ensureCols(env); const n = await sweepReservations(env); if (n) console.log('reservations expired', n); } catch (e) { console.log('reservation sweep failed', e.code || e.message); }
         try { const n = await linkLoggedPlays(env); if (n) console.log('rounds linked to plays', n); } catch (e) { console.log('round link failed', e.code || e.message); }
+        try { const n = await linkCampaignPlays(env); if (n) console.log('campaign sessions linked to plays', n); } catch (e) { console.log('campaign link failed', e.code || e.message); }
         // Kampagnen: Sitzungen eine Woche vorher im Thread posten.
         try { const n = await postDueSessions(env); if (n) console.log('campaign sessions posted', n); } catch (e) { console.log('campaign sessions failed', e.code || e.message); }
         // Übersicht offener Runden aktuell halten (bearbeitet nur, wenn sich etwas geändert hat, z. B. nach Mitternacht).

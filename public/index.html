@@ -359,6 +359,11 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .cp-rule { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
 .cp-rule select, .cp-rule input { min-height: 44px; }
 .cp-chk { display: flex; align-items: center; gap: 10px; min-height: 40px; font-weight: 600; color: var(--fg); }
+.cp-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.presult.cp-stats strong span { white-space: normal; overflow: visible; }
+.cp-more summary { cursor: pointer; font-size: 13px; color: var(--muted); font-weight: 700; padding: 4px 0; }
+.cp-more[open] summary { margin-bottom: 8px; }
+@media (max-width: 520px) { .cp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .cp-chk input { width: 20px; height: 20px; accent-color: var(--camp); }
 @media (max-width: 520px) { .subtabs a { padding: 8px 10px; font-size: 15px; } }
 .party { background: var(--surface); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
@@ -673,6 +678,8 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <p class="meta" id="ptState" style="margin:0"></p>
     <h2 class="sec-h" data-t="ptUpcoming"></h2>
     <div class="parties rounds" id="ptUpcoming"></div>
+    <h2 class="sec-h" id="ptCampH" data-t="ptCamp" hidden></h2>
+    <div class="parties camps" id="ptCamp"></div>
     <h2 class="sec-h" id="ptPastH" data-t="ptPast"></h2>
     <div class="parties rounds" id="ptPast"></div>
   </div>
@@ -694,6 +701,8 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <div class="parties camps" id="cpNewList"></div>
     <h2 class="sec-h" id="cpRunH" data-t="cpRunH"></h2>
     <div class="parties camps" id="cpRunList"></div>
+    <h2 class="sec-h" id="cpEndH" data-t="cpEndH"></h2>
+    <div class="parties camps" id="cpEndList"></div>
   </div>
 </main>
 
@@ -1350,6 +1359,12 @@ Object.assign(TXT.en, { subCamps: 'Campaigns', cpTitle: 'Find campaign players',
   cpEditNote: 'If you change start or rhythm, all upcoming dates are recalculated (individual reschedules are lost).',
   cpPropT: 'Suggest another date', cpPropTxt: 'Session {n}, currently {d}. Everyone in the campaign votes (here or in the Discord thread); if all agree or the organiser applies it, the session moves.', cpApplyLbl: 'Apply right away (no vote)', cpPropSend: 'Suggest', cpPropDone: 'Suggestion sent ✓', cpApplied: 'Rescheduled ✓',
   cpErr: { members_only: 'Only members can start campaigns. Without the member role you can join if all sessions are on regular club nights or if someone invites you on Discord.', closed: 'This campaign is not looking for players right now.', full: 'Sorry, all seats are taken.', ended: 'This campaign is over.', past: 'The start date is in the past.', invalid: 'Please check all fields.', seats_taken: 'That many players are already in; you can’t reduce the seats further.', bad_date: 'Please pick a date from today on.', bad_time: 'Please enter a time.', same: 'That is already the current date.', past_session: 'This session is already over.', not_in: 'Only campaign players can do that.', started: 'The campaign has started already; the date can’t be open any more.', no_prop: 'That suggestion is already settled.' } });
+Object.assign(TXT.de, { ptCamp: 'Kampagnenrunden', cpRoundTag: 'Kampagne · Sitzung {n} von ca. {m}', cpPastTag: 'Kampagne · {n} gespielt', cpPlayedDates: 'Gespielte Termine', cpGo: 'Zur Kampagne', cpEndH: 'Beendete Kampagnen',
+  cpEndQ: 'Wie ist die Kampagne ausgegangen?', cpEndDoneBtn: 'Zu Ende gespielt', cpEndAbortBtn: 'Abgebrochen', cpEndDone: 'Zu Ende gespielt · {d}', cpEndAbort: 'Abgebrochen · {d}', cpDone: 'Zu Ende gespielt', cpAborted: 'Abgebrochen',
+  cpPurge: 'Löschen', cpStPlayed: 'Partien', cpStMin: 'Spielzeit gesamt', cpStMinV: '{h} Std. ({m} Min.)', cpStAvg: 'Ø pro Partie', cpStCancel: 'Ausgefallen', cpStLogged: 'Eingetragen', cpStPeriod: 'Zeitraum', cpStWins: 'Meiste Siege', cpStAtt: 'Dabei' });
+Object.assign(TXT.en, { ptCamp: 'Campaign sessions', cpRoundTag: 'Campaign · session {n} of about {m}', cpPastTag: 'Campaign · {n} played', cpPlayedDates: 'Played sessions', cpGo: 'Open campaign', cpEndH: 'Finished campaigns',
+  cpEndQ: 'How did the campaign end?', cpEndDoneBtn: 'Played to the end', cpEndAbortBtn: 'Abandoned', cpEndDone: 'Played to the end · {d}', cpEndAbort: 'Abandoned · {d}', cpDone: 'Completed', cpAborted: 'Abandoned',
+  cpPurge: 'Delete', cpStPlayed: 'Sessions', cpStMin: 'Total play time', cpStMinV: '{h} h ({m} min)', cpStAvg: 'Avg per session', cpStCancel: 'Cancelled', cpStLogged: 'Logged', cpStPeriod: 'Period', cpStWins: 'Most wins', cpStAtt: 'Attendance' });
 const T = () => TXT[S.lang];
 const de = () => S.lang === 'de';
 const name = (g) => (de() ? g.nDe : g.nEn);
@@ -1954,7 +1969,7 @@ $('logForm').addEventListener('submit', async (e) => {
   try {
     if (!useKey) await ensureLogin(code);
     await api('POST', '/plays', { guest: !!logGame.guest, year: logGame.guest ? (logGame.y || null) : null, gameId: logGame.id, game: logGame.nDe, date: $('fDate').value, players: Number($('fPlayers').value) || 0,
-      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty || undefined, names: logParty ? logNames || undefined : undefined, by: useKey ? by : undefined }, useKey ? { 'X-Log-Key': logKey } : {});
+      winner: $('fWinner').value.trim().slice(0, 80), note: $('fNote').value.trim().slice(0, 200), duration: dur, firstPlay: $('fFirst').checked, partyId: logParty && !String(logParty).startsWith('cs:') ? logParty : undefined, sessionId: logParty && String(logParty).startsWith('cs:') ? String(logParty).slice(3) : undefined, names: logParty ? logNames || undefined : undefined, by: useKey ? by : undefined }, useKey ? { 'X-Log-Key': logKey } : {});
     if (useKey) lsSet('n3-log-name', by); refreshAll();
     msg.textContent = t.saved; setTimeout(() => { closeLog(); if (useKey) { if (location.hash !== '#statistik') location.hash = '#statistik'; setTimeout(() => $('recH').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); } }, 600);
   } catch (err) {
@@ -2371,13 +2386,20 @@ function renderParties() {
   const lim = isoDay(new Date(Date.now() - 30 * 864e5));
   const past = parties.filter((x) => String(x.p.date) < td && String(x.p.date) >= lim);
   $('ptUpcoming').innerHTML = up.length ? up.map((x) => partyCard(x, false)).join('') : partyState === 'ready' ? '<p class="st-empty">' + esc(t.ptNone) + '</p>' : '';
-  $('ptPast').innerHTML = past.map((x) => partyCard(x, true)).join('');
+  const cl = Array.isArray(camps) ? camps : [], cpPast = cl.map(cpPastItem).filter(Boolean);
+  const items = past.map((x) => ({ d: String(x.p.date), h: partyCard(x, true) })).concat(cpPast).sort((a, b) => b.d.localeCompare(a.d));
+  $('ptPast').innerHTML = items.map((x) => x.h).join('');
+  const cr = cl.filter((c) => !c.ended && c.list.some((s) => s.date >= td)).sort((a, b) => { const na = a.list.find((s) => s.date >= td), nb = b.list.find((s) => s.date >= td); return (na.date + na.time).localeCompare(nb.date + nb.time); });
+  $('ptCamp').innerHTML = cr.map(cpRoundCard).join(''); $('ptCampH').hidden = !cr.length;
   $('cntRounds').textContent = partyState === 'ready' ? String(up.length) : '';
-  $('ptPastH').hidden = !past.length;
+  $('ptPastH').hidden = !items.length;
   renderCamps();
 }
 $('viewParties').addEventListener('click', async (e) => {
   const t = T(); let b;
+  if ((b = e.target.closest('[data-cplog]'))) { cpOpenLog(b.dataset.c, b.dataset.cplog); return; }
+  if ((b = e.target.closest('#subRounds [data-cpabs]'))) { b.disabled = true; try { await api('POST', '/campaigns/s/' + b.dataset.cpabs + '/absent', { on: b.dataset.on === '1' }); } catch (x) {} refreshAll(); return; }
+  if ((b = e.target.closest('[data-cpgo]'))) { e.preventDefault(); try { history.replaceState(null, '', '#kampagnen'); } catch (x) { location.hash = 'kampagnen'; } renderView(); renderCamps(); window.scrollTo(0, 0); return; }
   if ((b = e.target.closest('button[data-pe]'))) { openPlayEdit(b.dataset.pe); return; }
   if ((b = e.target.closest('[data-pjoin]'))) { joinOpen = b.dataset.pjoin; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
   if (e.target.closest('[data-pjoincancel]')) { joinOpen = null; renderParties(); return; }
@@ -2984,8 +3006,11 @@ function cpCard(c) {
   let actions = '';
   if (!inn && free && c.open && c.phase !== 'done') actions += '<button type="button" class="btn btn-primary" data-cpjoin="' + esc(c.id) + '">' + esc(t.cpJoin) + '</button>';
   if (inn && !host) actions += '<button type="button" class="btn btn-quiet" data-cpleave="' + esc(c.id) + '">' + esc(t.cpLeave) + '</button>';
-  if (host || canEdit) actions += '<button type="button" class="btn btn-quiet" data-cpedit="' + esc(c.id) + '">' + esc(t.cpEdit) + '</button>' +
-    '<button type="button" class="btn ' + (cpPend === 'e' + c.id ? 'btn-primary' : 'btn-quiet') + '" data-cpend="' + esc(c.id) + '">' + esc(cpPend === 'e' + c.id ? t.delConfirm : t.cpEnd) + '</button>';
+  if ((host || canEdit) && cpPend === 'e' + c.id) actions += '<span class="meta" style="flex-basis:100%">' + esc(t.cpEndQ) + '</span><button type="button" class="btn btn-primary" data-cpendo="done" data-id="' + esc(c.id) + '">' + esc(t.cpEndDoneBtn) + '</button>' +
+    '<button type="button" class="btn btn-quiet" data-cpendo="aborted" data-id="' + esc(c.id) + '">' + esc(t.cpEndAbortBtn) + '</button><button type="button" class="btn btn-quiet" data-cpendx>' + esc(t.cancel) + '</button>';
+  else if (host || canEdit) actions += '<button type="button" class="btn btn-quiet" data-cpedit="' + esc(c.id) + '">' + esc(t.cpEdit) + '</button>' +
+    '<button type="button" class="btn btn-quiet" data-cpend="' + esc(c.id) + '">' + esc(t.cpEnd) + '</button>' +
+    '<button type="button" class="btn ' + (cpPend === 'p' + c.id ? 'btn-primary' : 'btn-quiet') + '" data-cppurge="' + esc(c.id) + '">' + esc(cpPend === 'p' + c.id ? t.delConfirm : t.cpPurge) + '</button>';
   if (inn && c.url) actions += '<a class="btn btn-quiet" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(t.cpThread) + '</a>';
   return '<article class="party"><div class="top">' + thumbHtml({ guest: true, gameId: c.gameId }, c.gameId ? byId[c.gameId] : null, c.game) + '<div><span class="when">' + esc(head) + '</span><h3>' + esc(c.game) + (c.year ? ' <span class="meta">(' + c.year + ')</span>' : '') + '</h3><span class="src camp">' + esc(chip) + '</span></div></div>' +
     '<div class="body"><div class="cp-line">' + esc(line) + '</div>' +
@@ -3000,12 +3025,14 @@ function cpCard(c) {
 }
 function renderCamps() {
   const t = T(); if (!$('cpNewList') || !Array.isArray(camps)) return;
-  const nw = camps.filter((c) => c.phase === 'new'), run = camps.filter((c) => c.phase !== 'new');
+  const act = camps.filter((c) => !c.ended), ended = camps.filter((c) => c.ended).sort((a, b) => String(b.endedAt).localeCompare(String(a.endedAt)));
+  const nw = act.filter((c) => c.phase === 'new'), run = act.filter((c) => c.phase !== 'new');
+  $('cpEndList').innerHTML = ended.map(cpEndedCard).join(''); $('cpEndH').hidden = !ended.length;
   $('cpState').hidden = cpState === 'ready'; $('cpState').textContent = cpState === 'off' ? t.recentOff : '…';
-  $('cpNewList').innerHTML = nw.length ? nw.map(cpCard).join('') : cpState === 'ready' && !run.length ? '<p class="st-empty">' + esc(t.cpNone) + '</p>' : '';
+  $('cpNewList').innerHTML = nw.length ? nw.map(cpCard).join('') : cpState === 'ready' && !run.length && !ended.length ? '<p class="st-empty">' + esc(t.cpNone) + '</p>' : '';
   $('cpRunList').innerHTML = run.map(cpCard).join('');
   $('cpNewH').hidden = !nw.length && !!run.length; $('cpRunH').hidden = !run.length;
-  $('cntCamps').textContent = cpState === 'ready' ? String(camps.filter((c) => c.phase !== 'done').length) : '';
+  $('cntCamps').textContent = cpState === 'ready' ? String(act.filter((c) => c.phase !== 'done').length) : '';
 }
 async function cpCall(id, method, path, body) {
   delete cpMsgs[id];
@@ -3018,9 +3045,12 @@ $('subCamps').addEventListener('click', async (e) => {
   if ((b = e.target.closest('[data-cpjoin]'))) { if (!me) { startLogin(); return; } b.disabled = true; await cpCall(b.dataset.cpjoin, 'POST', '/campaigns/' + b.dataset.cpjoin + '/join', {}); return; }
   if ((b = e.target.closest('[data-cpleave]'))) { b.disabled = true; await cpCall(b.dataset.cpleave, 'POST', '/campaigns/' + b.dataset.cpleave + '/leave', {}); return; }
   if ((b = e.target.closest('[data-cpedit]'))) { openCampaign(camps.find((c) => c.id === b.dataset.cpedit)); return; }
-  if ((b = e.target.closest('[data-cpend]'))) {
-    const id = b.dataset.cpend; if (cpPend !== 'e' + id) { cpPend = 'e' + id; renderCamps(); return; }
-    cpPend = null; await cpCall(id, 'DELETE', '/campaigns/' + id); camps = camps.filter((c) => c.id !== id); renderCamps(); return;
+  if ((b = e.target.closest('[data-cpend]'))) { cpPend = 'e' + b.dataset.cpend; renderCamps(); return; }
+  if (e.target.closest('[data-cpendx]')) { cpPend = null; renderCamps(); return; }
+  if ((b = e.target.closest('[data-cpendo]'))) { cpPend = null; b.disabled = true; await cpCall(b.dataset.id, 'DELETE', '/campaigns/' + b.dataset.id + '?outcome=' + b.dataset.cpendo); return; }
+  if ((b = e.target.closest('[data-cppurge]'))) {
+    const id = b.dataset.cppurge; if (cpPend !== 'p' + id) { cpPend = 'p' + id; renderCamps(); return; }
+    cpPend = null; if (await cpCall(id, 'DELETE', '/campaigns/' + id + '?purge=1')) { camps = camps.filter((c) => c.id !== id); renderCamps(); } return;
   }
   if ((b = e.target.closest('[data-cpabs]'))) { b.disabled = true; await cpCall(card(b.dataset.cpabs), 'POST', '/campaigns/s/' + b.dataset.cpabs + '/absent', { on: b.dataset.on === '1' }); return; }
   if ((b = e.target.closest('[data-cpmove]'))) { openCpProp(b.dataset.c, b.dataset.cpmove); return; }
@@ -3119,6 +3149,71 @@ $('cpPForm').addEventListener('submit', async (e) => {
     msg.className = 'ok'; msg.textContent = r && r.applied ? t.cpApplied : t.cpPropDone; refreshAll(); setTimeout(() => { if ($('cpPDlg').open) $('cpPDlg').close(); }, 1200);
   } catch (x) { msg.className = 'err'; msg.textContent = cpErrTxt(x); }
 });
+/* Kampagnen in „Mitspieler gesucht“: nächste Sitzung je Kampagne („Kampagnenrunden“) und eine Karte pro Kampagne unter „Vergangene Runden“. */
+const cpGameObj = (c) => (c.gameId && byId[c.gameId]) || { guest: true, id: c.gameId || null, nDe: c.game, nEn: c.game, y: c.year || null, p1: 1, p2: 30 };
+const cpNames = (c, s) => [c.host].concat(c.players).filter((n) => !(s.absent || []).includes(n));
+function cpLogBtn(c, s, cls) {
+  const t = T(), inn = !!(c.you && c.you.in);
+  if (s.playId || String(s.date) > todayIso() || !(inn || canEdit)) return '';
+  return '<button type="button" class="btn ' + (cls || 'btn-outline') + '" data-cplog="' + esc(s.id) + '" data-c="' + esc(c.id) + '">' + esc(t.ptLog) + '</button>';
+}
+function cpRoundCard(c) {
+  const t = T(), td = todayIso(), i = c.list.findIndex((s) => s.date >= td), s = c.list[i]; if (!s) return '';
+  const you = s.you || {}, inn = !!(c.you && c.you.in), names = cpNames(c, s);
+  let actions = '';
+  if (inn) actions += '<button type="button" class="btn btn-quiet" data-cpabs="' + esc(s.id) + '" data-on="' + (you.absent ? 0 : 1) + '">' + esc(you.absent ? t.cpCan : t.cpCant) + '</button>';
+  actions += cpLogBtn(c, s, 'btn-primary');
+  actions += '<a class="btn btn-quiet" href="#kampagnen" data-cpgo>' + esc(t.cpGo) + '</a>';
+  return '<article class="party"><div class="top">' + thumbHtml({ guest: true, gameId: c.gameId }, c.gameId ? byId[c.gameId] : null, c.game) + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(s.date), t: s.time })) + '</span><h3>' + esc(c.game) + '</h3><span class="src camp">' + esc(fill(t.cpRoundTag, { n: i + 1, m: c.sessions })) + '</span></div></div>' +
+    '<div class="body"><div class="who"><span class="pill host">' + esc(c.host) + ' · ' + esc(t.cpHostTag) + '</span>' + c.players.map((x) => '<span class="pill"' + ((s.absent || []).includes(x) ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x) + '</span>').join('') + '</div>' +
+    '<span class="meta">' + esc(fill(t.ptPlayers, { n: names.length }) + (s.absent.length ? ' · ' + fill(t.cpAbsent, { n: s.absent.join(', ') }) : '')) + '</span>' +
+    (s.prop ? '<span class="meta">' + esc(s.prop.cancel ? fill(t.cpPropCancel, { b: s.prop.by }) : fill(t.cpPropMove, { b: s.prop.by, d: dayLabel(s.prop.date) + ' · ' + s.prop.time })) + '</span>' : '') +
+    '<div class="actions">' + actions + '</div></div></article>';
+}
+// Vergangene Kampagnenrunden: letzte Runde wie eine normale vergangene Runde, darunter die Liste der gespielten Termine.
+// Bleibt, solange die Kampagne läuft; nach dem Ende noch 30 Tage (wie Runden).
+function cpPastItem(c) {
+  const t = T(), td = todayIso(), past = c.list.filter((s) => s.date < td); if (!past.length) return null;
+  if (c.ended && c.endedAt && c.endedAt.slice(0, 10) < isoDay(new Date(Date.now() - 30 * 864e5))) return null;
+  const last = past[past.length - 1], pl = last.playId ? plays.find((r) => String(r.id) === String(last.playId)) : null;
+  const names = pl && pl.names ? String(pl.names).split(',').map((x) => x.trim()).filter(Boolean) : cpNames(c, last);
+  const days = Math.round((new Date(td + 'T12:00:00') - new Date(last.date + 'T12:00:00')) / 864e5);
+  let actions = cpLogBtn(c, last);
+  if (pl && (canEdit || isMine('plays', pl.id))) actions += '<button type="button" class="btn btn-quiet" data-pe="' + esc(pl.id) + '">' + esc(t.ptEditPlay) + '</button>';
+  const row = (s) => { const n = c.list.indexOf(s) + 1; return '<li><div class="r1"><strong>' + esc(fill(t.cpNo, { n })) + '</strong><span>' + esc(dayLabel(s.date) + ' · ' + s.time) + '</span>' + (s.playId ? '<span class="pchip ok">' + ICO_OK + esc(t.ptPlayed) + '</span>' : (s === last ? '' : cpLogBtn(c, s, 'btn-quiet mini'))) + '</div></li>'; };
+  // Neueste 4 Termine direkt, der Rest aufklappbar.
+  const rev = past.slice().reverse();
+  const lst = rev.slice(0, 4).map(row).join('') + (rev.length > 4 ? '</ul><details class="cp-more"><summary>' + esc(fill(t.cpAll, { n: rev.length })) + '</summary><ul class="cp-sess">' + rev.slice(4).map(row).join('') + '</ul></details><ul class="cp-sess" hidden>' : '');
+  const h = '<article class="party past"><div class="top">' + thumbHtml({ guest: true, gameId: c.gameId }, c.gameId ? byId[c.gameId] : null, c.game) + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(last.date), t: last.time }) + ' · ' + (days === 1 ? t.ptYesterday : fill(t.ptAgo, { n: days }))) + '</span><h3>' + esc(c.game) + '</h3>' +
+    (last.playId ? '<span class="pchip ok">' + ICO_OK + esc(t.ptPlayed) + '</span>' : '<span class="pchip warn">' + ICO_PEN + esc(t.ptNotLogged) + '</span>') + ' <span class="src camp">' + esc(fill(t.cpPastTag, { n: past.length })) + '</span></div></div>' +
+    '<div class="body">' + (pl ? '<div class="presult"><div><small>' + esc(t.ptWon) + '</small><strong>' + ICO_CUP + '<span>' + esc(pl.winner || '–') + '</span></strong></div><div><small>' + esc(t.ptDur) + '</small><strong>' + ICO_CLOCK + '<span>' + esc(pl.duration ? fill(t.ptMin, { n: pl.duration }) : '–') + '</span></strong></div><div><small>' + esc(t.ptPl) + '</small><strong>' + ICO_PPL + '<span>' + esc(String(pl.players || names.length)) + '</span></strong></div></div>'
+      : '<div class="players">' + ICO_PPL + esc(fill(t.ptPlayers, { n: names.length })) + '</div>') + '<div class="names">' + esc(names.join(', ')) + '</div>' +
+    '<p class="cp-h">' + esc(t.cpPlayedDates) + '</p><ul class="cp-sess">' + lst + '</ul>' + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
+  return { d: last.date, h };
+}
+function cpOpenLog(cid, sid) {
+  const c = camps.find((x) => x.id === cid); if (!c) return; const s = c.list.find((x) => x.id === sid); if (!s) return;
+  openLog(cpGameObj(c)); logParty = 'cs:' + sid;
+  const names = cpNames(c, s); $('fDate').value = s.date; $('fPlayers').value = names.length || 1; logNames = names.join(', ').slice(0, 300);
+}
+// Beendete Kampagne: Ergebnis (zu Ende gespielt / abgebrochen) und Statistik.
+function cpEndedCard(c) {
+  const t = T(), st = c.stats || {}, host = !!(c.you && c.you.host) || canEdit;
+  const box = (k, v) => '<div><small>' + esc(k) + '</small><strong><span>' + esc(v) + '</span></strong></div>';
+  const hrs = st.minutes ? (Math.round(st.minutes / 6) / 10).toString().replace('.', de() ? ',' : '.') : '';
+  const boxes = box(t.cpStPlayed, String(st.played || 0)) + box(t.cpStMin, st.minutes ? fill(t.cpStMinV, { m: st.minutes, h: hrs }) : '–') + box(t.cpStAvg, st.avgMinutes ? fill(t.ptMin, { n: st.avgMinutes }) : '–') +
+    box(t.cpStCancel, String(st.cancelled || 0)) + box(t.cpStLogged, String(st.logged || 0)) + box(t.cpStPeriod, st.first ? dmy(st.first) + ' – ' + dmy(st.last) : '–');
+  const head = fill(c.outcome === 'done' ? t.cpEndDone : t.cpEndAbort, { d: c.endedAt ? dmy(c.endedAt.slice(0, 10)) : '' });
+  let actions = '';
+  if (host) actions += '<button type="button" class="btn ' + (cpPend === 'p' + c.id ? 'btn-primary' : 'btn-quiet') + '" data-cppurge="' + esc(c.id) + '">' + esc(cpPend === 'p' + c.id ? t.delConfirm : t.cpPurge) + '</button>';
+  return '<article class="party past"><div class="top">' + thumbHtml({ guest: true, gameId: c.gameId }, c.gameId ? byId[c.gameId] : null, c.game) + '<div><span class="when">' + esc(head) + '</span><h3>' + esc(c.game) + (c.year ? ' <span class="meta">(' + c.year + ')</span>' : '') + '</h3>' +
+    (c.outcome === 'done' ? '<span class="pchip ok">' + ICO_OK + esc(t.cpDone) + '</span>' : '<span class="pchip warn">' + esc(t.cpAborted) + '</span>') + '</div></div>' +
+    '<div class="body"><div class="presult cp-stats">' + boxes + '</div>' +
+    (st.winners && st.winners.length ? '<span class="meta">' + esc(t.cpStWins + ': ' + st.winners.map((w) => w.name + ' (' + w.n + ')').join(', ')) + '</span>' : '') +
+    (st.attendance && st.attendance.length ? '<span class="meta">' + esc(t.cpStAtt + ': ' + st.attendance.map((a) => a.name + ' ' + a.n + '/' + (st.played || 0)).join(', ')) + '</span>' : '') +
+    '<div class="who"><span class="pill host">' + esc(c.host) + ' · ' + esc(t.cpHostTag) + '</span>' + c.players.map((x) => '<span class="pill">' + esc(x) + '</span>').join('') + '</div>' +
+    (cpMsgs[c.id] ? '<span class="err" role="alert">' + esc(cpMsgs[c.id]) + '</span>' : '') + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
+}
 /* ---------- Ansichten (Tabs) ---------- */
 const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties|suche|wanted|kampagnen|campaigns)$/i.test(location.hash) ? 'parties' : 'collection');
 function renderView() {
@@ -3480,7 +3575,7 @@ watch('/plays', (rows) => {
   loadGuestWeights();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
 watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
-watch('/campaigns', (rows) => { camps = Array.isArray(rows) ? rows : []; cpState = 'ready'; renderCamps(); }, () => { if (cpState !== 'ready') { cpState = 'off'; renderCamps(); } }, 60000);
+watch('/campaigns', (rows) => { camps = Array.isArray(rows) ? rows : []; cpState = 'ready'; renderParties(); }, () => { if (cpState !== 'ready') { cpState = 'off'; renderCamps(); } }, 60000);
 watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);
 watch('/config/gamemeta', (cfg) => {
   metaCfg = cfg && typeof cfg === 'object' ? cfg : {}; applyMeta(); renderGrid(); if (canEdit) renderLangAdmin();
