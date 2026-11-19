@@ -335,6 +335,31 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .btn-mem, .parties.wants .btn-primary { background: var(--mem); border-color: var(--mem); color: var(--on-mem); }
 .src.wt { background: var(--mem-soft); color: var(--mem-ink); }
 .src.wt::before { background: var(--mem); }
+:root { --camp: #2e8b7a; --camp-soft: #dff2ee; --camp-ink: #1d5b50; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --camp: #4fb3a0; --camp-soft: #1b3632; --camp-ink: #a9e3d6; } }
+:root[data-theme="dark"] { --camp: #4fb3a0; --camp-soft: #1b3632; --camp-ink: #a9e3d6; }
+.subtabs a.g[aria-current="page"] { border-color: var(--camp); }
+.cnt.g { background: var(--camp); color: #fff; }
+.acc-g { border-top: 4px solid var(--camp); }
+.parties.camps .party { box-shadow: inset 4px 0 0 var(--camp); }
+.btn-camp, .parties.camps .btn-primary, #cpDlg .btn-primary, #cpPDlg .btn-primary { background: var(--camp); border-color: var(--camp); color: #fff; }
+.src.camp { background: var(--camp-soft); color: var(--camp-ink); }
+.src.camp::before { background: var(--camp); }
+.cp-line { font-size: 14px; color: var(--text); }
+.cp-prog { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.cp-prog .bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.cp-prog .bar > span { display: block; height: 100%; background: var(--camp); }
+.cp-sess { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cp-sess li { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; font-size: 14px; }
+.cp-sess .r1 { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; color: var(--fg); }
+.cp-sess .acts2 { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn.mini { min-height: 34px; padding: 4px 10px; font-size: 13px; }
+.cp-prop { background: var(--camp-soft); color: var(--camp-ink); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; }
+.cp-h { font-size: 13px; font-weight: 700; color: var(--muted); margin: 4px 0 0; }
+.cp-rule { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.cp-rule select, .cp-rule input { min-height: 44px; }
+.cp-chk { display: flex; align-items: center; gap: 10px; min-height: 40px; font-weight: 600; color: var(--fg); }
+.cp-chk input { width: 20px; height: 20px; accent-color: var(--camp); }
 @media (max-width: 520px) { .subtabs a { padding: 8px 10px; font-size: 15px; } }
 .party { background: var(--surface); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
 .party .top { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; padding: 16px; }
@@ -637,6 +662,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   <nav class="subtabs" id="ptSub" aria-label="Mitspieler-/Spielesuche">
     <a href="#partys" class="o" data-sub="rounds"><span data-t="subRounds"></span> <span class="cnt o" id="cntRounds"></span></a>
     <a href="#suche" class="p" data-sub="wanted"><span data-t="subWanted"></span> <span class="cnt p" id="cntWanted"></span></a>
+    <a href="#kampagnen" class="g" data-sub="camps"><span data-t="subCamps"></span> <span class="cnt g" id="cntCamps"></span></a>
   </nav>
   <div class="sub-page" id="subRounds">
     <section class="panel st-panel acc-o">
@@ -657,6 +683,17 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     </section>
     <h2 class="sec-h" data-t="wtOpen"></h2>
     <div class="parties wants" id="wtList"></div>
+  </div>
+  <div class="sub-page" id="subCamps" hidden>
+    <section class="panel st-panel acc-g" aria-labelledby="cpH">
+      <div class="pt-head"><h2 id="cpH" data-t="cpTitle"></h2><button type="button" class="btn btn-camp" id="cpNewBtn" data-t="cpNew"></button></div>
+      <p class="meta" data-t="cpIntro" style="margin:0"></p>
+    </section>
+    <p class="meta" id="cpState" style="margin:0" hidden></p>
+    <h2 class="sec-h" id="cpNewH" data-t="cpNewH"></h2>
+    <div class="parties camps" id="cpNewList"></div>
+    <h2 class="sec-h" id="cpRunH" data-t="cpRunH"></h2>
+    <div class="parties camps" id="cpRunList"></div>
   </div>
 </main>
 
@@ -852,6 +889,43 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <div class="auth-box" id="whAuth" data-authbox></div>
     <span id="whMsg" role="alert"></span>
     <div class="acts"><button type="button" class="btn btn-quiet" id="whCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="whSend"></button></div>
+  </form>
+</dialog>
+<dialog class="info wide" id="cpDlg" aria-labelledby="cpT">
+  <h3 id="cpT"></h3>
+  <form class="mg" id="cpForm">
+    <div class="gsel" id="cpSel" hidden><span><strong id="cpSelName"></strong> <span class="meta" id="cpSelMeta"></span></span><button type="button" class="btn btn-quiet" id="cpChange" data-t="change"></button></div>
+    <div id="cpSearchBox" class="gpick">
+      <label class="field"><span data-t="cpGame"></span><input type="search" id="cpQ" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cpRes"></label>
+      <ul class="gres" id="cpRes" role="listbox"></ul>
+    </div>
+    <label class="cp-chk"><input type="checkbox" id="cpTbd"><span data-t="cpTbdLbl"></span></label>
+    <div id="cpWhen" style="display:grid;gap:12px">
+      <div class="br-dates"><label class="field"><span data-t="cpStart"></span><input type="date" id="cpStart"></label><label class="field"><span data-t="ptTime"></span><input type="time" id="cpTime" value="18:00"></label></div>
+      <div class="cp-rule">
+        <label class="field"><span data-t="cpRhythm"></span><select id="cpRt"><option value="w" data-t="cpRtW"></option><option value="d" data-t="cpRtD"></option><option value="m" data-t="cpRtM"></option></select></label>
+        <label class="field" id="cpNWrap"><span id="cpNLbl"></span><input type="number" id="cpN" min="1" max="90" value="2" style="width:90px"></label>
+        <label class="field" id="cpNthWrap" hidden><span data-t="cpWhich"></span><select id="cpNth"></select></label>
+        <label class="field" id="cpWdWrap" hidden><span data-t="cpWd"></span><select id="cpWd"></select></label>
+      </div>
+    </div>
+    <div class="br-dates"><label class="field"><span data-t="cpCount"></span><input type="number" id="cpCount" min="1" max="60" value="10" required></label><label class="field"><span data-t="cpDurLbl"></span><input type="number" id="cpDur" min="0.5" max="12" step="0.5" value="4"></label><label class="field"><span data-t="cpSeats"></span><input type="number" id="cpSeats" min="2" max="20" value="5" required></label></div>
+    <p class="meta" id="cpPrev" style="margin:0"></p>
+    <label class="field"><span data-t="cpNote"></span><textarea id="cpNote" maxlength="500" rows="3"></textarea></label>
+    <label class="cp-chk" id="cpOpenWrap" hidden><input type="checkbox" id="cpOpen" checked><span data-t="cpOpenLbl"></span></label>
+    <div class="auth-box" id="cpAuth" data-authbox></div>
+    <span id="cpMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="cpCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="cpSend"></button></div>
+  </form>
+</dialog>
+<dialog class="info" id="cpPDlg" aria-labelledby="cpPT">
+  <h3 id="cpPT" data-t="cpPropT"></h3>
+  <form class="mg" id="cpPForm">
+    <p class="meta" id="cpPTxt" style="margin:0"></p>
+    <div class="br-dates"><label class="field"><span data-t="date"></span><input type="date" id="cpPDate" required></label><label class="field"><span data-t="ptTime"></span><input type="time" id="cpPTime" required></label></div>
+    <label class="cp-chk" id="cpPApplyWrap" hidden><input type="checkbox" id="cpPApply"><span data-t="cpApplyLbl"></span></label>
+    <span id="cpPMsg" role="alert"></span>
+    <div class="acts"><button type="button" class="btn btn-quiet" id="cpPCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" data-t="cpPropSend"></button></div>
   </form>
 </dialog>
 <dialog class="info wide" id="myDlg" aria-labelledby="myT">
@@ -1243,6 +1317,39 @@ function calcClubTime() {
 const clubTimeTxt = (g) => { const c = clubTime[g.id]; return c ? fill(T().clubTime, { m: c.m, p: c.p }) : ''; };
 let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), db = null, dbState = 'loading', logGame = null;
 
+// Kampagnen (#kampagnen): Texte
+Object.assign(TXT.de, { subCamps: 'Kampagnen', cpTitle: 'Kampagnen-Mitspieler finden', cpNew: 'Kampagne anlegen', cpNewH: 'Neue Kampagnen', cpRunH: 'Laufende Kampagnen', cpNone: 'Gerade läuft keine Kampagne. Leg eine an!',
+  cpIntro: 'Für Spiele, die man über viele Abende spielt (Legacy, Kampagnen, Rollenspiel-artiges). Lege Spiel, Start und Rhythmus fest (oder lass den Termin noch offen). Der Bot postet die Kampagne in Discord und richtet einen privaten Thread nur für die Mitspielenden ein. Eine Woche vor jeder Sitzung steht der Termin dort, alle werden erwähnt. Wer nicht kann, schlägt einen anderen Termin oder eine Absage vor; stimmen alle zu, gilt es. Anlegen können Mitglieder; mitmachen können alle Mitglieder, ohne Mitgliederrolle nur, wenn alle Sitzungen an Stammtisch-Tagen sind oder du eingeladen wurdest (Einladen geht in Discord).',
+  cpHeadTbd: 'Termin noch offen', cpHeadStart: 'Start: {d}', cpHeadRun: 'Läuft · {n} von ca. {m} Sitzungen gespielt', cpHeadDone: 'Abgeschlossen', cpSeek: 'Sucht Mitspielende', cpFull: 'Voll', cpClosed: 'Sucht niemanden mehr',
+  cpTbd: 'Termin und Rhythmus noch offen', cpDaily: 'täglich', cpEveryDays: 'alle {n} Tage', cpWeekly: 'jeden {d}', cpEveryWeeks: 'alle {n} Wochen am {d}', cpMonthly: 'jeden {x} {d} im Monat', cpNth: { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' },
+  cpHours: 'ca. {h} Std.', cpProg: '{d}/{m} Sitzungen', cpSessions: 'ca. {m} Sitzungen', cpNext: 'Nächste Termine', cpAll: 'Alle {n} Termine anzeigen', cpLess: 'Weniger anzeigen', cpNo: 'Sitzung {n}', cpMoved: 'verschoben', cpAbsent: 'kann nicht: {n}',
+  cpJoin: 'Mitmachen', cpLeave: 'Aussteigen', cpEdit: 'Bearbeiten', cpEnd: 'Kampagne beenden', cpThread: 'Zum Discord-Thread', cpHostTag: 'leitet',
+  cpCant: 'Kann nicht', cpCan: 'Doch dabei', cpMove: 'Verschieben', cpCancelS: 'Absage vorschlagen', cpCancelQ: 'Wirklich Absage vorschlagen?',
+  cpPropMove: '{b} schlägt vor: {d}', cpPropCancel: '{b} schlägt vor, diese Sitzung ausfallen zu lassen', cpYes: 'Passt mir', cpNoV: 'Passt mir nicht', cpAccept: 'Übernehmen', cpWithdraw: 'Zurückziehen', cpReject: 'Ablehnen',
+  cpVoteYes: 'Passt: {n}', cpVoteNo: 'Passt nicht: {n}', cpVoteOpen: 'Noch offen: {n}',
+  cpDlgNew: 'Kampagne anlegen', cpDlgEdit: 'Kampagne bearbeiten', cpGame: 'Spiel', cpTbdLbl: 'Start und Rhythmus stehen noch nicht fest (später festlegen)', cpStart: 'Erste Sitzung (Start)', cpRhythm: 'Rhythmus',
+  cpRtW: 'Alle N Wochen (Wochentag vom Start)', cpRtD: 'Alle N Tage', cpRtM: 'Monatlich: n-ter Wochentag', cpNWeeks: 'Alle … Wochen', cpNDays: 'Alle … Tage', cpWhich: 'Welcher', cpWd: 'Wochentag',
+  cpCount: 'Sitzungen (ungefähr)', cpDurLbl: 'Dauer pro Sitzung (Std.)', cpSeats: 'Plätze inkl. dir', cpNote: 'Hinweis (Vorkenntnisse, Erweiterungen, Sprache …)', cpOpenLbl: 'Sucht noch Mitspielende',
+  cpPrev: 'Termine: {l}', cpPrevMore: '… letzte etwa {d}', cpCreate: 'Kampagne anlegen', cpSave: 'Speichern', cpSaved: 'Gespeichert ✓', cpCreated: 'Kampagne angelegt ✓ Der Bot postet sie gleich in Discord.',
+  cpEditNote: 'Änderst du Start oder Rhythmus, werden alle kommenden Termine neu berechnet (einzelne Verschiebungen gehen dabei verloren).',
+  cpPropT: 'Anderen Termin vorschlagen', cpPropTxt: 'Sitzung {n}, bisher {d}. Alle in der Kampagne stimmen ab (auf der Webseite oder im Discord-Thread); sind alle einverstanden oder übernimmt der Ersteller, wird verschoben.', cpApplyLbl: 'Direkt übernehmen (ohne Abstimmung)', cpPropSend: 'Vorschlagen', cpPropDone: 'Vorschlag gesendet ✓', cpApplied: 'Verschoben ✓',
+  cpErr: { members_only: 'Neue Kampagnen können nur Mitglieder anlegen. Mitmachen ohne Mitgliederrolle geht, wenn alle Sitzungen an Stammtisch-Tagen sind oder dich jemand in Discord einlädt.', closed: 'Die Kampagne sucht gerade niemanden mehr.', full: 'Leider sind schon alle Plätze belegt.', ended: 'Die Kampagne ist vorbei.', past: 'Der Start liegt in der Vergangenheit.', invalid: 'Bitte alle Angaben prüfen.', seats_taken: 'So viele sind schon dabei, weniger Plätze gehen nicht.', bad_date: 'Bitte ein Datum ab heute wählen.', bad_time: 'Bitte eine Uhrzeit angeben.', same: 'Das ist schon der aktuelle Termin.', past_session: 'Diese Sitzung ist schon vorbei.', not_in: 'Das geht nur, wenn du mitmachst.', started: 'Die Kampagne läuft schon, der Termin kann nicht mehr offen sein.', no_prop: 'Der Vorschlag ist schon erledigt.' } });
+Object.assign(TXT.en, { subCamps: 'Campaigns', cpTitle: 'Find campaign players', cpNew: 'Start a campaign', cpNewH: 'New campaigns', cpRunH: 'Running campaigns', cpNone: 'No campaign right now. Start one!',
+  cpIntro: 'For games you play over many evenings (legacy, campaigns, RPG-like). Set the game, start and rhythm (or leave the date open). The bot posts the campaign on Discord and opens a private thread just for the players. One week before each session the date is posted there and everyone is mentioned. If someone can’t make it, they suggest another date or a cancellation; if everyone agrees, it applies. Members can start campaigns; members can always join, others only if all sessions are on regular club nights or if they were invited (inviting works on Discord).',
+  cpHeadTbd: 'Date not set yet', cpHeadStart: 'Starts: {d}', cpHeadRun: 'Running · {n} of about {m} sessions played', cpHeadDone: 'Finished', cpSeek: 'Looking for players', cpFull: 'Full', cpClosed: 'Not looking for players',
+  cpTbd: 'Date and rhythm not set yet', cpDaily: 'daily', cpEveryDays: 'every {n} days', cpWeekly: 'every {d}', cpEveryWeeks: 'every {n} weeks on {d}', cpMonthly: 'every {x} {d} of the month', cpNth: { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' },
+  cpHours: 'about {h} h', cpProg: '{d}/{m} sessions', cpSessions: 'about {m} sessions', cpNext: 'Next dates', cpAll: 'Show all {n} dates', cpLess: 'Show less', cpNo: 'Session {n}', cpMoved: 'moved', cpAbsent: 'can’t make it: {n}',
+  cpJoin: 'Join', cpLeave: 'Leave', cpEdit: 'Edit', cpEnd: 'End campaign', cpThread: 'Open Discord thread', cpHostTag: 'runs it',
+  cpCant: 'Can’t make it', cpCan: 'I’m in after all', cpMove: 'Reschedule', cpCancelS: 'Suggest cancelling', cpCancelQ: 'Really suggest cancelling?',
+  cpPropMove: '{b} suggests: {d}', cpPropCancel: '{b} suggests cancelling this session', cpYes: 'Works for me', cpNoV: 'Doesn’t work', cpAccept: 'Apply', cpWithdraw: 'Withdraw', cpReject: 'Reject',
+  cpVoteYes: 'Works: {n}', cpVoteNo: 'Doesn’t work: {n}', cpVoteOpen: 'Waiting for: {n}',
+  cpDlgNew: 'Start a campaign', cpDlgEdit: 'Edit campaign', cpGame: 'Game', cpTbdLbl: 'Start and rhythm are not fixed yet (set them later)', cpStart: 'First session (start)', cpRhythm: 'Rhythm',
+  cpRtW: 'Every N weeks (weekday of start)', cpRtD: 'Every N days', cpRtM: 'Monthly: nth weekday', cpNWeeks: 'Every … weeks', cpNDays: 'Every … days', cpWhich: 'Which', cpWd: 'Weekday',
+  cpCount: 'Sessions (roughly)', cpDurLbl: 'Length per session (h)', cpSeats: 'Seats incl. you', cpNote: 'Note (experience, expansions, language …)', cpOpenLbl: 'Still looking for players',
+  cpPrev: 'Dates: {l}', cpPrevMore: '… last around {d}', cpCreate: 'Start campaign', cpSave: 'Save', cpSaved: 'Saved ✓', cpCreated: 'Campaign created ✓ The bot will post it on Discord shortly.',
+  cpEditNote: 'If you change start or rhythm, all upcoming dates are recalculated (individual reschedules are lost).',
+  cpPropT: 'Suggest another date', cpPropTxt: 'Session {n}, currently {d}. Everyone in the campaign votes (here or in the Discord thread); if all agree or the organiser applies it, the session moves.', cpApplyLbl: 'Apply right away (no vote)', cpPropSend: 'Suggest', cpPropDone: 'Suggestion sent ✓', cpApplied: 'Rescheduled ✓',
+  cpErr: { members_only: 'Only members can start campaigns. Without the member role you can join if all sessions are on regular club nights or if someone invites you on Discord.', closed: 'This campaign is not looking for players right now.', full: 'Sorry, all seats are taken.', ended: 'This campaign is over.', past: 'The start date is in the past.', invalid: 'Please check all fields.', seats_taken: 'That many players are already in; you can’t reduce the seats further.', bad_date: 'Please pick a date from today on.', bad_time: 'Please enter a time.', same: 'That is already the current date.', past_session: 'This session is already over.', not_in: 'Only campaign players can do that.', started: 'The campaign has started already; the date can’t be open any more.', no_prop: 'That suggestion is already settled.' } });
 const T = () => TXT[S.lang];
 const de = () => S.lang === 'de';
 const name = (g) => (de() ? g.nDe : g.nEn);
@@ -2267,6 +2374,7 @@ function renderParties() {
   $('ptPast').innerHTML = past.map((x) => partyCard(x, true)).join('');
   $('cntRounds').textContent = partyState === 'ready' ? String(up.length) : '';
   $('ptPastH').hidden = !past.length;
+  renderCamps();
 }
 $('viewParties').addEventListener('click', async (e) => {
   const t = T(); let b;
@@ -2811,13 +2919,213 @@ $('whForm').addEventListener('submit', async (e) => {
     if (c === 'gone') refreshAll();
   }
 });
+/* ---------- Kampagnen (#kampagnen): Mitspielende für viele Sitzungen im festen Rhythmus ---------- */
+var camps = [], cpState = 'loading', cpAllOpen = new Set(), cpPend = null, cpMsgs = {}, cpEditing = null, cpGame = null, cpResults = [], cpActive = -1, cpPSid = null;
+const WDL = () => (de() ? ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'] : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+function cpRhythm(rule, start) {
+  const t = T(); if (!rule || !start) return t.cpTbd;
+  if (rule.t === 'd') return rule.n === 1 ? t.cpDaily : fill(t.cpEveryDays, { n: rule.n });
+  const wd = WDL()[new Date(start + 'T12:00:00').getDay()];
+  if (rule.t === 'w') return rule.n === 1 ? fill(t.cpWeekly, { d: wd }) : fill(t.cpEveryWeeks, { n: rule.n, d: wd });
+  return fill(t.cpMonthly, { x: t.cpNth[String(rule.nth)], d: WDL()[rule.wd] });
+}
+const cpDurTxt = (m) => (m ? fill(T().cpHours, { h: String(Math.round(m / 6) / 10).replace('.', de() ? ',' : '.') }) : '');
+// Gleiche Berechnung wie im Worker (src/campaigns.js ruleDates), für die Vorschau im Dialog.
+function cpDates(rule, start, count) {
+  const out = []; if (!rule || !start || count <= 0) return out;
+  if (rule.t === 'm') {
+    let y = +start.slice(0, 4), m = +start.slice(5, 7) - 1;
+    for (let i = 0; out.length < count && i < 1200; i++) {
+      let d;
+      if (rule.nth === -1) { d = new Date(Date.UTC(y, m + 1, 0, 12)); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() - rule.wd + 7) % 7)); }
+      else { d = new Date(Date.UTC(y, m, 1, 12)); d.setUTCDate(1 + ((rule.wd - d.getUTCDay() + 7) % 7) + 7 * (rule.nth - 1)); }
+      const s = d.toISOString().slice(0, 10); if (s >= start) out.push(s);
+      if (++m > 11) { m = 0; y++; }
+    }
+    return out;
+  }
+  const step = rule.t === 'd' ? rule.n : rule.n * 7;
+  for (let i = 0, d = start; out.length < count && i < 5000; i++, d = isoAdd(d, step)) out.push(d);
+  return out;
+}
+const cpErrTxt = (x) => { const t = T(), c = x && x.code; return (c && t.cpErr[c]) || (c === 'guests_paused' ? pauseMsg() : codeErr(x)); };
+function cpSessRow(c, s, i) {
+  const t = T(), you = s.you || {}, inn = !!(c.you && c.you.in), host = !!(c.you && c.you.host) || canEdit;
+  let h = '<li><div class="r1"><strong>' + esc(fill(t.cpNo, { n: i + 1 })) + '</strong><span>' + esc(dayLabel(s.date) + ' · ' + s.time) + '</span>' + (s.moved ? '<span class="src camp">' + esc(t.cpMoved) + '</span>' : '') +
+    (s.absent.length ? '<span class="meta">' + esc(fill(t.cpAbsent, { n: s.absent.join(', ') })) + '</span>' : '') + '</div>';
+  if (inn) {
+    h += '<div class="acts2"><button type="button" class="btn btn-quiet mini" data-cpabs="' + esc(s.id) + '" data-on="' + (you.absent ? 0 : 1) + '">' + esc(you.absent ? t.cpCan : t.cpCant) + '</button>' +
+      '<button type="button" class="btn btn-quiet mini" data-cpmove="' + esc(s.id) + '" data-c="' + esc(c.id) + '">' + esc(t.cpMove) + '</button>' +
+      '<button type="button" class="btn ' + (cpPend === 'x' + s.id ? 'btn-primary' : 'btn-quiet') + ' mini" data-cpx="' + esc(s.id) + '">' + esc(cpPend === 'x' + s.id ? t.cpCancelQ : t.cpCancelS) + '</button></div>';
+  }
+  const p = s.prop;
+  if (p) {
+    h += '<div class="cp-prop"><strong>' + esc(p.cancel ? fill(t.cpPropCancel, { b: p.by }) : fill(t.cpPropMove, { b: p.by, d: dayLabel(p.date) + ' · ' + p.time })) + '</strong>' +
+      '<span>' + esc(fill(t.cpVoteYes, { n: p.yes.join(', ') || '–' })) + (p.no.length ? ' · ' + esc(fill(t.cpVoteNo, { n: p.no.join(', ') })) : '') + (p.open.length ? ' · ' + esc(fill(t.cpVoteOpen, { n: p.open.join(', ') })) : '') + '</span>';
+    let a = '';
+    if (inn && you.vote !== 'y') a += '<button type="button" class="btn btn-primary mini" data-cpvote="' + esc(s.id) + '" data-y="1">' + esc(t.cpYes) + '</button>';
+    if (inn && you.vote !== 'n' && !you.mine) a += '<button type="button" class="btn btn-quiet mini" data-cpvote="' + esc(s.id) + '" data-y="0">' + esc(t.cpNoV) + '</button>';
+    if (host) a += '<button type="button" class="btn btn-quiet mini" data-cpacc="' + esc(s.id) + '">' + esc(t.cpAccept) + '</button>';
+    if (host || you.mine) a += '<button type="button" class="btn btn-quiet mini" data-cpwd="' + esc(s.id) + '">' + esc(you.mine ? t.cpWithdraw : t.cpReject) + '</button>';
+    if (a) h += '<div class="acts2">' + a + '</div>';
+    h += '</div>';
+  }
+  return h + '</li>';
+}
+function cpCard(c) {
+  const t = T(), td = todayIso(), you = c.you || {}, inn = !!you.in, host = !!you.host;
+  const up = c.list.filter((s) => s.date >= td), next = up[0], ppl = 1 + c.players.length, free = Math.max(0, c.seats - ppl);
+  const head = c.tbd ? t.cpHeadTbd : c.phase === 'done' ? t.cpHeadDone : c.phase === 'running' ? fill(t.cpHeadRun, { n: c.done, m: c.sessions }) : fill(t.cpHeadStart, { d: next ? dayLabel(next.date) : '' });
+  const chip = !free ? t.cpFull : !c.open ? t.cpClosed : t.cpSeek;
+  const line = cpRhythm(c.rule, c.start) + (c.tbd ? '' : ' · ' + c.time) + (c.duration ? ' · ' + cpDurTxt(c.duration) : '') + ' · ' + fill(t.cpSessions, { m: c.tbd ? c.plannedSessions : c.sessions });
+  const dots = Array.from({ length: Math.min(c.seats, 20) }, (_, i) => '<span class="seat' + (i < ppl ? ' on' : '') + '"></span>').join('');
+  const all = cpAllOpen.has(c.id), first = c.list.findIndex((s) => s.date >= td);
+  const shown = all ? c.list.map((s, i) => [s, i]) : up.slice(0, 3).map((s) => [s, first + up.indexOf(s)]);
+  let actions = '';
+  if (!inn && free && c.open && c.phase !== 'done') actions += '<button type="button" class="btn btn-primary" data-cpjoin="' + esc(c.id) + '">' + esc(t.cpJoin) + '</button>';
+  if (inn && !host) actions += '<button type="button" class="btn btn-quiet" data-cpleave="' + esc(c.id) + '">' + esc(t.cpLeave) + '</button>';
+  if (host || canEdit) actions += '<button type="button" class="btn btn-quiet" data-cpedit="' + esc(c.id) + '">' + esc(t.cpEdit) + '</button>' +
+    '<button type="button" class="btn ' + (cpPend === 'e' + c.id ? 'btn-primary' : 'btn-quiet') + '" data-cpend="' + esc(c.id) + '">' + esc(cpPend === 'e' + c.id ? t.delConfirm : t.cpEnd) + '</button>';
+  if (inn && c.url) actions += '<a class="btn btn-quiet" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(t.cpThread) + '</a>';
+  return '<article class="party"><div class="top">' + thumbHtml({ guest: true, gameId: c.gameId }, c.gameId ? byId[c.gameId] : null, c.game) + '<div><span class="when">' + esc(head) + '</span><h3>' + esc(c.game) + (c.year ? ' <span class="meta">(' + c.year + ')</span>' : '') + '</h3><span class="src camp">' + esc(chip) + '</span></div></div>' +
+    '<div class="body"><div class="cp-line">' + esc(line) + '</div>' +
+    (c.tbd ? '' : '<div class="cp-prog"><span class="bar"><span style="width:' + Math.round(100 * c.done / Math.max(1, c.sessions)) + '%"></span></span><span>' + esc(fill(t.cpProg, { d: c.done, m: c.sessions })) + '</span></div>') +
+    '<div class="seats" aria-label="' + esc(ppl + '/' + c.seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(ppl + '/' + c.seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
+    '<div class="who"><span class="pill host">' + esc(c.host) + ' · ' + esc(t.cpHostTag) + '</span>' + c.players.map((x) => '<span class="pill">' + esc(x) + '</span>').join('') + '</div>' +
+    (c.note ? '<span class="meta">' + esc(c.note) + '</span>' : '') +
+    (shown.length ? '<p class="cp-h">' + esc(t.cpNext) + '</p><ul class="cp-sess">' + shown.map(([s, i]) => cpSessRow(c, s, i)).join('') + '</ul>' : '') +
+    (c.list.length > 3 ? '<button type="button" class="linkbtn" data-cpall="' + esc(c.id) + '">' + esc(all ? t.cpLess : fill(t.cpAll, { n: c.list.length })) + '</button>' : '') +
+    (cpMsgs[c.id] ? '<span class="err" role="alert">' + esc(cpMsgs[c.id]) + '</span>' : '') +
+    '<div class="actions">' + actions + '</div></div></article>';
+}
+function renderCamps() {
+  const t = T(); if (!$('cpNewList') || !Array.isArray(camps)) return;
+  const nw = camps.filter((c) => c.phase === 'new'), run = camps.filter((c) => c.phase !== 'new');
+  $('cpState').hidden = cpState === 'ready'; $('cpState').textContent = cpState === 'off' ? t.recentOff : '…';
+  $('cpNewList').innerHTML = nw.length ? nw.map(cpCard).join('') : cpState === 'ready' && !run.length ? '<p class="st-empty">' + esc(t.cpNone) + '</p>' : '';
+  $('cpRunList').innerHTML = run.map(cpCard).join('');
+  $('cpNewH').hidden = !nw.length && !!run.length; $('cpRunH').hidden = !run.length;
+  $('cntCamps').textContent = cpState === 'ready' ? String(camps.filter((c) => c.phase !== 'done').length) : '';
+}
+async function cpCall(id, method, path, body) {
+  delete cpMsgs[id];
+  try { const r = await api(method, path, body); refreshAll(); return r; }
+  catch (x) { cpMsgs[id] = cpErrTxt(x); renderCamps(); return null; }
+}
+$('subCamps').addEventListener('click', async (e) => {
+  let b; const card = (sid) => (camps.find((c) => c.list.some((s) => s.id === sid)) || {}).id;
+  if ((b = e.target.closest('[data-cpall]'))) { const id = b.dataset.cpall; if (cpAllOpen.has(id)) cpAllOpen.delete(id); else cpAllOpen.add(id); renderCamps(); return; }
+  if ((b = e.target.closest('[data-cpjoin]'))) { if (!me) { startLogin(); return; } b.disabled = true; await cpCall(b.dataset.cpjoin, 'POST', '/campaigns/' + b.dataset.cpjoin + '/join', {}); return; }
+  if ((b = e.target.closest('[data-cpleave]'))) { b.disabled = true; await cpCall(b.dataset.cpleave, 'POST', '/campaigns/' + b.dataset.cpleave + '/leave', {}); return; }
+  if ((b = e.target.closest('[data-cpedit]'))) { openCampaign(camps.find((c) => c.id === b.dataset.cpedit)); return; }
+  if ((b = e.target.closest('[data-cpend]'))) {
+    const id = b.dataset.cpend; if (cpPend !== 'e' + id) { cpPend = 'e' + id; renderCamps(); return; }
+    cpPend = null; await cpCall(id, 'DELETE', '/campaigns/' + id); camps = camps.filter((c) => c.id !== id); renderCamps(); return;
+  }
+  if ((b = e.target.closest('[data-cpabs]'))) { b.disabled = true; await cpCall(card(b.dataset.cpabs), 'POST', '/campaigns/s/' + b.dataset.cpabs + '/absent', { on: b.dataset.on === '1' }); return; }
+  if ((b = e.target.closest('[data-cpmove]'))) { openCpProp(b.dataset.c, b.dataset.cpmove); return; }
+  if ((b = e.target.closest('[data-cpx]'))) {
+    const sid = b.dataset.cpx; if (cpPend !== 'x' + sid) { cpPend = 'x' + sid; renderCamps(); return; }
+    cpPend = null; await cpCall(card(sid), 'POST', '/campaigns/s/' + sid + '/propose', { cancel: true }); return;
+  }
+  if ((b = e.target.closest('[data-cpvote]'))) { b.disabled = true; await cpCall(card(b.dataset.cpvote), 'POST', '/campaigns/s/' + b.dataset.cpvote + '/vote', { yes: b.dataset.y === '1' }); return; }
+  if ((b = e.target.closest('[data-cpacc]'))) { b.disabled = true; await cpCall(card(b.dataset.cpacc), 'POST', '/campaigns/s/' + b.dataset.cpacc + '/accept', {}); return; }
+  if ((b = e.target.closest('[data-cpwd]'))) { b.disabled = true; await cpCall(card(b.dataset.cpwd), 'DELETE', '/campaigns/s/' + b.dataset.cpwd + '/propose'); return; }
+});
+
+/* Dialog: Kampagne anlegen / bearbeiten */
+function cpRule() {
+  const rt = $('cpRt').value, n = Math.max(1, Math.round(Number($('cpN').value) || 1));
+  return rt === 'm' ? { t: 'm', nth: Number($('cpNth').value), wd: Number($('cpWd').value) } : { t: rt, n };
+}
+function renderCpForm() {
+  const t = T(), tbd = $('cpTbd').checked, rt = $('cpRt').value;
+  $('cpWhen').hidden = tbd; $('cpStart').required = !tbd;
+  $('cpNWrap').hidden = rt === 'm'; $('cpNthWrap').hidden = rt !== 'm'; $('cpWdWrap').hidden = rt !== 'm';
+  $('cpNLbl').textContent = rt === 'd' ? t.cpNDays : t.cpNWeeks; $('cpN').max = rt === 'd' ? 90 : 12;
+  const cnt = Math.max(1, Math.min(60, Math.round(Number($('cpCount').value) || 1)));
+  const ds = tbd || !$('cpStart').value ? [] : cpDates(cpRule(), $('cpStart').value, cnt);
+  $('cpPrev').textContent = (ds.length ? fill(t.cpPrev, { l: ds.slice(0, 4).map((d) => dayLabel(d)).join(', ') }) + (ds.length > 4 ? ' ' + fill(t.cpPrevMore, { d: dmy(ds[ds.length - 1]) }) : '') : '') + (cpEditing && !tbd ? (ds.length ? ' · ' : '') + t.cpEditNote : '');
+}
+['cpTbd', 'cpRt', 'cpN', 'cpNth', 'cpWd', 'cpStart', 'cpCount'].forEach((id) => $(id).addEventListener('input', renderCpForm));
+function renderCpPick() {
+  const t = T(); $('cpSel').hidden = !cpGame; $('cpSearchBox').hidden = !!cpGame;
+  if (cpGame) { $('cpSelName').textContent = cpGame.n; $('cpSelMeta').textContent = cpGame.gameId ? (cpGame.y ? '(' + cpGame.y + ') · ' : '') + 'BGG #' + cpGame.gameId : '(' + t.gNoBgg + ')'; return; }
+  const q = $('cpQ').value.trim();
+  let html = cpResults.map((r, i) => '<li role="option" id="cpOpt' + i + '" data-i="' + i + '" aria-selected="' + (i === cpActive) + '"><span>' + esc(r.n) + (r.inColl ? ' <span class="src club">' + esc(t.clubTag) + '</span>' : '') + '</span><span class="yr">' + (r.y || '') + '</span></li>').join('');
+  if (q) html += '<li role="option" id="cpOpt' + cpResults.length + '" data-i="' + cpResults.length + '" aria-selected="' + (cpActive === cpResults.length) + '"><span class="meta">' + esc((cpResults.length ? '' : t.gNone + ' ') + fill(t.gUseName, { q })) + '</span></li>';
+  $('cpRes').innerHTML = html; $('cpQ').setAttribute('aria-expanded', String(!!q));
+}
+function cpPick(i) {
+  const q = $('cpQ').value.trim();
+  if (i < cpResults.length) { const r = cpResults[i]; cpGame = { n: r.n, gameId: r.id || null, y: r.y || null }; }
+  else if (q) cpGame = { n: q.slice(0, 120), gameId: null, y: null }; else return;
+  $('cpMsg').textContent = ''; renderCpPick();
+}
+$('cpQ').addEventListener('input', () => { cpActive = 0; startLive($('cpQ').value, (r) => { cpResults = r; cpActive = r.length ? Math.max(0, Math.min(cpActive, r.length - 1)) : -1; renderCpPick(); }); });
+$('cpQ').addEventListener('keydown', (e) => {
+  const max = cpResults.length + ($('cpQ').value.trim() ? 1 : 0) - 1;
+  if (e.key === 'ArrowDown') { e.preventDefault(); cpActive = Math.min(max, cpActive + 1); renderCpPick(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); cpActive = Math.max(0, cpActive - 1); renderCpPick(); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (cpActive >= 0) cpPick(cpActive); }
+});
+$('cpRes').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) cpPick(Number(li.dataset.i)); });
+$('cpChange').onclick = () => { cpGame = null; renderCpPick(); $('cpQ').focus(); };
+function openCampaign(c) {
+  const t = T(); cpEditing = c || null;
+  $('cpNth').innerHTML = ['1', '2', '3', '4', '-1'].map((k) => '<option value="' + k + '">' + esc(t.cpNth[k]) + '</option>').join('');
+  $('cpWd').innerHTML = [1, 2, 3, 4, 5, 6, 0].map((k) => '<option value="' + k + '">' + esc(WDL()[k]) + '</option>').join('');
+  cpGame = c ? { n: c.game, gameId: c.gameId, y: c.year } : null; cpResults = []; cpActive = -1; $('cpQ').value = '';
+  $('cpTbd').checked = c ? c.tbd : false; $('cpStart').min = c ? '' : todayIso(); $('cpStart').value = c && c.start ? c.start : nextEventDay(); $('cpTime').value = c ? c.time : '18:00';
+  const r = c && c.rule ? c.rule : { t: 'w', n: 2 };
+  $('cpRt').value = r.t; $('cpN').value = r.n || 2; $('cpNth').value = String(r.nth || 1); $('cpWd').value = String(r.wd != null ? r.wd : 6);
+  $('cpCount').value = c ? (c.tbd ? c.plannedSessions : c.sessions) : 10; $('cpDur').value = c && c.duration ? c.duration / 60 : 4; $('cpSeats').value = c ? c.seats : 5;
+  $('cpNote').value = c ? c.note : ''; $('cpOpen').checked = c ? c.open : true; $('cpOpenWrap').hidden = !c;
+  $('cpT').textContent = c ? t.cpDlgEdit : t.cpDlgNew; $('cpSend').textContent = c ? t.cpSave : t.cpCreate;
+  $('cpMsg').textContent = ''; $('cpMsg').className = ''; $('cpSend').disabled = false;
+  if (!c && me && !me.member) { $('cpMsg').className = 'err'; $('cpMsg').textContent = t.cpErr.members_only; $('cpSend').disabled = true; }
+  renderCpPick(); renderCpForm(); renderAuth(); $('cpDlg').showModal(); if (!c) $('cpQ').focus();
+}
+$('cpNewBtn').onclick = () => openCampaign(null);
+$('cpCancel').onclick = () => $('cpDlg').close();
+$('cpForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('cpMsg'); msg.className = 'err';
+  if (!me && !canEdit) { msg.textContent = t.errLogin; return; }
+  if (!cpGame) { msg.textContent = t.errPick; $('cpQ').focus(); return; }
+  const tbd = $('cpTbd').checked, dur = Number($('cpDur').value);
+  const b = { game: cpGame.n, gameId: cpGame.gameId, year: cpGame.y, tbd, start: tbd ? '' : $('cpStart').value, time: $('cpTime').value || '18:00', rule: tbd ? null : cpRule(),
+    sessions: Number($('cpCount').value), duration: dur ? Math.round(dur * 60) : null, seats: Number($('cpSeats').value), note: $('cpNote').value.trim().slice(0, 500), open: $('cpOpen').checked };
+  $('cpSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
+  try {
+    if (cpEditing) await api('PUT', '/campaigns/' + cpEditing.id, b); else await api('POST', '/campaigns', b);
+    msg.textContent = cpEditing ? t.cpSaved : t.cpCreated; refreshAll(); setTimeout(() => { if ($('cpDlg').open) $('cpDlg').close(); }, 1500);
+  } catch (x) { msg.className = 'err'; $('cpSend').disabled = false; msg.textContent = cpErrTxt(x); }
+});
+
+/* Dialog: anderen Termin vorschlagen */
+function openCpProp(cid, sid) {
+  const t = T(), c = camps.find((x) => x.id === cid); if (!c) return;
+  const i = c.list.findIndex((s) => s.id === sid), s = c.list[i]; if (!s) return;
+  cpPSid = sid; $('cpPTxt').textContent = fill(t.cpPropTxt, { n: i + 1, d: dayLabel(s.date) + ' · ' + s.time });
+  $('cpPDate').min = todayIso(); $('cpPDate').value = s.date; $('cpPTime').value = s.time;
+  $('cpPApplyWrap').hidden = !((c.you && c.you.host) || canEdit); $('cpPApply').checked = false;
+  $('cpPMsg').textContent = ''; $('cpPMsg').className = ''; $('cpPDlg').showModal();
+}
+$('cpPCancel').onclick = () => $('cpPDlg').close();
+$('cpPForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const t = T(), msg = $('cpPMsg');
+  try {
+    const r = await api('POST', '/campaigns/s/' + cpPSid + '/propose', { date: $('cpPDate').value, time: $('cpPTime').value, apply: $('cpPApply').checked });
+    msg.className = 'ok'; msg.textContent = r && r.applied ? t.cpApplied : t.cpPropDone; refreshAll(); setTimeout(() => { if ($('cpPDlg').open) $('cpPDlg').close(); }, 1200);
+  } catch (x) { msg.className = 'err'; msg.textContent = cpErrTxt(x); }
+});
 /* ---------- Ansichten (Tabs) ---------- */
-const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties|suche|wanted)$/i.test(location.hash) ? 'parties' : 'collection');
+const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties|suche|wanted|kampagnen|campaigns)$/i.test(location.hash) ? 'parties' : 'collection');
 function renderView() {
   const v = currentView();
   $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties';
-  const sub = /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : 'rounds';
-  $('subRounds').hidden = sub !== 'rounds'; $('subWanted').hidden = sub !== 'wanted';
+  const sub = /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : /^#(kampagnen|campaigns)$/i.test(location.hash) ? 'camps' : 'rounds';
+  $('subRounds').hidden = sub !== 'rounds'; $('subWanted').hidden = sub !== 'wanted'; $('subCamps').hidden = sub !== 'camps';
   document.querySelectorAll('#ptSub a').forEach((a) => { if (a.dataset.sub === sub) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   document.querySelectorAll('#tabs a').forEach((a) => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 }
@@ -2830,7 +3138,7 @@ $('tabs').addEventListener('click', (e) => {
 $('ptSub').addEventListener('click', (e) => {
   const a = e.target.closest('a[data-sub]'); if (!a) return; e.preventDefault();
   try { history.replaceState(null, '', a.getAttribute('href')); } catch (x) { location.hash = a.getAttribute('href').slice(1); }
-  renderView(); if (a.dataset.sub === 'wanted') renderWanted(); else renderParties();
+  renderView(); if (a.dataset.sub === 'wanted') renderWanted(); else if (a.dataset.sub === 'camps') renderCamps(); else renderParties();
 });
 window.addEventListener('hashchange', () => { renderView(); renderSlider(); });
 
@@ -3172,6 +3480,7 @@ watch('/plays', (rows) => {
   loadGuestWeights();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
 watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
+watch('/campaigns', (rows) => { camps = Array.isArray(rows) ? rows : []; cpState = 'ready'; renderCamps(); }, () => { if (cpState !== 'ready') { cpState = 'off'; renderCamps(); } }, 60000);
 watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);
 watch('/config/gamemeta', (cfg) => {
   metaCfg = cfg && typeof cfg === 'object' ? cfg : {}; applyMeta(); renderGrid(); if (canEdit) renderLangAdmin();

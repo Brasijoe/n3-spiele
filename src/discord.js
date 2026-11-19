@@ -4,6 +4,7 @@ import { bggSearch } from './bgg.js';
 import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
 import { wantedButton, wantedSubmit } from './wanted.js';
+import { campaignButton, campaignSubmit, openCampaignCount } from './campaigns.js';
 import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP, guestsPaused, pauseText } from './booking.js';
 
 const enc = new TextEncoder();
@@ -349,7 +350,9 @@ export async function handleInteraction(req, env, ctx) {
   if (env.DISCORD_GUILD_ID && i.guild_id !== env.DISCORD_GUILD_ID) return say('Dieser Bot ist für diesen Server nicht freigeschaltet.');
   // Optional: nur ein Kanal. Buttons an alten Nachrichten gelten ebenfalls nur dort.
   const chans = botChannels(env);
-  if (chans.length && !chans.includes(i.channel_id)) {
+  // Knöpfe in Threads (z. B. Kampagnen-Thread): der Thread gehört zum Kanal, wenn sein Elternkanal erlaubt ist.
+  const parent = i.channel && i.channel.parent_id;
+  if (chans.length && !chans.includes(i.channel_id) && !chans.includes(parent)) {
     return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur in ${chans.map((c) => `<#${c}>`).join(', ')}.`);
   }
   try {
@@ -357,8 +360,8 @@ export async function handleInteraction(req, env, ctx) {
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env, ctx) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : i.data.name === 'runden' ? reply({ type: 4, data: { ...(await overviewMessage(env)), flags: 64 } }) : say('Unbekannter Befehl.');
     const cid = String((i.data && i.data.custom_id) || '');
-    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env, ctx);
-    if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
+    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('camp') ? await campaignButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env, ctx);
+    if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('camp') ? await campaignSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
   return say('Nicht unterstützt.');
 }
@@ -406,8 +409,10 @@ export async function discord(env, method, path, body) {
 export const channelIds = (env) => String(env.DISCORD_CHANNEL_ID || '').split(',').map((x) => x.trim()).filter(Boolean);
 // DISCORD_WANTED_CHANNEL_ID: eigener Kanal für „Hat jemand …?“ (leer = erster DISCORD_CHANNEL_ID).
 export const wantedChannel = (env) => String(env.DISCORD_WANTED_CHANNEL_ID || '').trim() || channelIds(env)[0];
-// Alle Kanäle, in denen der Bot reagiert: Runden-Kanäle plus der Such-Kanal.
-export const botChannels = (env) => { const c = channelIds(env), w = String(env.DISCORD_WANTED_CHANNEL_ID || '').trim(); return w && !c.includes(w) ? c.concat(w) : c; };
+// DISCORD_CAMPAIGN_CHANNEL_ID: Kanal für Kampagnen (leer = erster DISCORD_CHANNEL_ID). Daran hängen die privaten Kampagnen-Threads.
+export const campaignChannel = (env) => String(env.DISCORD_CAMPAIGN_CHANNEL_ID || '').trim() || channelIds(env)[0];
+// Alle Kanäle, in denen der Bot reagiert: Runden-Kanäle plus Such- und Kampagnen-Kanal.
+export const botChannels = (env) => { const c = channelIds(env).slice(); for (const x of [env.DISCORD_WANTED_CHANNEL_ID, env.DISCORD_CAMPAIGN_CHANNEL_ID]) { const w = String(x || '').trim(); if (w && !c.includes(w)) c.push(w); } return c; };
 export const discordOn = (env) => !!(env.DISCORD_BOT_TOKEN && channelIds(env).length);
 
 // Spalten für die Verknüpfung mit der Discord-Nachricht (einmal pro Worker-Instanz prüfen).
@@ -605,6 +610,10 @@ export async function overviewMessage(env) {
   try { wanted = (await env.DB.prepare("SELECT count(*) AS n FROM wanted WHERE status = 'open' AND expires_at >= ?1").bind(berlinToday()).first()).n; } catch { /* Tabelle fehlt noch */ }
   const wc = wantedChannel(env);
   if (wanted) desc += `\n\n🔎 ${wanted} offene Spielesuche${wanted === 1 ? '' : 'n'}${wc && wc !== channelIds(env)[0] ? ` in <#${wc}>` : ''}`;
+  let camps = 0;
+  try { camps = await openCampaignCount(env); } catch { /* Tabelle fehlt noch */ }
+  const cc = campaignChannel(env);
+  if (camps) desc += `${wanted ? '\n' : '\n\n'}🗺️ ${camps} Kampagne${camps === 1 ? '' : 'n'} ${camps === 1 ? 'sucht' : 'suchen'} Mitspielende${cc && cc !== channelIds(env)[0] ? ` in <#${cc}>` : ''}`;
   const embed = { title: '📋 Offene Runden', description: desc.trim(), color: 0xe8a33d, footer: { text: `${results.length} Runde${results.length === 1 ? '' : 'n'} · ${free} freie Plätze · Neue Runde: /party` } };
   const web = env.PUBLIC_URL ? env.PUBLIC_URL.replace(/\/$/, '') + '/#partys' : '';
   const components = web ? [{ type: 1, components: [{ type: 2, style: 5, label: 'Auf der Webseite ansehen', url: web }] }] : [];
