@@ -299,7 +299,8 @@ export function campaignMessage(c, rows, env) {
     { name: '🔁 Rhythmus', value: tbd(c) ? `noch offen${c.duration ? ` · ${durText(c.duration)} pro Sitzung` : ''}` : `${rhythmText(J(c.rule, null), c.start_date)}, ${c.time} Uhr${c.duration ? ` · ${durText(c.duration)}` : ''}` },
     { name: '🎯 Sitzungen', value: tbd(c) ? `ca. ${c.sessions}` : `ca. ${rows.length}${done ? `, davon ${done} gespielt` : ''}${rows.length ? ` · bis etwa ${fmtDate(rows[rows.length - 1].date)}` : ''}` },
     { name: `🪑 ${c.seats} Plätze`, value: `${bar}  ${!c.open ? '🔒 sucht niemanden mehr' : fr ? `noch ${fr} frei` : '🔒 voll'}${rs ? ` · ${rs} reserviert` : ''}` },
-    { name: '👥 Dabei', value: ppl.map((x, i) => (i ? '🙋 ' : '👑 ') + `<@${x.id}>`).join('\n').slice(0, 1000) },
+    // Eingeladene stehen mit dabei: 🟨 = Platz reserviert (wie im Balken), ✉️ = eingeladen ohne Reservierung.
+    { name: '👥 Dabei', value: ppl.map((x, i) => (i ? '🙋 ' : '👑 ') + `<@${x.id}>`).concat(invOf(c).filter((x) => !isIn(c, x.id)).map((x) => (x.res ? '🟨 ' : '✉️ ') + `<@${x.id}> · ${x.res ? 'eingeladen, Platz reserviert' : 'eingeladen'}`)).join('\n').slice(0, 1000) },
   ];
   if (c.note) fields.push({ name: '💬 Hinweis', value: c.note.slice(0, 500) });
   const web = env.PUBLIC_URL ? env.PUBLIC_URL.replace(/\/$/, '') + '/#kampagnen' : '';

@@ -92,6 +92,9 @@ assert.match(dmMsg.body.content, /lädt dich zur Kampagne/); assert.match(dmMsg.
 assert.deepEqual(dmMsg.body.components[0].components.slice(0, 2).map((b) => b.custom_id), [`campj:${id}`, `campd:${id}`]);
 assert.equal(log.filter((y) => y.method === 'POST' && y.path === '/channels/CH1/messages').length, ch1Before, 'no public invite');
 assert.ok(log.some((y) => y.method === 'POST' && y.path === '/channels/TH1/messages' && /hat \*\*Gast\*\* eingeladen \(Platz reserviert/.test(y.body.content || '')), 'thread note invite');
+const postPatch = log.filter((y) => y.method === 'PATCH' && /^\/channels\/CH1\/messages\//.test(y.path)).at(-1);
+const dabei = postPatch.body.embeds[0].fields.find((f) => /Dabei/.test(f.name)).value; assert.match(dabei, /🟨 <@557> · eingeladen, Platz reserviert/);
+assert.match(postPatch.body.embeds[0].fields.find((f) => /Plätze/.test(f.name)).value, /🟩🟩🟨⬜ .*1 reserviert/);
 L = await list(eva); assert.equal(L[0].reserved, 1); assert.equal(L[0].invited.length, 1); assert.equal(L[0].invited[0].name, 'Gast'); assert.ok(L[0].invited[0].k);
 let G = await list(gast); assert.deepEqual(G[0].you, { host: false, in: false, invited: true, res: true }); assert.deepEqual(G[0].invited, []);
 L = await list(fritz); assert.equal(L[0].invited[0].k, undefined, 'only host sees keys');
