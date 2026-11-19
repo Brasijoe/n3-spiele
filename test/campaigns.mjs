@@ -1,11 +1,11 @@
 // Kampagnen (#kampagnen). Startet selbst einen Mock-Discord auf :8801 (OAuth, Bot-API, Kanal CH1, private Threads TH…).
 // Worker per test/reset.sh mit .dev.vars wie in test/wanted.mjs (DISCORD_CHANNEL_ID=CH1, DISCORD_MEMBER_ROLE_ID=777, DISCORD_PUBLIC_KEY=<pub aus DK_FILE>).
-// Mock-Nutzer: 555 Eva, 556 Fritz, 558 Hans, 559 Ida (Mitglieder), 557 Gast (keine Mitgliederrolle).
+// Mock-Nutzer: 555 Eva, 556 Fritz, 557 Gast, 558 Hans, 559 Ida (Mitglieder), 560 Nora (keine Mitgliederrolle).
 import http from 'node:http';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const W = 'http://localhost:8799/api';
-const USERS = { 555: { username: 'eva_x', global_name: 'Eva', nick: 'Eva vom Server', roles: ['777'] }, 556: { username: 'fritz', global_name: 'Fritz', nick: null, roles: ['777'] }, 557: { username: 'gast', global_name: 'Gast', nick: null, roles: [] }, 558: { username: 'hans', global_name: 'Hans', nick: null, roles: ['777'] }, 559: { username: 'ida', global_name: 'Ida', nick: null, roles: ['777'] } };
+const USERS = { 555: { username: 'eva_x', global_name: 'Eva', nick: 'Eva vom Server', roles: ['777'] }, 556: { username: 'fritz', global_name: 'Fritz', nick: null, roles: ['777'] }, 557: { username: 'gast', global_name: 'Gast', nick: null, roles: ['777'] }, 560: { username: 'nora', global_name: 'Nora', nick: null, roles: [] }, 558: { username: 'hans', global_name: 'Hans', nick: null, roles: ['777'] }, 559: { username: 'ida', global_name: 'Ida', nick: null, roles: ['777'] } };
 const log = []; let cur = '555', n = 0, th = 0;
 http.createServer((req, res) => {
   let b = ''; req.on('data', (c) => (b += c)); req.on('end', () => {
@@ -53,11 +53,11 @@ const plus = (iso, k) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(
 let wed = plus(today, 1); while (new Date(wed + 'T12:00:00Z').getUTCDay() !== 3) wed = plus(wed, 1);
 const list = async (tok) => (await call('GET', '/campaigns', tok)).d;
 
-const eva = await login('555'), fritz = await login('556'), gast = await login('557'), hans = await login('558'), ida = await login('559');
+const eva = await login('555'), fritz = await login('556'), gast = await login('557'), hans = await login('558'), ida = await login('559'), nora = await login('560');
 const base = { game: 'Gloomhaven', gameId: 174430, year: 2017, start: wed, time: '18:30', rule: { t: 'x', wd: [3], every: 1, mo: [], extra: [], skip: [] }, sessions: 5, duration: 240, seats: 4, note: 'Wir starten bei Szenario 1.' };
 
 let r = await call('POST', '/campaigns', null, base); assert.equal(r.status, 403);
-r = await call('POST', '/campaigns', gast, base); assert.equal(r.d.error, 'members_only');
+r = await call('POST', '/campaigns', nora, base); assert.equal(r.d.error, 'members_only');
 r = await call('POST', '/campaigns', eva, { ...base, start: plus(today, -1) }); assert.equal(r.d.error, 'past');
 r = await call('POST', '/campaigns', eva, { ...base, rule: { t: 'x' } }); assert.equal(r.d.error, 'invalid');
 r = await call('POST', '/campaigns', eva, base); assert.equal(r.status, 200, JSON.stringify(r.d));
@@ -75,16 +75,19 @@ assert.equal(log.filter((x) => x.path === '/channels/TH1/messages' && /Sitzung 2
 let L = await list(eva); assert.equal(L.length, 1); assert.equal(L[0].phase, 'new'); assert.deepEqual(L[0].you, { host: true, in: true, invited: false, res: false }); assert.equal(JSON.stringify(L).includes('555'), false);
 console.log('create ok');
 
-// Mitmachen: Fritz (Mitglied) ja, Gast (ohne Mitgliederrolle, Mittwoch ist kein Stammtisch) nein
+// Mitmachen: Fritz (Mitglied) ja, Nora (ohne Mitgliederrolle) nein; Kampagnen sind nur für Mitglieder
 r = await call('POST', `/campaigns/${id}/join`, fritz); assert.equal(r.status, 200);
-r = await call('POST', `/campaigns/${id}/join`, gast); assert.equal(r.d.error, 'members_only');
+r = await call('POST', `/campaigns/${id}/join`, nora); assert.equal(r.d.error, 'members_only');
 // Einladen über Discord: Eva wählt Gast aus (privat per Direktnachricht, Platz reserviert)
 const asDm = (id) => ({ guild_id: undefined, channel_id: 'DMC', channel: { id: 'DMC', type: 1 }, user: { id, username: USERS[id].username, global_name: USERS[id].global_name } });
 const ch1Before = log.filter((y) => y.method === 'POST' && y.path === '/channels/CH1/messages').length;
 let x = await interact({ type: 3, ...as('555'), data: { custom_id: `campi:${id}` } });
 assert.equal(x.data.flags, 64); assert.equal(x.data.components[0].components[0].type, 5); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:1`);
 x = await interact({ type: 3, ...as('555'), data: { custom_id: `campt:${id}:0` } }); assert.equal(x.type, 7); assert.equal(x.data.flags, undefined, 'no flags on update'); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:0`);
-const invite = async (who, res = 1) => interact({ type: 3, ...as('555'), data: { custom_id: `campu:${id}:${res}`, component_type: 5, values: [who, '556'], resolved: { users: { [who]: { id: who, global_name: USERS[who].global_name }, 556: { id: '556' } } } } });
+const mem = (u) => ({ user: { id: u, global_name: USERS[u].global_name }, nick: USERS[u].nick, roles: USERS[u].roles });
+const invite = async (who, res = 1) => interact({ type: 3, ...as('555'), data: { custom_id: `campu:${id}:${res}`, component_type: 5, values: [who, '556'], resolved: { users: { [who]: { id: who, global_name: USERS[who].global_name }, 556: { id: '556' } }, members: { [who]: mem(who), 556: mem('556') } } } });
+// Nora (kein Mitglied) kann nicht eingeladen werden
+x = await invite('560'); assert.equal(x.type, 7); assert.match(x.data.content, /Nora ist kein Mitglied/); assert.equal(log.some((y) => y.path === '/users/@me/channels' && y.body.recipient_id === '560'), false);
 x = await invite('557'); assert.match(x.data.content, /Eingeladen ✓ Gast/); await wait();
 assert.ok(log.some((y) => y.method === 'POST' && y.path === '/users/@me/channels' && y.body.recipient_id === '557'), 'dm opened');
 let dmMsg = log.filter((y) => y.method === 'POST' && /^\/channels\/DM\d+\/messages$/.test(y.path)).at(-1);
@@ -115,7 +118,7 @@ assert.ok(log.some((y) => y.method === 'PATCH' && /^\/channels\/DM\d+\/messages\
 x = await invite('557'); await wait();
 L = await list(eva); r = await call('DELETE', `/campaigns/${id}/invited/${L[0].invited[0].k}`, fritz); assert.equal(r.status, 403);
 r = await call('DELETE', `/campaigns/${id}/invited/${L[0].invited[0].k}`, eva); assert.equal(r.status, 200); L = await list(eva); assert.equal(L[0].invited.length, 0);
-// Letzte Einladung: Gast nimmt per Direktnachricht an (ohne Mitgliederrolle, voll außer seinem Platz)
+// Letzte Einladung: Gast nimmt per Direktnachricht an (Rollen werden beim Server nachgefragt; voll außer seinem Platz)
 x = await invite('557'); await wait();
 x = await interact({ type: 3, ...asDm('557'), message: { id: 'dm2' }, data: { custom_id: `campj:${id}` } }); assert.equal(x.type, 7, JSON.stringify(x)); assert.match(x.data.content, /dabei ✓/); await wait();
 assert.ok(log.some((y) => y.path === '/channels/TH1/messages' && /Gast\*\* hat die Einladung angenommen/.test(y.body && y.body.content || '')), 'thread note accept');
@@ -173,7 +176,7 @@ console.log('edit ok');
 // Termin noch offen: anlegen ohne Start/Rhythmus, später festlegen
 r = await call('POST', '/campaigns', fritz, { game: 'Pandemic Legacy', tbd: true, sessions: 12, seats: 4 }); assert.equal(r.status, 200, JSON.stringify(r.d));
 const id2 = r.d.id; assert.equal(r.d.tbd, true); assert.equal(r.d.list.length, 0); assert.equal(r.d.phase, 'new');
-r = await call('POST', `/campaigns/${id2}/join`, gast); assert.equal(r.d.error, 'members_only');
+r = await call('POST', `/campaigns/${id2}/join`, nora); assert.equal(r.d.error, 'members_only');
 r = await call('POST', `/campaigns/${id2}/join`, ida); assert.equal(r.status, 200);
 r = await call('PUT', `/campaigns/${id2}`, fritz, { game: 'Pandemic Legacy', start: plus(today, 30), time: '18:00', rule: { t: 'd', n: 10 }, sessions: 12, seats: 4 }); assert.equal(r.status, 200, JSON.stringify(r.d));
 L = await list(fritz); const c2 = L.find((c) => c.id === id2); assert.equal(c2.tbd, false); assert.equal(c2.list.length, 12); assert.equal(c2.list[1].date, plus(today, 40));
