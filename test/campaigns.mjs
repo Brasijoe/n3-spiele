@@ -72,24 +72,53 @@ assert.ok(log.some((x) => x.method === 'PUT' && x.path === '/channels/TH1/thread
 const s1post = log.find((x) => x.method === 'POST' && x.path === '/channels/TH1/messages' && /Sitzung 1 von ca\. 5/.test(x.body.content || ''));
 assert.ok(s1post, 'session 1 posted'); assert.deepEqual(s1post.body.allowed_mentions.users, ['555']);
 assert.equal(log.filter((x) => x.path === '/channels/TH1/messages' && /Sitzung 2 /.test(x.body && x.body.content || '')).length, 0);
-let L = await list(eva); assert.equal(L.length, 1); assert.equal(L[0].phase, 'new'); assert.deepEqual(L[0].you, { host: true, in: true }); assert.equal(JSON.stringify(L).includes('555'), false);
+let L = await list(eva); assert.equal(L.length, 1); assert.equal(L[0].phase, 'new'); assert.deepEqual(L[0].you, { host: true, in: true, invited: false, res: false }); assert.equal(JSON.stringify(L).includes('555'), false);
 console.log('create ok');
 
 // Mitmachen: Fritz (Mitglied) ja, Gast (ohne Mitgliederrolle, Mittwoch ist kein Stammtisch) nein
 r = await call('POST', `/campaigns/${id}/join`, fritz); assert.equal(r.status, 200);
 r = await call('POST', `/campaigns/${id}/join`, gast); assert.equal(r.d.error, 'members_only');
-// Einladen über Discord: Eva wählt Gast aus
-let x = await interact({ type: 3, ...as('555'), data: { custom_id: `campi:${id}` } }); assert.equal(x.data.components[0].components[0].type, 5);
-x = await interact({ type: 3, ...as('555'), data: { custom_id: `campu:${id}`, component_type: 5, values: ['557', '556'], resolved: { users: { 557: { id: '557' }, 556: { id: '556' } } } } });
-assert.match(x.data.content, /Eingeladen/); await wait();
-const inv = log.filter((y) => y.method === 'POST' && y.path === '/channels/CH1/messages').at(-1); assert.match(inv.body.content, /<@557>.*lädt dich/); assert.deepEqual(inv.body.allowed_mentions.users, ['557']);
-r = await call('POST', `/campaigns/${id}/join`, gast); assert.equal(r.status, 200, JSON.stringify(r.d));
-// Hans über den Discord-Knopf an der Einladung (Antwort nur für ihn, Post bleibt)
+// Einladen über Discord: Eva wählt Gast aus (privat per Direktnachricht, Platz reserviert)
+const asDm = (id) => ({ guild_id: undefined, channel_id: 'DMC', channel: { id: 'DMC', type: 1 }, user: { id, username: USERS[id].username, global_name: USERS[id].global_name } });
+const ch1Before = log.filter((y) => y.method === 'POST' && y.path === '/channels/CH1/messages').length;
+let x = await interact({ type: 3, ...as('555'), data: { custom_id: `campi:${id}` } });
+assert.equal(x.data.flags, 64); assert.equal(x.data.components[0].components[0].type, 5); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:1`);
+x = await interact({ type: 3, ...as('555'), data: { custom_id: `campt:${id}:0` } }); assert.equal(x.type, 7); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:0`);
+const invite = async (who, res = 1) => interact({ type: 3, ...as('555'), data: { custom_id: `campu:${id}:${res}`, component_type: 5, values: [who, '556'], resolved: { users: { [who]: { id: who, global_name: USERS[who].global_name }, 556: { id: '556' } } } } });
+x = await invite('557'); assert.match(x.data.content, /Eingeladen ✓ Gast/); await wait();
+assert.ok(log.some((y) => y.method === 'POST' && y.path === '/users/@me/channels' && y.body.recipient_id === '557'), 'dm opened');
+let dmMsg = log.filter((y) => y.method === 'POST' && /^\/channels\/DM\d+\/messages$/.test(y.path)).at(-1);
+assert.match(dmMsg.body.content, /lädt dich zur Kampagne/); assert.match(dmMsg.body.content, /Platz ist für dich reserviert/);
+assert.deepEqual(dmMsg.body.components[0].components.slice(0, 2).map((b) => b.custom_id), [`campj:${id}`, `campd:${id}`]);
+assert.equal(log.filter((y) => y.method === 'POST' && y.path === '/channels/CH1/messages').length, ch1Before, 'no public invite');
+assert.ok(log.some((y) => y.method === 'POST' && y.path === '/channels/TH1/messages' && /hat \*\*Gast\*\* eingeladen \(Platz reserviert/.test(y.body.content || '')), 'thread note invite');
+L = await list(eva); assert.equal(L[0].reserved, 1); assert.equal(L[0].invited.length, 1); assert.equal(L[0].invited[0].name, 'Gast'); assert.ok(L[0].invited[0].k);
+let G = await list(gast); assert.deepEqual(G[0].you, { host: false, in: false, invited: true, res: true }); assert.deepEqual(G[0].invited, []);
+L = await list(fritz); assert.equal(L[0].invited[0].k, undefined, 'only host sees keys');
+// Platz bleibt reserviert: Hans kommt noch rein, danach ist voll (Eva, Fritz, Hans + Gast reserviert)
 x = await interact({ type: 3, ...as('558'), message: { id: 'msgX' }, data: { custom_id: `campj:${id}` } }); assert.match(x.data.content, /Du bist dabei/);
 r = await call('POST', `/campaigns/${id}/join`, ida); assert.equal(r.d.error, 'full');
-await wait();
+x = await invite('559'); assert.match(x.data.content, /Nur noch 0/);
+// Gast lehnt in der Direktnachricht ab -> Platz frei, Hinweis im Thread
+x = await interact({ type: 3, ...asDm('557'), message: { id: dmMsg.body ? 'dm1' : 'dm1' }, data: { custom_id: `campd:${id}` } }); assert.equal(x.type, 7); assert.match(x.data.content, /abgelehnt/); await wait();
+assert.ok(log.some((y) => y.path === '/channels/TH1/messages' && /Gast\*\* hat die Einladung abgelehnt/.test(y.body && y.body.content || '')), 'thread note decline');
+L = await list(eva); assert.equal(L[0].reserved, 0); assert.equal(L[0].invited.length, 0);
+// Wieder einladen, Eva nimmt zurück (Discord-Menü), dann noch einmal einladen und per Web zurücknehmen
+x = await invite('557'); await wait();
+x = await interact({ type: 3, ...as('555'), data: { custom_id: `campi:${id}` } }); const kSel = x.data.components[2].components[0]; assert.equal(kSel.type, 3); assert.equal(kSel.options[0].label, 'Gast');
+x = await interact({ type: 3, ...as('556'), data: { custom_id: `campk:${id}`, component_type: 3, values: [kSel.options[0].value] } }); assert.match(x.data.content, /Nur Eva|nur Eva/);
+x = await interact({ type: 3, ...as('555'), data: { custom_id: `campk:${id}`, component_type: 3, values: [kSel.options[0].value] } }); assert.match(x.data.content, /Zurückgenommen ✓ \(1\)/); await wait();
+assert.ok(log.some((y) => y.method === 'PATCH' && /^\/channels\/DM\d+\/messages\/msg\d+$/.test(y.path) && /zurückgenommen/.test(y.body.content)), 'dm closed');
+x = await invite('557'); await wait();
+L = await list(eva); r = await call('DELETE', `/campaigns/${id}/invited/${L[0].invited[0].k}`, fritz); assert.equal(r.status, 403);
+r = await call('DELETE', `/campaigns/${id}/invited/${L[0].invited[0].k}`, eva); assert.equal(r.status, 200); L = await list(eva); assert.equal(L[0].invited.length, 0);
+// Letzte Einladung: Gast nimmt per Direktnachricht an (ohne Mitgliederrolle, voll außer seinem Platz)
+x = await invite('557'); await wait();
+x = await interact({ type: 3, ...asDm('557'), message: { id: 'dm2' }, data: { custom_id: `campj:${id}` } }); assert.equal(x.type, 7, JSON.stringify(x)); assert.match(x.data.content, /dabei ✓/); await wait();
+assert.ok(log.some((y) => y.path === '/channels/TH1/messages' && /Gast\*\* hat die Einladung angenommen/.test(y.body && y.body.content || '')), 'thread note accept');
+r = await call('POST', `/campaigns/${id}/join`, ida); assert.equal(r.d.error, 'full');
 for (const u of ['556', '557', '558']) assert.ok(log.some((y) => y.method === 'PUT' && y.path === '/channels/TH1/thread-members/' + u), 'thread member ' + u);
-L = await list(fritz); assert.deepEqual(L[0].players, ['Fritz', 'Gast', 'Hans']); assert.deepEqual(L[0].you, { host: false, in: true });
+L = await list(fritz); assert.deepEqual(L[0].players, ['Fritz', 'Gast', 'Hans']); assert.deepEqual(L[0].you, { host: false, in: true, invited: false, res: false }); assert.equal(L[0].reserved, 0);
 console.log('join + invite ok');
 
 // Verschieben: Fritz schlägt Sitzung 1 einen Tag später vor; alle stimmen zu -> verschoben

@@ -125,7 +125,15 @@ export const playersOf = (c) => J(c.players, {});
 // Alle in der Kampagne (Ersteller zuerst), als [{id, name}].
 export const people = (c) => [{ id: c.host_discord, name: c.host_name }, ...Object.entries(playersOf(c)).map(([id, p]) => ({ id, name: p.name }))];
 const isIn = (c, uid) => !!uid && (uid === c.host_discord || !!playersOf(c)[uid]);
-const free = (c) => Math.max(0, c.seats - 1 - Object.keys(playersOf(c)).length);
+// Einladungen: [{id, name, k (Schlüssel fürs Web), res (1 = Platz reserviert), by, at, dm, msg (Direktnachricht)}]; alte Einträge sind nur IDs.
+// Ein reservierter Platz bleibt belegt, bis die Person mitmacht, ablehnt oder der Ersteller die Einladung zurücknimmt.
+export const invOf = (c) => J(c.invited, []).map((x) => (typeof x === 'string' ? { id: x, name: '', k: 'i' + x.slice(-8), res: 0 } : x)).filter((x) => x && x.id);
+const reservedOf = (c) => invOf(c).filter((x) => x.res && !isIn(c, x.id));
+const free = (c) => Math.max(0, c.seats - 1 - Object.keys(playersOf(c)).length - reservedOf(c).length);
+async function saveInv(env, c, list) {
+  c.invited = JSON.stringify(list.slice(-200));
+  await env.DB.prepare('UPDATE campaigns SET invited = ?1 WHERE id = ?2').bind(c.invited, c.id).run();
+}
 const numberOf = (rows, sid) => rows.findIndex((r) => r.id === sid) + 1;
 const tbd = (c) => !c.start_date;
 const phase = (rows, today = berlinToday()) => { const done = rows.filter((r) => r.date < today).length; return !rows.length || done === rows.length ? 'done' : done ? 'running' : 'new'; };
@@ -138,8 +146,10 @@ async function joinCheck(env, c, rows, roles, uid) {
   if (c.status !== 'active') return 'ended';
   const today = berlinToday(), fut = rows.filter((r) => r.date >= today);
   if (!fut.length && !tbd(c)) return 'ended';
+  const inv = uid ? invOf(c).find((x) => x.id === uid) : null;
+  if (inv && inv.res) return null; // eigener reservierter Platz
   if (!free(c)) return 'full';
-  if (uid && J(c.invited, []).includes(uid)) return null;
+  if (inv) return null;
   if (!c.open) return 'closed';
   const rule = await getBooking(env);
   if (isMember(rule, roles)) return null;
@@ -152,7 +162,57 @@ async function addPlayer(env, c, uid, name, member) {
   if (uid === c.host_discord || pl[uid]) return 'already';
   pl[uid] = { name: str(name, 40), at: new Date().toISOString(), m: member ? 1 : 0 };
   const u = await env.DB.prepare('UPDATE campaigns SET players = ?1 WHERE id = ?2 AND players = ?3').bind(JSON.stringify(pl), c.id, c.players).run();
-  return u.meta.changes ? null : 'changed';
+  if (!u.meta.changes) return 'changed';
+  // War die Person eingeladen: Einladung ist erledigt (reservierter Platz wird zum normalen Platz).
+  const fresh = await getCamp(env, c.id), inv = invOf(fresh), mine = inv.find((x) => x.id === uid);
+  if (mine) { await saveInv(env, fresh, inv.filter((x) => x.id !== uid)); c._accepted = mine; }
+  return null;
+}
+// Hinweis im privaten Thread (ohne Erwähnungen).
+async function threadNote(env, c, content) {
+  if (!c.discord_thread || !env.DISCORD_BOT_TOKEN || thState(c).a) return;
+  await toThread(env, c, { content, allowed_mentions: { parse: [] } }).catch((e) => console.log('campaign note failed', e && e.message));
+}
+// Direktnachricht einer Einladung ändern (Knöpfe weg).
+async function closeInviteDm(env, x, text) {
+  if (!x.dm || !x.msg || !env.DISCORD_BOT_TOKEN) return;
+  await discord(env, 'PATCH', `/channels/${x.dm}/messages/${x.msg}`, { content: text, embeds: [], components: [] }).catch(() => {});
+}
+// Einladung zurücknehmen (Ersteller/Verwaltung) oder ablehnen (eingeladene Person). Gibt den Eintrag zurück oder null.
+async function dropInvite(env, c, match, by) {
+  const inv = invOf(c), x = inv.find(match); if (!x) return null;
+  await saveInv(env, c, inv.filter((y) => y !== x));
+  const nm = x.name || 'Eine eingeladene Person';
+  if (env.DISCORD_BOT_TOKEN) {
+    await closeInviteDm(env, x, by ? `${ICON} Die Einladung zur Kampagne **${c.game}** wurde zurückgenommen.` : `${ICON} Du hast die Einladung zur Kampagne **${c.game}** abgelehnt.`);
+    await threadNote(env, c, by ? `🗑️ ${by} hat die Einladung für **${nm}** zurückgenommen.${x.res ? ' Der reservierte Platz ist wieder frei.' : ''}` : `❌ **${nm}** hat die Einladung abgelehnt.${x.res ? ' Der reservierte Platz ist wieder frei.' : ''}`);
+    await syncCampaign(env, c.id);
+  }
+  return x;
+}
+// Einladungen verschicken (Direktnachricht, privat) und im Thread vermerken.
+async function sendInvites(env, c, list, byName) {
+  const fails = [], post = c.discord_msg && env.DISCORD_GUILD_ID ? `https://discord.com/channels/${env.DISCORD_GUILD_ID}/${c.discord_channel}/${c.discord_msg}` : '';
+  const what = tbd(c) ? 'Termine noch offen' : `${rhythmText(J(c.rule, null), c.start_date)}, ${c.time} Uhr`;
+  for (const x of list) {
+    try {
+      const dm = await discord(env, 'POST', '/users/@me/channels', { recipient_id: x.id });
+      const btns = [{ type: 2, style: 3, label: 'Mitmachen', emoji: { name: '✋' }, custom_id: 'campj:' + c.id }, { type: 2, style: 4, label: 'Ablehnen', custom_id: 'campd:' + c.id }];
+      if (post) btns.push({ type: 2, style: 5, label: 'Zur Kampagne', url: post });
+      const msg = await discord(env, 'POST', `/channels/${dm.id}/messages`, {
+        content: `✉️ **${byName}** lädt dich zur Kampagne **${c.game}** ein (${what}, ca. ${c.sessions} Sitzungen).${x.res ? ' Ein Platz ist für dich reserviert, bis du zusagst oder ablehnst.' : ''}${c.note ? `
+> ${c.note.slice(0, 300)}` : ''}`,
+        components: [{ type: 1, components: btns }], allowed_mentions: { parse: [] },
+      });
+      const fresh = await getCamp(env, c.id), inv = invOf(fresh), e = inv.find((y) => y.id === x.id);
+      if (e) { e.dm = dm.id; e.msg = msg.id; await saveInv(env, fresh, inv); }
+    } catch (e) { fails.push(x.name || 'jemand'); }
+  }
+  const names = list.map((x) => `**${x.name || 'jemand'}**`).join(', ');
+  await threadNote(env, await getCamp(env, c.id), `✉️ ${byName} hat ${names} eingeladen${list.some((x) => x.res) ? ' (Platz reserviert, bis zugesagt, abgelehnt oder zurückgenommen)' : ''}.` +
+    (fails.length ? ` ⚠️ ${fails.join(', ')} ${fails.length === 1 ? 'kann' : 'können'} keine Direktnachrichten vom Bot empfangen. Bitte direkt Bescheid geben: Mitmachen geht auch am Post der Kampagne.` : ''));
+  await syncCampaign(env, c.id);
+  return fails;
 }
 async function removePlayer(env, c, uid) {
   const pl = playersOf(c);
@@ -232,13 +292,13 @@ function gameEmbed(c, env, extra) {
 }
 export function campaignMessage(c, rows, env) {
   const today = berlinToday(), next = rows.find((r) => r.date >= today), done = rows.filter((r) => r.date < today).length;
-  const ppl = people(c), taken = ppl.length, fr = free(c);
-  const bar = '🟩'.repeat(Math.min(taken, c.seats)) + '⬜'.repeat(Math.max(0, c.seats - taken));
+  const ppl = people(c), taken = ppl.length, fr = free(c), rs = reservedOf(c).length;
+  const bar = '🟩'.repeat(Math.min(taken, c.seats)) + '🟨'.repeat(Math.max(0, Math.min(rs, c.seats - taken))) + '⬜'.repeat(Math.max(0, c.seats - taken - rs));
   const fields = [
     { name: done ? '📅 Nächste Sitzung' : '📅 Start', value: next ? when(next.date, next.time) : tbd(c) ? 'noch offen' : 'keine weitere Sitzung geplant' },
     { name: '🔁 Rhythmus', value: tbd(c) ? `noch offen${c.duration ? ` · ${durText(c.duration)} pro Sitzung` : ''}` : `${rhythmText(J(c.rule, null), c.start_date)}, ${c.time} Uhr${c.duration ? ` · ${durText(c.duration)}` : ''}` },
     { name: '🎯 Sitzungen', value: tbd(c) ? `ca. ${c.sessions}` : `ca. ${rows.length}${done ? `, davon ${done} gespielt` : ''}${rows.length ? ` · bis etwa ${fmtDate(rows[rows.length - 1].date)}` : ''}` },
-    { name: `🪑 ${c.seats} Plätze`, value: `${bar}  ${!c.open ? '🔒 sucht niemanden mehr' : fr ? `noch ${fr} frei` : '🔒 voll'}` },
+    { name: `🪑 ${c.seats} Plätze`, value: `${bar}  ${!c.open ? '🔒 sucht niemanden mehr' : fr ? `noch ${fr} frei` : '🔒 voll'}${rs ? ` · ${rs} reserviert` : ''}` },
     { name: '👥 Dabei', value: ppl.map((x, i) => (i ? '🙋 ' : '👑 ') + `<@${x.id}>`).join('\n').slice(0, 1000) },
   ];
   if (c.note) fields.push({ name: '💬 Hinweis', value: c.note.slice(0, 500) });
@@ -331,7 +391,7 @@ export async function announceCampaign(env, id) {
     // Privater Thread: nur hinzugefügte Mitspielende (und Moderierende) sehen und schreiben dort; hinzufügen kann nur der Bot (invitable: false).
     const th = await discord(env, 'POST', `/channels/${ch}/threads`, { name: `Kampagne: ${c.game}`.slice(0, 100), type: 12, invitable: false, auto_archive_duration: 10080 });
     await env.DB.prepare('UPDATE campaigns SET discord_thread = ?1, thread_state = ?2 WHERE id = ?3').bind(th.id, JSON.stringify({ m: [] }), id).run();
-    await discord(env, 'POST', `/channels/${th.id}/messages`, { content: `Hier plant ihr die Kampagne **${c.game}**. Eine Woche vor jeder Sitzung postet der Bot hier den Termin und erwähnt alle, die dabei sind. Wer bei einer Sitzung nicht kann, sagt es dort mit einem Klick. Passt ein Termin nicht, schlag mit „Anderen Termin vorschlagen“ einen neuen vor (oder „Absage vorschlagen“): stimmen alle zu oder übernimmt ${c.host_name} ihn, wird die Sitzung verschoben bzw. fällt aus. Diesen Thread sehen nur die Mitspielenden. Andere holst du mit „Einladen“ dazu.`, components: [{ type: 1, components: [{ type: 2, style: 1, label: 'Einladen', emoji: { name: '✉️' }, custom_id: 'campi:' + c.id }] }], allowed_mentions: { parse: [] } });
+    await discord(env, 'POST', `/channels/${th.id}/messages`, { content: `Hier plant ihr die Kampagne **${c.game}**. Eine Woche vor jeder Sitzung postet der Bot hier den Termin und erwähnt alle, die dabei sind. Wer bei einer Sitzung nicht kann, sagt es dort mit einem Klick. Passt ein Termin nicht, schlag mit „Anderen Termin vorschlagen“ einen neuen vor (oder „Absage vorschlagen“): stimmen alle zu oder übernimmt ${c.host_name} ihn, wird die Sitzung verschoben bzw. fällt aus. Diesen Thread sehen nur die Mitspielenden. Andere holst du mit „Einladen“ dazu: die Einladung kommt privat per Direktnachricht, auf Wunsch mit reserviertem Platz.`, components: [{ type: 1, components: [{ type: 2, style: 1, label: 'Einladen', emoji: { name: '✉️' }, custom_id: 'campi:' + c.id }] }], allowed_mentions: { parse: [] } });
     await syncThread(env, { ...c, discord_thread: th.id, thread_state: JSON.stringify({ m: [] }) });
   } catch (e) { console.log('campaign thread failed', e && e.message); }
   await postDueSessions(env, id);
@@ -555,7 +615,7 @@ export async function campStats(env, c, rows) {
 }
 const statsText = (st) => `📊 ${st.played} Sitzung${st.played === 1 ? '' : 'en'} gespielt${st.cancelled ? `, ${st.cancelled} ausgefallen` : ''}${st.first ? ` (${fmtDate(st.first)} bis ${fmtDate(st.last)})` : ''}${st.minutes ? `, zusammen ca. ${Math.round(st.minutes / 60)} Std.` : ''}.${st.winners.length ? ' Meiste Siege: ' + st.winners.slice(0, 3).map((w) => `${w.name} (${w.n})`).join(', ') + '.' : ''}`;
 
-function campOut(env, c, rows, uid, today = berlinToday()) {
+function campOut(env, c, rows, uid, today = berlinToday(), adm = false) {
   const pl = playersOf(c), name = (id) => (id === c.host_discord ? c.host_name : (pl[id] && pl[id].name) || '?');
   const ppl = people(c);
   return {
@@ -568,7 +628,10 @@ function campOut(env, c, rows, uid, today = berlinToday()) {
         prop: p ? { cancel: p.kind === 'x', date: p.date, time: p.time, by: p.name, yes: p.yes.map(name), no: p.no.map(name), open: ppl.filter((x) => !p.yes.includes(x.id) && !p.no.includes(x.id)).map((x) => x.name) } : null,
         you: uid ? { absent: ab.includes(uid), vote: p ? (p.yes.includes(uid) ? 'y' : p.no.includes(uid) ? 'n' : '') : '', mine: !!(p && p.by === uid) } : null };
     }),
-    you: uid ? { host: uid === c.host_discord, in: isIn(c, uid) } : null,
+    reserved: reservedOf(c).length,
+    // Eingeladene: Namen nur für Mitspielende, Schlüssel zum Zurücknehmen nur für Ersteller/Verwaltung.
+    invited: adm || isIn(c, uid) ? invOf(c).filter((x) => !isIn(c, x.id)).map((x) => ({ name: x.name || '?', res: !!x.res, ...(adm || uid === c.host_discord ? { k: x.k } : {}) })) : [],
+    you: uid ? { host: uid === c.host_discord, in: isIn(c, uid), invited: !isIn(c, uid) && invOf(c).some((x) => x.id === uid), res: !isIn(c, uid) && invOf(c).some((x) => x.id === uid && x.res) } : null,
     ended: c.status !== 'active', endedAt: c.ended_at || null, outcome: c.outcome || null,
   };
 }
@@ -592,12 +655,13 @@ export async function campaignRoute(req, env, ctx, path, m, ip, h) {
     // Mit Anmeldung: pro Kampagne/Sitzung, ob man selbst dabei ist, abgestimmt hat usw. (ohne Discord-IDs in der Antwort).
     let uid = null;
     if (req.headers.get('x-session')) { const u = await checkMember(req, env, ip); if (!u.err) uid = u.member.discord_id; }
+    const adm = req.headers.has('x-admin-token') && (await isAdmin(req, env, ip));
     const today = berlinToday();
     // Aktive Kampagnen und die beendeten des letzten Jahres (mit Statistik).
     const { results } = await env.DB.prepare("SELECT * FROM campaigns WHERE status = 'active' OR (status != 'active' AND ended_at >= ?1) ORDER BY start_date LIMIT 150").bind(addDays(today, -365)).all();
     const out = [];
     for (const c of results) {
-      const rows = await getSessions(env, c.id), o = campOut(env, c, rows, uid, today);
+      const rows = await getSessions(env, c.id), o = campOut(env, c, rows, uid, today, adm);
       if (o.ended) o.stats = await campStats(env, c, rows);
       out.push(o);
     }
@@ -622,7 +686,7 @@ export async function campaignRoute(req, env, ctx, path, m, ip, h) {
     const c = await getCamp(env, g[1]); if (!c || c.status !== 'active') return fail(404, 'not_found');
     const who = await ownerOrAdmin(c); if (who.res) return who.res;
     const b = await body(req), v = readInput(b, c); if (v.err) return fail(400, v.err);
-    if (v.seats < people(c).length) return fail(400, 'seats_taken');
+    if (v.seats < people(c).length + reservedOf(c).length) return fail(400, 'seats_taken');
     const hadPast = (await getSessions(env, c.id)).some((r) => r.date < berlinToday());
     if (!v.rule && hadPast) return fail(400, 'started');
     if (v.start && v.start !== c.start_date && v.start < berlinToday() && !(await getSessions(env, c.id)).some((r) => r.date < berlinToday())) return fail(400, 'past');
@@ -672,11 +736,25 @@ export async function campaignRoute(req, env, ctx, path, m, ip, h) {
       const err = await joinCheck(env, c, await getSessions(env, c.id), u.member.roles, uid); if (err) return fail(err === 'members_only' || err === 'guests_paused' ? 403 : 409, err);
       const e2 = await addPlayer(env, c, uid, u.member.name, isMember(await getBooking(env), u.member.roles));
       if (e2 === 'changed') return fail(409, 'changed');
+      if (c._accepted && env.DISCORD_BOT_TOKEN) { const x = c._accepted; bg((async () => { await closeInviteDm(env, x, `${ICON} Du bist bei der Kampagne **${c.game}** dabei ✓`); await threadNote(env, await getCamp(env, c.id), `✅ **${u.member.name}** hat die Einladung angenommen.`); })()); }
     } else {
       if (uid === c.host_discord) return fail(400, 'host');
       const e2 = await removePlayer(env, c, uid); if (e2) return fail(409, e2);
     }
     if (env.DISCORD_BOT_TOKEN) bg(syncCampaign(env, c.id));
+    return json({ ok: true });
+  }
+  // Einladung ablehnen (eingeladene Person) bzw. zurücknehmen (Ersteller/Verwaltung, per Schlüssel k).
+  if ((g = path.match(/^\/campaigns\/([\w-]+)\/decline$/)) && m === 'POST') {
+    const u = await login(); if (u.res) return u.res;
+    const c = await getCamp(env, g[1]); if (!c) return fail(404, 'not_found');
+    await dropInvite(env, c, (x) => x.id === u.member.discord_id, null);
+    return json({ ok: true });
+  }
+  if ((g = path.match(/^\/campaigns\/([\w-]+)\/invited\/([\w-]+)$/)) && m === 'DELETE') {
+    const c = await getCamp(env, g[1]); if (!c) return fail(404, 'not_found');
+    const who = await ownerOrAdmin(c); if (who.res) return who.res;
+    await dropInvite(env, c, (x) => x.k === g[2], who.admin ? 'Die Verwaltung' : c.host_name);
     return json({ ok: true });
   }
   // Sitzungen: /campaigns/s/:sid/(absent|propose|vote|accept)
@@ -744,7 +822,8 @@ const ERR = {
 };
 export async function campaignButton(i, env, ctx) {
   await ensureCampaigns(env);
-  const [act, id] = String(i.data.custom_id).split(':'), w = who(i), roles = (i.member && i.member.roles) || [];
+  const [act, id, arg] = String(i.data.custom_id).split(':'), w = who(i), roles = (i.member && i.member.roles) || [];
+  const inDm = !i.guild_id; // Knöpfe in der Einladung per Direktnachricht
   const perms = BigInt((i.member && i.member.permissions) || '0'), mod = (perms & 0x20n) !== 0n || (perms & 0x8n) !== 0n;
   const later = (p) => ctx.waitUntil(p.catch((e) => console.log('campaign discord failed', e && e.message)));
   if (act === 'campj' || act === 'campl') {
@@ -762,6 +841,12 @@ export async function campaignButton(i, env, ctx) {
       const e2 = await removePlayer(env, c, w.id); if (e2) return say(ERR.changed);
     }
     const fresh = await getCamp(env, id), rows = await getSessions(env, id);
+    if (act === 'campj' && c._accepted) { const x = c._accepted; later((async () => { if (!inDm) await closeInviteDm(env, x, `${ICON} Du bist bei der Kampagne **${c.game}** dabei ✓`); await threadNote(env, await getCamp(env, c.id), `✅ **${w.name}** hat die Einladung angenommen.`); })()); }
+    // Einladung per Direktnachricht: die Nachricht selbst ändern (Knöpfe weg).
+    if (inDm) {
+      later(syncCampaign(env, id));
+      return reply({ type: 7, data: { content: `${ICON} Du bist bei der Kampagne **${c.game}** dabei ✓ Du wurdest zum privaten Thread der Kampagne hinzugefügt.`, components: [] } });
+    }
     // Knopf an einer Einladung (nicht am Post der Kampagne): Post im Hintergrund aktualisieren, nur kurz antworten.
     if (i.message && i.message.id !== c.discord_msg) {
       later(syncCampaign(env, id));
@@ -770,26 +855,52 @@ export async function campaignButton(i, env, ctx) {
     later((async () => { await syncThread(env, fresh); for (const s of rows) if (s.posted === 1) await syncSession(env, fresh, s.id); })());
     return reply({ type: 7, data: campaignMessage(fresh, rows, env) });
   }
-  if (act === 'campi' || act === 'campu') {
+  if (act === 'campd') {
+    const c = await getCamp(env, id);
+    const x = c ? await dropInvite(env, c, (y) => y.id === w.id, null) : null;
+    return reply({ type: 7, data: { content: x ? `${ICON} Du hast die Einladung zur Kampagne **${c.game}** abgelehnt.` : `${ICON} Diese Einladung gilt nicht mehr.`, components: [] } });
+  }
+  if (['campi', 'campu', 'campt', 'campk'].includes(act)) {
     const c = await getCamp(env, id); if (!c || c.status !== 'active') return say('Diese Kampagne gibt es nicht mehr.');
-    if (!isIn(c, w.id)) return say('Einladen können nur Leute, die bei der Kampagne mitmachen.');
-    if (act === 'campi') return reply({ type: 4, data: { flags: 64, content: `Wen möchtest du zur Kampagne **${c.game}** einladen? Die Person wird im Kanal erwähnt und kann dann mitmachen${c.open ? '' : ' (auch wenn die Kampagne sonst niemanden mehr sucht)'}.`,
-      components: [{ type: 1, components: [{ type: 5, custom_id: 'campu:' + c.id, placeholder: 'Personen auswählen', min_values: 1, max_values: 10 }] }] } });
-    const users = (i.data.resolved && i.data.resolved.users) || {};
+    if (!isIn(c, w.id) && !mod) return say('Einladen können nur Leute, die bei der Kampagne mitmachen.');
+    const host = mod || w.id === c.host_discord;
+    // Auswahlmenü (nur für dich sichtbar): Personen wählen, Platz reservieren an/aus, als Ersteller Einladungen zurücknehmen.
+    const menu = (cc, res, note) => {
+      const inv = invOf(cc).filter((x) => !isIn(cc, x.id)), fr = free(cc);
+      const rows = [
+        { type: 1, components: [{ type: 5, custom_id: `campu:${cc.id}:${res ? 1 : 0}`, placeholder: 'Personen einladen …', min_values: 1, max_values: 10 }] },
+        { type: 1, components: [{ type: 2, style: res ? 3 : 2, label: res ? 'Platz reservieren: an' : 'Platz reservieren: aus', emoji: { name: res ? '🪑' : '➖' }, custom_id: `campt:${cc.id}:${res ? 0 : 1}` }] },
+      ];
+      if (host && inv.length) rows.push({ type: 1, components: [{ type: 3, custom_id: 'campk:' + cc.id, placeholder: 'Einladung zurücknehmen …', min_values: 1, max_values: Math.min(25, inv.length),
+        options: inv.slice(0, 25).map((x) => ({ label: (x.name || 'Unbekannt').slice(0, 80), value: x.k, description: x.res ? 'Platz reserviert' : 'ohne Reservierung' })) }] });
+      return { flags: 64, content: (note ? note + '\n\n' : '') + `Wen möchtest du zur Kampagne **${cc.game}** einladen? Die Einladung kommt als private Nachricht vom Bot, im Kanal sieht sie niemand. ` +
+        (res ? `Mit „Platz reservieren: an“ hält die Kampagne für jede eingeladene Person einen Platz frei, bis sie zusagt, ablehnt oder ${cc.host_name} die Einladung zurücknimmt (noch ${fr} frei).` : 'Ohne Reservierung kann die Person mitmachen, solange ein Platz frei ist.') +
+        (inv.length ? `\nEingeladen: ${inv.map((x) => (x.name || '?') + (x.res ? ' 🪑' : '')).join(', ')}` : ''), components: rows, allowed_mentions: { parse: [] } };
+    };
+    if (act === 'campi') return reply({ type: 4, data: menu(c, true) });
+    if (act === 'campt') return reply({ type: 7, data: menu(c, arg === '1') });
+    if (act === 'campk') {
+      if (!host) return say(`Einladungen zurücknehmen kann nur ${c.host_name} (Ersteller).`);
+      const keys = (i.data.values || []).map(String); let cur = c, n = 0;
+      for (const k of keys) { if (await dropInvite(env, cur, (x) => x.k === k, w.name)) n++; cur = await getCamp(env, c.id); }
+      return reply({ type: 7, data: menu(cur, true, n ? `Zurückgenommen ✓ (${n})` : 'Nichts geändert.') });
+    }
+    const res = arg !== '0';
+    const users = (i.data.resolved && i.data.resolved.users) || {}, members = (i.data.resolved && i.data.resolved.members) || {};
     const ids = (i.data.values || []).map(String).filter((x) => /^\d{1,25}$/.test(x) && !(users[x] && users[x].bot) && !isIn(c, x)).slice(0, 10);
-    if (!ids.length) return reply({ type: 7, data: { content: 'Niemand Neues ausgewählt (wer schon dabei ist oder ein Bot ist, wird übersprungen).', components: [] } });
-    const inv = [...new Set(J(c.invited, []).concat(ids))].slice(-200);
-    await env.DB.prepare('UPDATE campaigns SET invited = ?1 WHERE id = ?2').bind(JSON.stringify(inv), c.id).run();
-    const fresh = await getCamp(env, c.id), rows = await getSessions(env, c.id);
-    // Einladung im Kampagnen-Kanal (der private Thread ist für Eingeladene noch nicht sichtbar), mit eigenem „Mitmachen“-Knopf.
-    later(discord(env, 'POST', `/channels/${c.discord_channel || campaignChannel(env)}/messages`, {
-      content: `${ids.map((x) => `<@${x}>`).join(' ')} ✉️ **${w.name}** lädt dich zur Kampagne **${c.game}** ein (${tbd(c) ? 'Termine noch offen' : rhythmText(J(c.rule, null), c.start_date) + ', ' + c.time + ' Uhr'}). Mitmachen mit dem Knopf unten oder am Post der Kampagne.`,
-      ...(c.discord_msg ? { message_reference: { message_id: c.discord_msg, fail_if_not_exists: false } } : {}),
-      components: [{ type: 1, components: [{ type: 2, style: 3, label: 'Mitmachen', emoji: { name: '✋' }, custom_id: 'campj:' + c.id }] }],
-      allowed_mentions: { users: ids },
-    }).then(() => syncCampaign(env, fresh.id)));
-    void rows;
-    return reply({ type: 7, data: { content: `Eingeladen ✓ ${ids.map((x) => `<@${x}>`).join(' ')} ${ids.length === 1 ? 'wird' : 'werden'} im Kanal erwähnt und ${ids.length === 1 ? 'kann' : 'können'} jetzt mitmachen.`, components: [], allowed_mentions: { parse: [] } } });
+    if (!ids.length) return reply({ type: 7, data: menu(c, res, 'Niemand Neues ausgewählt (wer schon dabei ist oder ein Bot ist, wird übersprungen).') });
+    const inv = invOf(c), newRes = ids.filter((x) => !inv.some((y) => y.id === x && y.res)).length;
+    if (res && newRes > free(c)) return reply({ type: 7, data: menu(c, res, `Nur noch ${free(c)} Platz/Plätze frei. Wähle weniger Personen oder lade ohne Reservierung ein.`) });
+    const at = new Date().toISOString(), list = [];
+    for (const x of ids) {
+      const u = users[x] || {}, mb = members[x] || {}, name = str(mb.nick || u.global_name || u.username || '', 40);
+      const old = inv.find((y) => y.id === x), e = old || { id: x, k: newId().slice(0, 10) };
+      Object.assign(e, { name: name || e.name || '', res: res ? 1 : old ? old.res : 0, by: w.name, at });
+      if (!old) inv.push(e); list.push(e);
+    }
+    await saveInv(env, c, inv);
+    later(sendInvites(env, await getCamp(env, c.id), list, w.name));
+    return reply({ type: 7, data: menu(await getCamp(env, c.id), res, `Eingeladen ✓ ${list.map((x) => x.name || '?').join(', ')} ${list.length === 1 ? 'bekommt' : 'bekommen'} eine private Nachricht vom Bot${res ? ', ein Platz ist reserviert' : ''}. Im Thread steht es auch.`) });
   }
   const s = await getSession(env, id); if (!s) return say('Diese Sitzung gibt es nicht mehr.');
   const c = await getCamp(env, s.campaign_id); if (!c || c.status !== 'active') return say('Diese Kampagne gibt es nicht mehr.');
