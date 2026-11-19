@@ -873,11 +873,11 @@ export async function campaignButton(i, env, ctx) {
       ];
       if (host && inv.length) rows.push({ type: 1, components: [{ type: 3, custom_id: 'campk:' + cc.id, placeholder: 'Einladung zurücknehmen …', min_values: 1, max_values: Math.min(25, inv.length),
         options: inv.slice(0, 25).map((x) => ({ label: (x.name || 'Unbekannt').slice(0, 80), value: x.k, description: x.res ? 'Platz reserviert' : 'ohne Reservierung' })) }] });
-      return { flags: 64, content: (note ? note + '\n\n' : '') + `Wen möchtest du zur Kampagne **${cc.game}** einladen? Die Einladung kommt als private Nachricht vom Bot, im Kanal sieht sie niemand. ` +
+      return { content: (note ? note + '\n\n' : '') + `Wen möchtest du zur Kampagne **${cc.game}** einladen? Die Einladung kommt als private Nachricht vom Bot, im Kanal sieht sie niemand. ` +
         (res ? `Mit „Platz reservieren: an“ hält die Kampagne für jede eingeladene Person einen Platz frei, bis sie zusagt, ablehnt oder ${cc.host_name} die Einladung zurücknimmt (noch ${fr} frei).` : 'Ohne Reservierung kann die Person mitmachen, solange ein Platz frei ist.') +
         (inv.length ? `\nEingeladen: ${inv.map((x) => (x.name || '?') + (x.res ? ' 🪑' : '')).join(', ')}` : ''), components: rows, allowed_mentions: { parse: [] } };
     };
-    if (act === 'campi') return reply({ type: 4, data: menu(c, true) });
+    if (act === 'campi') return reply({ type: 4, data: { ...menu(c, true), flags: 64 } });
     if (act === 'campt') return reply({ type: 7, data: menu(c, arg === '1') });
     if (act === 'campk') {
       if (!host) return say(`Einladungen zurücknehmen kann nur ${c.host_name} (Ersteller).`);

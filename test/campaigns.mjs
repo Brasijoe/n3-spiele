@@ -83,7 +83,7 @@ const asDm = (id) => ({ guild_id: undefined, channel_id: 'DMC', channel: { id: '
 const ch1Before = log.filter((y) => y.method === 'POST' && y.path === '/channels/CH1/messages').length;
 let x = await interact({ type: 3, ...as('555'), data: { custom_id: `campi:${id}` } });
 assert.equal(x.data.flags, 64); assert.equal(x.data.components[0].components[0].type, 5); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:1`);
-x = await interact({ type: 3, ...as('555'), data: { custom_id: `campt:${id}:0` } }); assert.equal(x.type, 7); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:0`);
+x = await interact({ type: 3, ...as('555'), data: { custom_id: `campt:${id}:0` } }); assert.equal(x.type, 7); assert.equal(x.data.flags, undefined, 'no flags on update'); assert.equal(x.data.components[0].components[0].custom_id, `campu:${id}:0`);
 const invite = async (who, res = 1) => interact({ type: 3, ...as('555'), data: { custom_id: `campu:${id}:${res}`, component_type: 5, values: [who, '556'], resolved: { users: { [who]: { id: who, global_name: USERS[who].global_name }, 556: { id: '556' } } } } });
 x = await invite('557'); assert.match(x.data.content, /Eingeladen ✓ Gast/); await wait();
 assert.ok(log.some((y) => y.method === 'POST' && y.path === '/users/@me/channels' && y.body.recipient_id === '557'), 'dm opened');
