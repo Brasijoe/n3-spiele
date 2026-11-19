@@ -54,7 +54,7 @@ let wed = plus(today, 1); while (new Date(wed + 'T12:00:00Z').getUTCDay() !== 3)
 const list = async (tok) => (await call('GET', '/campaigns', tok)).d;
 
 const eva = await login('555'), fritz = await login('556'), gast = await login('557'), hans = await login('558'), ida = await login('559');
-const base = { game: 'Gloomhaven', gameId: 174430, year: 2017, start: wed, time: '18:30', rule: { t: 'w', n: 1 }, sessions: 5, duration: 240, seats: 4, note: 'Wir starten bei Szenario 1.' };
+const base = { game: 'Gloomhaven', gameId: 174430, year: 2017, start: wed, time: '18:30', rule: { t: 'x', wd: [3], every: 1, mo: [], extra: [], skip: [] }, sessions: 5, duration: 240, seats: 4, note: 'Wir starten bei Szenario 1.' };
 
 let r = await call('POST', '/campaigns', null, base); assert.equal(r.status, 403);
 r = await call('POST', '/campaigns', gast, base); assert.equal(r.d.error, 'members_only');
