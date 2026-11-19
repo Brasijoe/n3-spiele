@@ -7,7 +7,7 @@
 //   wird die Sitzung verschoben. Die übrigen Sitzungen bleiben, wo sie sind.
 // - Mitmachen: Mitglieder immer; ohne Mitgliederrolle nur, wenn alle kommenden Sitzungen an Stammtisch-Tagen liegen (wie bei Runden).
 import { discord, campaignChannel, fmtDate, wdName, who, say, reply, berlinToday, parseDate } from './discord.js';
-import { getBooking, isMember, isStammtisch, guestsPaused, pauseText, ruleText as stmText, addDays } from './booking.js';
+import { getBooking, isMember, addDays } from './booking.js';
 
 const newId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 20);
 const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
@@ -141,21 +141,18 @@ const tLink = (env, c) => (c.discord_thread && env.DISCORD_GUILD_ID ? `https://d
 const when = (date, time) => `${wdName(date)}, ${fmtDate(date)}${time ? ` · ${time} Uhr` : ''}`;
 
 // Darf diese Person mitmachen? Gibt null oder einen Fehlercode zurück.
-// Eingeladene (von jemandem aus der Kampagne) dürfen auch, wenn die Kampagne niemanden mehr sucht oder sie keine Mitgliederrolle haben.
+// Kampagnen sind nur für Mitglieder (Mitgliederrolle), auch für Eingeladene. Eingeladene dürfen auch, wenn die Kampagne
+// niemanden mehr sucht; mit reserviertem Platz auch, wenn sonst alles voll ist.
 async function joinCheck(env, c, rows, roles, uid) {
   if (c.status !== 'active') return 'ended';
   const today = berlinToday(), fut = rows.filter((r) => r.date >= today);
   if (!fut.length && !tbd(c)) return 'ended';
+  if (!isMember(await getBooking(env), roles)) return 'members_only';
   const inv = uid ? invOf(c).find((x) => x.id === uid) : null;
   if (inv && inv.res) return null; // eigener reservierter Platz
   if (!free(c)) return 'full';
   if (inv) return null;
-  if (!c.open) return 'closed';
-  const rule = await getBooking(env);
-  if (isMember(rule, roles)) return null;
-  if (guestsPaused(rule, today)) return 'guests_paused';
-  // Ohne Mitgliederrolle: nur wenn alle kommenden Sitzungen an Stammtisch-Tagen liegen (Termin noch offen = nur mit Einladung).
-  return !tbd(c) && fut.every((r) => isStammtisch(r.date, rule)) ? null : 'members_only';
+  return c.open ? null : 'closed';
 }
 async function addPlayer(env, c, uid, name, member) {
   const pl = playersOf(c);
@@ -831,11 +828,13 @@ export async function campaignButton(i, env, ctx) {
     const c = await getCamp(env, id); if (!c || c.status !== 'active') return say('Diese Kampagne gibt es nicht mehr.');
     if (act === 'campj') {
       if (isIn(c, w.id)) return say('Du bist schon dabei.');
-      const rule = await getBooking(env), err = await joinCheck(env, c, await getSessions(env, c.id), roles, w.id);
-      if (err === 'members_only') return say(`${tbd(c) ? 'Die Termine dieser Kampagne stehen noch nicht fest.' : `Nicht alle Sitzungen dieser Kampagne liegen an Stammtisch-Tagen (${stmText(rule)}).`} Mitmachen können dann nur Mitglieder (mit der Mitgliederrolle) oder wer eingeladen wurde.`);
-      if (err === 'guests_paused') return say(pauseText(rule));
+      // In der Direktnachricht schickt Discord keine Rollen mit: beim Server nachfragen.
+      let rl = roles;
+      if (inDm) { try { rl = (await discord(env, 'GET', `/guilds/${env.DISCORD_GUILD_ID}/members/${w.id}`)).roles || []; } catch { rl = []; } }
+      const rule = await getBooking(env), err = await joinCheck(env, c, await getSessions(env, c.id), rl, w.id);
+      if (err === 'members_only') return say('Kampagnen sind nur für Mitglieder (mit der Mitgliederrolle auf dem Server).');
       if (err) return say(ERR[err]);
-      const e2 = await addPlayer(env, c, w.id, w.name, isMember(rule, roles)); if (e2) return say(e2 === 'already' ? 'Du bist schon dabei.' : ERR.changed);
+      const e2 = await addPlayer(env, c, w.id, w.name, isMember(rule, rl)); if (e2) return say(e2 === 'already' ? 'Du bist schon dabei.' : ERR.changed);
     } else {
       if (w.id === c.host_discord) return say('Als Ersteller kannst du nicht aussteigen. Beenden kannst du die Kampagne auf der Webseite.');
       if (!isIn(c, w.id)) return say('Du bist nicht dabei.');
@@ -888,8 +887,12 @@ export async function campaignButton(i, env, ctx) {
     }
     const res = arg !== '0';
     const users = (i.data.resolved && i.data.resolved.users) || {}, members = (i.data.resolved && i.data.resolved.members) || {};
-    const ids = (i.data.values || []).map(String).filter((x) => /^\d{1,25}$/.test(x) && !(users[x] && users[x].bot) && !isIn(c, x)).slice(0, 10);
-    if (!ids.length) return reply({ type: 7, data: menu(c, res, 'Niemand Neues ausgewählt (wer schon dabei ist oder ein Bot ist, wird übersprungen).') });
+    const picked = (i.data.values || []).map(String).filter((x) => /^\d{1,25}$/.test(x) && !(users[x] && users[x].bot) && !isIn(c, x)).slice(0, 10);
+    // Nur Mitglieder (Mitgliederrolle) können eingeladen werden; wer nicht auf dem Server ist, hat keine Rollen.
+    const brule = await getBooking(env), nm = (x) => str((members[x] && members[x].nick) || (users[x] && (users[x].global_name || users[x].username)) || 'jemand', 40);
+    const ids = picked.filter((x) => isMember(brule, (members[x] && members[x].roles) || [])), refused = picked.filter((x) => !ids.includes(x));
+    const refNote = refused.length ? `⚠️ ${refused.map(nm).join(', ')} ${refused.length === 1 ? 'ist kein Mitglied' : 'sind keine Mitglieder'} (keine Mitgliederrolle) und ${refused.length === 1 ? 'kann' : 'können'} nicht eingeladen werden. Kampagnen sind nur für Mitglieder.` : '';
+    if (!ids.length) return reply({ type: 7, data: menu(c, res, refNote || 'Niemand Neues ausgewählt (wer schon dabei ist oder ein Bot ist, wird übersprungen).') });
     const inv = invOf(c), newRes = ids.filter((x) => !inv.some((y) => y.id === x && y.res)).length;
     if (res && newRes > free(c)) return reply({ type: 7, data: menu(c, res, `Nur noch ${free(c)} Platz/Plätze frei. Wähle weniger Personen oder lade ohne Reservierung ein.`) });
     const at = new Date().toISOString(), list = [];
@@ -901,7 +904,7 @@ export async function campaignButton(i, env, ctx) {
     }
     await saveInv(env, c, inv);
     later(sendInvites(env, await getCamp(env, c.id), list, w.name));
-    return reply({ type: 7, data: menu(await getCamp(env, c.id), res, `Eingeladen ✓ ${list.map((x) => x.name || '?').join(', ')} ${list.length === 1 ? 'bekommt' : 'bekommen'} eine private Nachricht vom Bot${res ? ', ein Platz ist reserviert' : ''}. Im Thread steht es auch.`) });
+    return reply({ type: 7, data: menu(await getCamp(env, c.id), res, `Eingeladen ✓ ${list.map((x) => x.name || '?').join(', ')} ${list.length === 1 ? 'bekommt' : 'bekommen'} eine private Nachricht vom Bot${res ? ', ein Platz ist reserviert' : ''}. Im Thread steht es auch.${refNote ? '\n' + refNote : ''}`) });
   }
   const s = await getSession(env, id); if (!s) return say('Diese Sitzung gibt es nicht mehr.');
   const c = await getCamp(env, s.campaign_id); if (!c || c.status !== 'active') return say('Diese Kampagne gibt es nicht mehr.');
