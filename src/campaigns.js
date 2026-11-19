@@ -35,12 +35,24 @@ export async function ensureCampaigns(env) {
 }
 
 // ---------- Rhythmus ----------
-// rule: {t:'d', n} alle n Tage · {t:'w', n} alle n Wochen (Wochentag des Starttermins) · {t:'m', nth: 1–4|-1, wd: 0–6} n-ter Wochentag im Monat
+// rule: {t:'d', n} alle n Tage
+//   · {t:'x', wd:[0–6], every: 1–8, mo:[{nth: 1–4|-1, wd}], extra:[ISO], skip:[ISO]} frei wie die Stammtisch-Tage:
+//     Wochentage (alle `every` Wochen, gezählt ab der Woche des Starts) + n-te Wochentage im Monat + Zusatztermine, ohne Ausfalltage.
+//   · alt (bestehende Kampagnen): {t:'w', n} alle n Wochen am Wochentag des Starts · {t:'m', nth, wd} n-ter Wochentag im Monat
+const isoList = (a) => [...new Set((Array.isArray(a) ? a : []).map((x) => String(x).trim()).filter(isDate))].sort().slice(0, 100);
 export function cleanRule(r) {
   r = r || {};
   if (r.t === 'd') { const n = int(r.n); return n >= 1 && n <= 90 ? { t: 'd', n } : null; }
   if (r.t === 'w') { const n = int(r.n); return n >= 1 && n <= 12 ? { t: 'w', n } : null; }
   if (r.t === 'm') { const nth = int(r.nth), wd = int(r.wd); return [1, 2, 3, 4, -1].includes(nth) && wd >= 0 && wd <= 6 ? { t: 'm', nth, wd } : null; }
+  if (r.t === 'x') {
+    const okWd = (x) => Number.isInteger(x) && x >= 0 && x <= 6;
+    const wd = [...new Set((Array.isArray(r.wd) ? r.wd : []).map(Number).filter(okWd))].sort();
+    const seen = new Set(), mo = (Array.isArray(r.mo) ? r.mo : []).map((x) => ({ nth: Number(x && x.nth), wd: Number(x && x.wd) }))
+      .filter((x) => [1, 2, 3, 4, -1].includes(x.nth) && okWd(x.wd) && !seen.has(x.nth + '/' + x.wd) && seen.add(x.nth + '/' + x.wd)).slice(0, 35);
+    const every = Math.min(8, Math.max(1, int(r.every) || 1)), extra = isoList(r.extra), skip = isoList(r.skip);
+    return wd.length || mo.length || extra.length ? { t: 'x', wd, every, mo, extra, skip } : null;
+  }
   return null;
 }
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -49,10 +61,26 @@ function nthWeekday(y, m, nth, wd) {
   if (nth === -1) { const d = new Date(Date.UTC(y, m + 1, 0, 12)); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() - wd + 7) % 7)); return iso(d); }
   const d = new Date(Date.UTC(y, m, 1, 12)); d.setUTCDate(1 + ((wd - d.getUTCDay() + 7) % 7) + 7 * (nth - 1)); return iso(d);
 }
+const dm = (d) => d.slice(8, 10) + '.' + d.slice(5, 7) + '.';
+// Passt der Tag zur freien Regel? mon = Montag der Startwoche (für „alle n Wochen“).
+function xMatch(rule, d, mon) {
+  if (rule.skip.includes(d)) return false;
+  if (rule.extra.includes(d)) return true;
+  const dt = new Date(d + 'T12:00:00Z'), w = dt.getUTCDay(), day = dt.getUTCDate();
+  if (rule.wd.includes(w) && Math.floor(dayDiff(mon, d) / 7) % rule.every === 0) return true;
+  const len = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+  return rule.mo.some((x) => x.wd === w && (x.nth === -1 ? day + 7 > len : Math.ceil(day / 7) === x.nth));
+}
 // Termine nach dem Rhythmus ab start (einschließlich), die nach `after` liegen; höchstens count.
 export function ruleDates(rule, start, count, after = '') {
   const out = [];
   if (!rule || !isDate(start) || count <= 0) return out;
+  if (rule.t === 'x') {
+    const mon = addDays(start, -((new Date(start + 'T12:00:00Z').getUTCDay() + 6) % 7));
+    let d = after && after >= start ? addDays(after, 1) : start;
+    for (let i = 0; out.length < count && i < 3 * 366; i++, d = addDays(d, 1)) if (xMatch(rule, d, mon)) out.push(d);
+    return out;
+  }
   if (rule.t === 'm') {
     let y = +start.slice(0, 4), m = +start.slice(5, 7) - 1;
     for (let i = 0; out.length < count && i < 1200; i++) {
@@ -72,6 +100,13 @@ const WD = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'
 const NTH = { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' };
 export function rhythmText(rule, start) {
   if (!rule || !start) return 'Termin und Rhythmus stehen noch nicht fest';
+  if (rule.t === 'x') {
+    const ev = rule.every > 1 ? `alle ${rule.every} Wochen am ` : 'jeden ';
+    const parts = rule.wd.map((w) => ev + WD[w]).concat(rule.mo.map((x) => `am ${NTH[x.nth]} ${WD[x.wd]} im Monat`));
+    if (rule.extra.length) parts.push(`zusätzlich ${rule.extra.map(dm).join(', ')}`);
+    if (rule.skip.length) parts.push(`nicht ${rule.skip.map(dm).join(', ')}`);
+    return parts.join(', ');
+  }
   if (rule.t === 'd') return rule.n === 1 ? 'täglich' : `alle ${rule.n} Tage`;
   const wd = WD[new Date(start + 'T12:00:00Z').getUTCDay()];
   if (rule.t === 'w') return rule.n === 1 ? `jeden ${wd}` : `alle ${rule.n} Wochen am ${wd}`;

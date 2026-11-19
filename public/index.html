@@ -912,10 +912,18 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <div id="cpWhen" style="display:grid;gap:12px">
       <div class="br-dates"><label class="field"><span data-t="cpStart"></span><input type="date" id="cpStart"></label><label class="field"><span data-t="ptTime"></span><input type="time" id="cpTime" value="18:00"></label></div>
       <div class="cp-rule">
-        <label class="field"><span data-t="cpRhythm"></span><select id="cpRt"><option value="w" data-t="cpRtW"></option><option value="d" data-t="cpRtD"></option><option value="m" data-t="cpRtM"></option></select></label>
-        <label class="field" id="cpNWrap"><span id="cpNLbl"></span><input type="number" id="cpN" min="1" max="90" value="2" style="width:90px"></label>
-        <label class="field" id="cpNthWrap" hidden><span data-t="cpWhich"></span><select id="cpNth"></select></label>
-        <label class="field" id="cpWdWrap" hidden><span data-t="cpWd"></span><select id="cpWd"></select></label>
+        <label class="field"><span data-t="cpRhythm"></span><select id="cpRt"><option value="x" data-t="cpRtX"></option><option value="d" data-t="cpRtD"></option></select></label>
+        <label class="field" id="cpNWrap"><span data-t="cpNDays"></span><input type="number" id="cpN" min="1" max="90" value="7" style="width:90px"></label>
+        <button type="button" class="btn btn-quiet" id="cpXStm" data-t="cpXStm"></button>
+      </div>
+      <div id="cpXWrap" style="display:grid;gap:12px">
+        <div class="field"><span data-t="cpXWd"></span><div class="pills" id="cpXWd"></div></div>
+        <label class="field" style="max-width:220px"><span data-t="cpXEvery"></span><select id="cpXEvery"></select></label>
+        <div class="field"><span data-t="cpXMo"></span><div id="cpXMo" style="overflow-x:auto"></div></div>
+        <div class="row" style="gap:12px;flex-wrap:wrap">
+          <label class="field" style="flex:1 1 200px"><span data-t="cpXExtra"></span><input type="text" id="cpXExtra" placeholder="30.12.2026"></label>
+          <label class="field" style="flex:1 1 200px"><span data-t="cpXSkip"></span><input type="text" id="cpXSkip" placeholder="29.12.2026"></label>
+        </div>
       </div>
     </div>
     <div class="br-dates"><label class="field"><span data-t="cpCount"></span><input type="number" id="cpCount" min="1" max="60" value="10" required></label><label class="field"><span data-t="cpDurLbl"></span><input type="number" id="cpDur" min="0.5" max="12" step="0.5" value="4"></label><label class="field"><span data-t="cpSeats"></span><input type="number" id="cpSeats" min="2" max="20" value="5" required></label></div>
@@ -1337,7 +1345,7 @@ Object.assign(TXT.de, { subCamps: 'Kampagnen', cpTitle: 'Kampagnen-Mitspieler fi
   cpPropMove: '{b} schlägt vor: {d}', cpPropCancel: '{b} schlägt vor, diese Sitzung ausfallen zu lassen', cpYes: 'Passt mir', cpNoV: 'Passt mir nicht', cpAccept: 'Übernehmen', cpWithdraw: 'Zurückziehen', cpReject: 'Ablehnen',
   cpVoteYes: 'Passt: {n}', cpVoteNo: 'Passt nicht: {n}', cpVoteOpen: 'Noch offen: {n}',
   cpDlgNew: 'Kampagne anlegen', cpDlgEdit: 'Kampagne bearbeiten', cpGame: 'Spiel', cpTbdLbl: 'Start und Rhythmus stehen noch nicht fest (später festlegen)', cpStart: 'Erste Sitzung (Start)', cpRhythm: 'Rhythmus',
-  cpRtW: 'Alle N Wochen (Wochentag vom Start)', cpRtD: 'Alle N Tage', cpRtM: 'Monatlich: n-ter Wochentag', cpNWeeks: 'Alle … Wochen', cpNDays: 'Alle … Tage', cpWhich: 'Welcher', cpWd: 'Wochentag',
+  cpRtX: 'Wochentage / Tage im Monat', cpRtD: 'Alle N Tage', cpXStm: 'Stammtisch-Tage übernehmen', cpXWd: 'Wöchentlich am', cpXEvery: 'Wochentage gelten', cpXEveryN: { 1: 'jede Woche', 2: 'jede 2. Woche', 3: 'jede 3. Woche', 4: 'jede 4. Woche' }, cpXMo: 'Monatlich am (n-ter Wochentag)', cpXLast: 'Letzter', cpXExtra: 'Zusätzliche Termine', cpXSkip: 'Ausfalltage', cpErrRule: 'Bitte mindestens einen Wochentag, einen Monatstag oder einen Zusatztermin wählen.', cpErrDates: 'Bitte Datumsangaben als TT.MM.JJJJ eingeben, mit Komma getrennt.', cpEveryWeeksX: 'alle {n} Wochen am {d}', cpExtraTxt: 'zusätzlich {l}', cpSkipTxt: 'nicht am {l}', cpNWeeks: 'Alle … Wochen', cpNDays: 'Alle … Tage', cpWhich: 'Welcher', cpWd: 'Wochentag',
   cpCount: 'Sitzungen (ungefähr)', cpDurLbl: 'Dauer pro Sitzung (Std.)', cpSeats: 'Plätze inkl. dir', cpNote: 'Hinweis (Vorkenntnisse, Erweiterungen, Sprache …)', cpOpenLbl: 'Sucht noch Mitspielende',
   cpPrev: 'Termine: {l}', cpPrevMore: '… letzte etwa {d}', cpCreate: 'Kampagne anlegen', cpSave: 'Speichern', cpSaved: 'Gespeichert ✓', cpCreated: 'Kampagne angelegt ✓ Der Bot postet sie gleich in Discord.',
   cpEditNote: 'Änderst du Start oder Rhythmus, werden alle kommenden Termine neu berechnet (einzelne Verschiebungen gehen dabei verloren).',
@@ -1353,7 +1361,7 @@ Object.assign(TXT.en, { subCamps: 'Campaigns', cpTitle: 'Find campaign players',
   cpPropMove: '{b} suggests: {d}', cpPropCancel: '{b} suggests cancelling this session', cpYes: 'Works for me', cpNoV: 'Doesn’t work', cpAccept: 'Apply', cpWithdraw: 'Withdraw', cpReject: 'Reject',
   cpVoteYes: 'Works: {n}', cpVoteNo: 'Doesn’t work: {n}', cpVoteOpen: 'Waiting for: {n}',
   cpDlgNew: 'Start a campaign', cpDlgEdit: 'Edit campaign', cpGame: 'Game', cpTbdLbl: 'Start and rhythm are not fixed yet (set them later)', cpStart: 'First session (start)', cpRhythm: 'Rhythm',
-  cpRtW: 'Every N weeks (weekday of start)', cpRtD: 'Every N days', cpRtM: 'Monthly: nth weekday', cpNWeeks: 'Every … weeks', cpNDays: 'Every … days', cpWhich: 'Which', cpWd: 'Weekday',
+  cpRtX: 'Weekdays / days of the month', cpRtD: 'Every N days', cpXStm: 'Use game night days', cpXWd: 'Weekly on', cpXEvery: 'Weekdays apply', cpXEveryN: { 1: 'every week', 2: 'every 2nd week', 3: 'every 3rd week', 4: 'every 4th week' }, cpXMo: 'Monthly on (nth weekday)', cpXLast: 'Last', cpXExtra: 'Extra dates', cpXSkip: 'Days off', cpErrRule: 'Please pick at least one weekday, day of the month or extra date.', cpErrDates: 'Please enter dates as DD.MM.YYYY, separated by commas.', cpEveryWeeksX: 'every {n} weeks on {d}', cpExtraTxt: 'also {l}', cpSkipTxt: 'not on {l}', cpNWeeks: 'Every … weeks', cpNDays: 'Every … days', cpWhich: 'Which', cpWd: 'Weekday',
   cpCount: 'Sessions (roughly)', cpDurLbl: 'Length per session (h)', cpSeats: 'Seats incl. you', cpNote: 'Note (experience, expansions, language …)', cpOpenLbl: 'Still looking for players',
   cpPrev: 'Dates: {l}', cpPrevMore: '… last around {d}', cpCreate: 'Start campaign', cpSave: 'Save', cpSaved: 'Saved ✓', cpCreated: 'Campaign created ✓ The bot will post it on Discord shortly.',
   cpEditNote: 'If you change start or rhythm, all upcoming dates are recalculated (individual reschedules are lost).',
@@ -2946,6 +2954,13 @@ var camps = [], cpState = 'loading', cpAllOpen = new Set(), cpPend = null, cpMsg
 const WDL = () => (de() ? ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'] : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
 function cpRhythm(rule, start) {
   const t = T(); if (!rule || !start) return t.cpTbd;
+  if (rule.t === 'x') {
+    const p = rule.wd.map((w) => rule.every > 1 ? fill(t.cpEveryWeeksX, { n: rule.every, d: WDL()[w] }) : fill(t.cpWeekly, { d: WDL()[w] }))
+      .concat(rule.mo.map((x) => fill(t.cpMonthly, { x: t.cpNth[String(x.nth)], d: WDL()[x.wd] })));
+    if (rule.extra.length) p.push(fill(t.cpExtraTxt, { l: rule.extra.map((d) => dmy(d).slice(0, 6)).join(', ') }));
+    if (rule.skip.length) p.push(fill(t.cpSkipTxt, { l: rule.skip.map((d) => dmy(d).slice(0, 6)).join(', ') }));
+    return p.join(', ');
+  }
   if (rule.t === 'd') return rule.n === 1 ? t.cpDaily : fill(t.cpEveryDays, { n: rule.n });
   const wd = WDL()[new Date(start + 'T12:00:00').getDay()];
   if (rule.t === 'w') return rule.n === 1 ? fill(t.cpWeekly, { d: wd }) : fill(t.cpEveryWeeks, { n: rule.n, d: wd });
@@ -2955,6 +2970,16 @@ const cpDurTxt = (m) => (m ? fill(T().cpHours, { h: String(Math.round(m / 6) / 1
 // Gleiche Berechnung wie im Worker (src/campaigns.js ruleDates), für die Vorschau im Dialog.
 function cpDates(rule, start, count) {
   const out = []; if (!rule || !start || count <= 0) return out;
+  if (rule.t === 'x') {
+    const mon = isoAdd(start, -((new Date(start + 'T12:00:00').getDay() + 6) % 7));
+    for (let i = 0, d = start; out.length < count && i < 3 * 366; i++, d = isoAdd(d, 1)) {
+      if (rule.skip.includes(d)) continue;
+      const dt = new Date(d + 'T12:00:00'), w = dt.getDay(), day = dt.getDate(), len = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+      const weeks = Math.floor(Math.round((Date.parse(d + 'T12:00:00Z') - Date.parse(mon + 'T12:00:00Z')) / 864e5) / 7);
+      if (rule.extra.includes(d) || (rule.wd.includes(w) && weeks % rule.every === 0) || rule.mo.some((x) => x.wd === w && (x.nth === -1 ? day + 7 > len : Math.ceil(day / 7) === x.nth))) out.push(d);
+    }
+    return out;
+  }
   if (rule.t === 'm') {
     let y = +start.slice(0, 4), m = +start.slice(5, 7) - 1;
     for (let i = 0; out.length < count && i < 1200; i++) {
@@ -3065,19 +3090,36 @@ $('subCamps').addEventListener('click', async (e) => {
 
 /* Dialog: Kampagne anlegen / bearbeiten */
 function cpRule() {
-  const rt = $('cpRt').value, n = Math.max(1, Math.round(Number($('cpN').value) || 1));
-  return rt === 'm' ? { t: 'm', nth: Number($('cpNth').value), wd: Number($('cpWd').value) } : { t: rt, n };
+  if ($('cpRt').value === 'd') return { t: 'd', n: Math.max(1, Math.min(90, Math.round(Number($('cpN').value) || 1))) };
+  const extra = parseDates($('cpXExtra').value), skip = parseDates($('cpXSkip').value);
+  if (!extra || !skip) return null;
+  return { t: 'x', wd: Array.from(document.querySelectorAll('[data-cpxw]:checked'), (x) => Number(x.dataset.cpxw)), every: Number($('cpXEvery').value) || 1,
+    mo: Array.from(document.querySelectorAll('[data-cpxn]:checked'), (x) => ({ nth: Number(x.dataset.cpxn), wd: Number(x.dataset.cpxd) })), extra, skip };
+}
+// Freie Regel ins Formular schreiben (alte Kampagnen mit „alle n Wochen“ / „n-ter Wochentag“ werden umgerechnet).
+function cpFillX(r, start) {
+  const t = T(), order = [1, 2, 3, 4, 5, 6, 0], nths = [1, 2, 3, 4, -1];
+  if (r && r.t === 'w') r = { wd: [new Date((start || todayIso()) + 'T12:00:00').getDay()], every: Math.min(4, r.n), mo: [] };
+  else if (r && r.t === 'm') r = { wd: [], every: 1, mo: [{ nth: r.nth, wd: r.wd }] };
+  r = r && r.t !== 'd' ? r : { wd: [], every: 1, mo: [] };
+  const has = (n, w) => (r.mo || []).some((x) => x.nth === n && x.wd === w);
+  $('cpXWd').innerHTML = order.map((w) => '<label class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:14px"><input type="checkbox" data-cpxw="' + w + '" style="width:18px;height:18px;padding:0"' + ((r.wd || []).includes(w) ? ' checked' : '') + '> ' + esc(WDL()[w]) + '</label>').join(' ');
+  $('cpXEvery').innerHTML = [1, 2, 3, 4].map((n) => '<option value="' + n + '"' + (n === (r.every || 1) ? ' selected' : '') + '>' + esc(t.cpXEveryN[n]) + '</option>').join('');
+  $('cpXMo').innerHTML = '<table class="bk-tbl"><tr><th></th>' + order.map((w) => '<th>' + esc(t.wdMin[(w + 6) % 7]) + '</th>').join('') + '</tr>' +
+    nths.map((n) => '<tr><th style="text-align:left;padding-right:8px">' + esc(n === -1 ? t.cpXLast : n + '.') + '</th>' + order.map((w) => '<td style="text-align:center"><input type="checkbox" data-cpxn="' + n + '" data-cpxd="' + w + '"' + (has(n, w) ? ' checked' : '') + ' style="width:20px;height:20px"></td>').join('') + '</tr>').join('') + '</table>';
+  $('cpXExtra').value = toDmy(r.extra); $('cpXSkip').value = toDmy(r.skip);
 }
 function renderCpForm() {
   const t = T(), tbd = $('cpTbd').checked, rt = $('cpRt').value;
   $('cpWhen').hidden = tbd; $('cpStart').required = !tbd;
-  $('cpNWrap').hidden = rt === 'm'; $('cpNthWrap').hidden = rt !== 'm'; $('cpWdWrap').hidden = rt !== 'm';
-  $('cpNLbl').textContent = rt === 'd' ? t.cpNDays : t.cpNWeeks; $('cpN').max = rt === 'd' ? 90 : 12;
+  $('cpNWrap').hidden = rt !== 'd'; $('cpXWrap').hidden = rt === 'd'; $('cpXStm').hidden = rt === 'd' || !bk;
   const cnt = Math.max(1, Math.min(60, Math.round(Number($('cpCount').value) || 1)));
-  const ds = tbd || !$('cpStart').value ? [] : cpDates(cpRule(), $('cpStart').value, cnt);
+  const rule = tbd ? null : cpRule(), ds = !rule || !$('cpStart').value ? [] : cpDates(rule, $('cpStart').value, cnt);
   $('cpPrev').textContent = (ds.length ? fill(t.cpPrev, { l: ds.slice(0, 4).map((d) => dayLabel(d)).join(', ') }) + (ds.length > 4 ? ' ' + fill(t.cpPrevMore, { d: dmy(ds[ds.length - 1]) }) : '') : '') + (cpEditing && !tbd ? (ds.length ? ' · ' : '') + t.cpEditNote : '');
 }
-['cpTbd', 'cpRt', 'cpN', 'cpNth', 'cpWd', 'cpStart', 'cpCount'].forEach((id) => $(id).addEventListener('input', renderCpForm));
+['cpTbd', 'cpRt', 'cpN', 'cpStart', 'cpCount', 'cpXEvery', 'cpXExtra', 'cpXSkip'].forEach((id) => $(id).addEventListener('input', renderCpForm));
+['cpXWd', 'cpXMo'].forEach((id) => $(id).addEventListener('change', renderCpForm));
+$('cpXStm').onclick = () => { if (!bk) return; cpFillX({ t: 'x', wd: bk.weekdays, every: 1, mo: bk.monthly, extra: bk.extra.filter((d) => d >= todayIso()), skip: bk.skip.filter((d) => d >= todayIso()) }); renderCpForm(); };
 function renderCpPick() {
   const t = T(); $('cpSel').hidden = !cpGame; $('cpSearchBox').hidden = !!cpGame;
   if (cpGame) { $('cpSelName').textContent = cpGame.n; $('cpSelMeta').textContent = cpGame.gameId ? (cpGame.y ? '(' + cpGame.y + ') · ' : '') + 'BGG #' + cpGame.gameId : '(' + t.gNoBgg + ')'; return; }
@@ -3103,12 +3145,10 @@ $('cpRes').addEventListener('click', (e) => { const li = e.target.closest('li[da
 $('cpChange').onclick = () => { cpGame = null; renderCpPick(); $('cpQ').focus(); };
 function openCampaign(c) {
   const t = T(); cpEditing = c || null;
-  $('cpNth').innerHTML = ['1', '2', '3', '4', '-1'].map((k) => '<option value="' + k + '">' + esc(t.cpNth[k]) + '</option>').join('');
-  $('cpWd').innerHTML = [1, 2, 3, 4, 5, 6, 0].map((k) => '<option value="' + k + '">' + esc(WDL()[k]) + '</option>').join('');
   cpGame = c ? { n: c.game, gameId: c.gameId, y: c.year } : null; cpResults = []; cpActive = -1; $('cpQ').value = '';
   $('cpTbd').checked = c ? c.tbd : false; $('cpStart').min = c ? '' : todayIso(); $('cpStart').value = c && c.start ? c.start : nextEventDay(); $('cpTime').value = c ? c.time : '18:00';
-  const r = c && c.rule ? c.rule : { t: 'w', n: 2 };
-  $('cpRt').value = r.t; $('cpN').value = r.n || 2; $('cpNth').value = String(r.nth || 1); $('cpWd').value = String(r.wd != null ? r.wd : 6);
+  const r = c && c.rule ? c.rule : { t: 'x', wd: [new Date($('cpStart').value + 'T12:00:00').getDay()], every: 2, mo: [] };
+  $('cpRt').value = r.t === 'd' ? 'd' : 'x'; $('cpN').value = r.t === 'd' ? r.n : 7; cpFillX(r, c && c.start);
   $('cpCount').value = c ? (c.tbd ? c.plannedSessions : c.sessions) : 10; $('cpDur').value = c && c.duration ? c.duration / 60 : 4; $('cpSeats').value = c ? c.seats : 5;
   $('cpNote').value = c ? c.note : ''; $('cpOpen').checked = c ? c.open : true; $('cpOpenWrap').hidden = !c;
   $('cpT').textContent = c ? t.cpDlgEdit : t.cpDlgNew; $('cpSend').textContent = c ? t.cpSave : t.cpCreate;
@@ -3122,8 +3162,10 @@ $('cpForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const t = T(), msg = $('cpMsg'); msg.className = 'err';
   if (!me && !canEdit) { msg.textContent = t.errLogin; return; }
   if (!cpGame) { msg.textContent = t.errPick; $('cpQ').focus(); return; }
-  const tbd = $('cpTbd').checked, dur = Number($('cpDur').value);
-  const b = { game: cpGame.n, gameId: cpGame.gameId, year: cpGame.y, tbd, start: tbd ? '' : $('cpStart').value, time: $('cpTime').value || '18:00', rule: tbd ? null : cpRule(),
+  const tbd = $('cpTbd').checked, dur = Number($('cpDur').value), rule = tbd ? null : cpRule();
+  if (!tbd && !rule) { msg.textContent = t.cpErrDates; return; }
+  if (!tbd && !cpDates(rule, $('cpStart').value, 1).length) { msg.textContent = t.cpErrRule; return; }
+  const b = { game: cpGame.n, gameId: cpGame.gameId, year: cpGame.y, tbd, start: tbd ? '' : $('cpStart').value, time: $('cpTime').value || '18:00', rule,
     sessions: Number($('cpCount').value), duration: dur ? Math.round(dur * 60) : null, seats: Number($('cpSeats').value), note: $('cpNote').value.trim().slice(0, 500), open: $('cpOpen').checked };
   $('cpSend').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   try {
