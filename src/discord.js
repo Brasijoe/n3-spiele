@@ -347,12 +347,14 @@ export async function handleInteraction(req, env, ctx) {
   if (!(await verifySignature(env.DISCORD_PUBLIC_KEY, req.headers.get('x-signature-ed25519'), req.headers.get('x-signature-timestamp'), text))) return new Response('bad signature', { status: 401 });
   const i = JSON.parse(text);
   if (i.type === 1) return reply({ type: 1 });
-  if (env.DISCORD_GUILD_ID && i.guild_id !== env.DISCORD_GUILD_ID) return say('Dieser Bot ist für diesen Server nicht freigeschaltet.');
+  // Ausnahme: Knöpfe „Mitmachen“/„Ablehnen“ an einer Kampagnen-Einladung per Direktnachricht (keine Server-/Kanalprüfung möglich).
+  const dmInvite = !i.guild_id && i.type === 3 && /^camp[jd]:/.test(String((i.data && i.data.custom_id) || ''));
+  if (env.DISCORD_GUILD_ID && i.guild_id !== env.DISCORD_GUILD_ID && !dmInvite) return say('Dieser Bot ist für diesen Server nicht freigeschaltet.');
   // Optional: nur ein Kanal. Buttons an alten Nachrichten gelten ebenfalls nur dort.
   const chans = botChannels(env);
   // Knöpfe in Threads (z. B. Kampagnen-Thread): der Thread gehört zum Kanal, wenn sein Elternkanal erlaubt ist.
   const parent = i.channel && i.channel.parent_id;
-  if (chans.length && !chans.includes(i.channel_id) && !chans.includes(parent)) {
+  if (chans.length && !dmInvite && !chans.includes(i.channel_id) && !chans.includes(parent)) {
     return i.type === 4 ? reply({ type: 8, data: { choices: [] } }) : say(`Bitte nutze den Bot nur in ${chans.map((c) => `<#${c}>`).join(', ')}.`);
   }
   try {

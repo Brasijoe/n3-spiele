@@ -375,6 +375,10 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .seats { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .seat { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--club); box-sizing: border-box; }
 .seat.on { background: var(--club); }
+.seat.res { background: repeating-linear-gradient(45deg, var(--club) 0 2px, transparent 2px 4px); }
+.cp-inv { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cp-inv .pill { display: inline-flex; align-items: center; gap: 4px; }
+.cp-inv .pill button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 0 2px; min-width: 24px; min-height: 24px; }
 .who { display: flex; flex-wrap: wrap; gap: 6px; }
 .who .pill.host { font-weight: 700; }
 .who .pill.res { background: transparent; border: 1px dashed var(--line-strong); color: var(--muted); }
@@ -1340,7 +1344,7 @@ Object.assign(TXT.de, { subCamps: 'Kampagnen', cpTitle: 'Kampagnen-Mitspieler fi
   cpHeadTbd: 'Termin noch offen', cpHeadStart: 'Start: {d}', cpHeadRun: 'Läuft · {n} von ca. {m} Sitzungen gespielt', cpHeadDone: 'Abgeschlossen', cpSeek: 'Sucht Mitspielende', cpFull: 'Voll', cpClosed: 'Sucht niemanden mehr',
   cpTbd: 'Termin und Rhythmus noch offen', cpDaily: 'täglich', cpEveryDays: 'alle {n} Tage', cpWeekly: 'jeden {d}', cpEveryWeeks: 'alle {n} Wochen am {d}', cpMonthly: 'jeden {x} {d} im Monat', cpNth: { 1: 'ersten', 2: 'zweiten', 3: 'dritten', 4: 'vierten', '-1': 'letzten' },
   cpHours: 'ca. {h} Std.', cpProg: '{d}/{m} Sitzungen', cpSessions: 'ca. {m} Sitzungen', cpNext: 'Nächste Termine', cpAll: 'Alle {n} Termine anzeigen', cpLess: 'Weniger anzeigen', cpNo: 'Sitzung {n}', cpMoved: 'verschoben', cpAbsent: 'kann nicht: {n}',
-  cpJoin: 'Mitmachen', cpLeave: 'Aussteigen', cpEdit: 'Bearbeiten', cpEnd: 'Kampagne beenden', cpThread: 'Zum Discord-Thread', cpHostTag: 'leitet',
+  cpJoin: 'Mitmachen', cpAccept: 'Einladung annehmen', cpDecline: 'Einladung ablehnen', cpReserved: '{n} reserviert', cpInvited: 'Eingeladen:', cpUninv: 'Einladung für {n} zurücknehmen', cpYouInv: 'Du bist eingeladen.', cpYouInvRes: 'Du bist eingeladen, ein Platz ist für dich reserviert.', cpLeave: 'Aussteigen', cpEdit: 'Bearbeiten', cpEnd: 'Kampagne beenden', cpThread: 'Zum Discord-Thread', cpHostTag: 'leitet',
   cpCant: 'Kann nicht', cpCan: 'Doch dabei', cpMove: 'Verschieben', cpCancelS: 'Absage vorschlagen', cpCancelQ: 'Wirklich Absage vorschlagen?',
   cpPropMove: '{b} schlägt vor: {d}', cpPropCancel: '{b} schlägt vor, diese Sitzung ausfallen zu lassen', cpYes: 'Passt mir', cpNoV: 'Passt mir nicht', cpAccept: 'Übernehmen', cpWithdraw: 'Zurückziehen', cpReject: 'Ablehnen',
   cpVoteYes: 'Passt: {n}', cpVoteNo: 'Passt nicht: {n}', cpVoteOpen: 'Noch offen: {n}',
@@ -1356,7 +1360,7 @@ Object.assign(TXT.en, { subCamps: 'Campaigns', cpTitle: 'Find campaign players',
   cpHeadTbd: 'Date not set yet', cpHeadStart: 'Starts: {d}', cpHeadRun: 'Running · {n} of about {m} sessions played', cpHeadDone: 'Finished', cpSeek: 'Looking for players', cpFull: 'Full', cpClosed: 'Not looking for players',
   cpTbd: 'Date and rhythm not set yet', cpDaily: 'daily', cpEveryDays: 'every {n} days', cpWeekly: 'every {d}', cpEveryWeeks: 'every {n} weeks on {d}', cpMonthly: 'every {x} {d} of the month', cpNth: { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' },
   cpHours: 'about {h} h', cpProg: '{d}/{m} sessions', cpSessions: 'about {m} sessions', cpNext: 'Next dates', cpAll: 'Show all {n} dates', cpLess: 'Show less', cpNo: 'Session {n}', cpMoved: 'moved', cpAbsent: 'can’t make it: {n}',
-  cpJoin: 'Join', cpLeave: 'Leave', cpEdit: 'Edit', cpEnd: 'End campaign', cpThread: 'Open Discord thread', cpHostTag: 'runs it',
+  cpJoin: 'Join', cpAccept: 'Accept invitation', cpDecline: 'Decline invitation', cpReserved: '{n} reserved', cpInvited: 'Invited:', cpUninv: 'Withdraw invitation for {n}', cpYouInv: 'You are invited.', cpYouInvRes: 'You are invited, a seat is reserved for you.', cpLeave: 'Leave', cpEdit: 'Edit', cpEnd: 'End campaign', cpThread: 'Open Discord thread', cpHostTag: 'runs it',
   cpCant: 'Can’t make it', cpCan: 'I’m in after all', cpMove: 'Reschedule', cpCancelS: 'Suggest cancelling', cpCancelQ: 'Really suggest cancelling?',
   cpPropMove: '{b} suggests: {d}', cpPropCancel: '{b} suggests cancelling this session', cpYes: 'Works for me', cpNoV: 'Doesn’t work', cpAccept: 'Apply', cpWithdraw: 'Withdraw', cpReject: 'Reject',
   cpVoteYes: 'Works: {n}', cpVoteNo: 'Doesn’t work: {n}', cpVoteOpen: 'Waiting for: {n}',
@@ -3021,15 +3025,16 @@ function cpSessRow(c, s, i) {
 }
 function cpCard(c) {
   const t = T(), td = todayIso(), you = c.you || {}, inn = !!you.in, host = !!you.host;
-  const up = c.list.filter((s) => s.date >= td), next = up[0], ppl = 1 + c.players.length, free = Math.max(0, c.seats - ppl);
+  const up = c.list.filter((s) => s.date >= td), next = up[0], ppl = 1 + c.players.length, rs = c.reserved || 0, free = Math.max(0, c.seats - ppl - rs), inv = c.invited || [];
   const head = c.tbd ? t.cpHeadTbd : c.phase === 'done' ? t.cpHeadDone : c.phase === 'running' ? fill(t.cpHeadRun, { n: c.done, m: c.sessions }) : fill(t.cpHeadStart, { d: next ? dayLabel(next.date) : '' });
   const chip = !free ? t.cpFull : !c.open ? t.cpClosed : t.cpSeek;
   const line = cpRhythm(c.rule, c.start) + (c.tbd ? '' : ' · ' + c.time) + (c.duration ? ' · ' + cpDurTxt(c.duration) : '') + ' · ' + fill(t.cpSessions, { m: c.tbd ? c.plannedSessions : c.sessions });
-  const dots = Array.from({ length: Math.min(c.seats, 20) }, (_, i) => '<span class="seat' + (i < ppl ? ' on' : '') + '"></span>').join('');
+  const dots = Array.from({ length: Math.min(c.seats, 20) }, (_, i) => '<span class="seat' + (i < ppl ? ' on' : i < ppl + rs ? ' res' : '') + '"></span>').join('');
   const all = cpAllOpen.has(c.id), first = c.list.findIndex((s) => s.date >= td);
   const shown = all ? c.list.map((s, i) => [s, i]) : up.slice(0, 3).map((s) => [s, first + up.indexOf(s)]);
   let actions = '';
-  if (!inn && free && c.open && c.phase !== 'done') actions += '<button type="button" class="btn btn-primary" data-cpjoin="' + esc(c.id) + '">' + esc(t.cpJoin) + '</button>';
+  if (!inn && c.phase !== 'done' && (you.invited ? you.res || free : free && c.open)) actions += '<button type="button" class="btn btn-primary" data-cpjoin="' + esc(c.id) + '">' + esc(you.invited ? t.cpAccept : t.cpJoin) + '</button>';
+  if (you.invited) actions += '<button type="button" class="btn btn-quiet" data-cpdecl="' + esc(c.id) + '">' + esc(t.cpDecline) + '</button>';
   if (inn && !host) actions += '<button type="button" class="btn btn-quiet" data-cpleave="' + esc(c.id) + '">' + esc(t.cpLeave) + '</button>';
   if ((host || canEdit) && cpPend === 'e' + c.id) actions += '<span class="meta" style="flex-basis:100%">' + esc(t.cpEndQ) + '</span><button type="button" class="btn btn-primary" data-cpendo="done" data-id="' + esc(c.id) + '">' + esc(t.cpEndDoneBtn) + '</button>' +
     '<button type="button" class="btn btn-quiet" data-cpendo="aborted" data-id="' + esc(c.id) + '">' + esc(t.cpEndAbortBtn) + '</button><button type="button" class="btn btn-quiet" data-cpendx>' + esc(t.cancel) + '</button>';
@@ -3040,8 +3045,11 @@ function cpCard(c) {
   return '<article class="party"><div class="top">' + thumbHtml({ guest: true, gameId: c.gameId }, c.gameId ? byId[c.gameId] : null, c.game) + '<div><span class="when">' + esc(head) + '</span><h3>' + esc(c.game) + (c.year ? ' <span class="meta">(' + c.year + ')</span>' : '') + '</h3><span class="src camp">' + esc(chip) + '</span></div></div>' +
     '<div class="body"><div class="cp-line">' + esc(line) + '</div>' +
     (c.tbd ? '' : '<div class="cp-prog"><span class="bar"><span style="width:' + Math.round(100 * c.done / Math.max(1, c.sessions)) + '%"></span></span><span>' + esc(fill(t.cpProg, { d: c.done, m: c.sessions })) + '</span></div>') +
-    '<div class="seats" aria-label="' + esc(ppl + '/' + c.seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(ppl + '/' + c.seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
+    '<div class="seats" aria-label="' + esc(ppl + '/' + c.seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(ppl + '/' + c.seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull) + (rs ? ' · ' + fill(t.cpReserved, { n: rs }) : '')) + '</span></div>' +
     '<div class="who"><span class="pill host">' + esc(c.host) + ' · ' + esc(t.cpHostTag) + '</span>' + c.players.map((x) => '<span class="pill">' + esc(x) + '</span>').join('') + '</div>' +
+    (you.invited ? '<span class="meta">' + esc(you.res ? t.cpYouInvRes : t.cpYouInv) + '</span>' : '') +
+    (inv.length ? '<div class="cp-inv"><span class="meta">' + esc(t.cpInvited) + '</span>' + inv.map((x) => '<span class="pill">' + esc(x.name) + (x.res ? ' 🪑' : '') +
+      (x.k ? '<button type="button" data-cpuninv="' + esc(c.id) + '" data-k="' + esc(x.k) + '" aria-label="' + esc(fill(t.cpUninv, { n: x.name })) + '" title="' + esc(fill(t.cpUninv, { n: x.name })) + '">✕</button>' : '') + '</span>').join('') + '</div>' : '') +
     (c.note ? '<span class="meta">' + esc(c.note) + '</span>' : '') +
     (shown.length ? '<p class="cp-h">' + esc(t.cpNext) + '</p><ul class="cp-sess">' + shown.map(([s, i]) => cpSessRow(c, s, i)).join('') + '</ul>' : '') +
     (c.list.length > 3 ? '<button type="button" class="linkbtn" data-cpall="' + esc(c.id) + '">' + esc(all ? t.cpLess : fill(t.cpAll, { n: c.list.length })) + '</button>' : '') +
@@ -3068,6 +3076,8 @@ $('subCamps').addEventListener('click', async (e) => {
   let b; const card = (sid) => (camps.find((c) => c.list.some((s) => s.id === sid)) || {}).id;
   if ((b = e.target.closest('[data-cpall]'))) { const id = b.dataset.cpall; if (cpAllOpen.has(id)) cpAllOpen.delete(id); else cpAllOpen.add(id); renderCamps(); return; }
   if ((b = e.target.closest('[data-cpjoin]'))) { if (!me) { startLogin(); return; } b.disabled = true; await cpCall(b.dataset.cpjoin, 'POST', '/campaigns/' + b.dataset.cpjoin + '/join', {}); return; }
+  if ((b = e.target.closest('[data-cpdecl]'))) { b.disabled = true; await cpCall(b.dataset.cpdecl, 'POST', '/campaigns/' + b.dataset.cpdecl + '/decline', {}); return; }
+  if ((b = e.target.closest('[data-cpuninv]'))) { b.disabled = true; await cpCall(b.dataset.cpuninv, 'DELETE', '/campaigns/' + b.dataset.cpuninv + '/invited/' + b.dataset.k); return; }
   if ((b = e.target.closest('[data-cpleave]'))) { b.disabled = true; await cpCall(b.dataset.cpleave, 'POST', '/campaigns/' + b.dataset.cpleave + '/leave', {}); return; }
   if ((b = e.target.closest('[data-cpedit]'))) { openCampaign(camps.find((c) => c.id === b.dataset.cpedit)); return; }
   if ((b = e.target.closest('[data-cpend]'))) { cpPend = 'e' + b.dataset.cpend; renderCamps(); return; }
