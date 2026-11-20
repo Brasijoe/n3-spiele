@@ -389,6 +389,27 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .join input { flex: 1 1 140px; height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font-size: 15px; }
 .parties.rounds .party.past { background: var(--surface-2); box-shadow: inset 4px 0 0 var(--line-strong); }
 .party.past .th { filter: grayscale(1); opacity: .7; }
+/* Wunschspiele: Daumen auf den Karten und Rangliste für den nächsten Stammtisch */
+.vote { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 40px; min-width: 48px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface); color: var(--fg); font: 700 14px var(--font-body); cursor: pointer; flex: none; }
+.vote svg { width: 17px; height: 17px; flex: none; }
+.vote:hover { border-color: var(--accent); }
+.vote.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.vote:disabled { opacity: .6; cursor: default; }
+.vt-panel { display: flex; flex-direction: column; gap: 10px; }
+.vt-panel h2 { margin: 0; }
+.vt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.vt-row { display: grid; grid-template-columns: 28px 48px minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.vt-row .rk { font: 700 18px var(--font-display); color: var(--muted); text-align: center; }
+.vt-row:first-child .rk { color: var(--accent); }
+.vt-row .th { width: 48px; height: 48px; border-radius: 6px; background: var(--cover); object-fit: contain; display: flex; align-items: center; justify-content: center; font: 700 20px var(--font-display); color: var(--muted); }
+.vt-row .nm { font-weight: 700; color: var(--fg); overflow-wrap: anywhere; }
+.vt-row .who { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.vt-row .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.vt-row .acts .btn { min-height: 40px; font-size: 13px; padding: 0 12px; }
+.vt-row .pchip { font-size: 12px; }
+.vt-more { align-self: flex-start; }
+.vt-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 60; max-width: min(92vw, 460px); background: var(--band); color: var(--band-fg); padding: 12px 16px; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 14px; }
+@media (max-width: 560px) { .vt-row { grid-template-columns: 24px 44px minmax(0, 1fr); } .vt-row .th { width: 44px; height: 44px; } .vt-row .acts { grid-column: 1 / -1; justify-content: flex-start; } }
 .party.past h3, .party.past .when { color: var(--muted); }
 .party .players { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--fg); }
 .party .players svg { width: 16px; height: 16px; flex: none; }
@@ -680,6 +701,12 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <div class="pt-how" id="ptHow"></div>
     </section>
     <p class="meta" id="ptState" style="margin:0"></p>
+    <section class="panel vt-panel" id="vtPanel" aria-labelledby="vtH" hidden>
+      <h2 id="vtH"></h2>
+      <p class="meta" id="vtIntro" style="margin:0"></p>
+      <ol class="vt-list" id="vtList"></ol>
+      <button type="button" class="btn btn-quiet vt-more" id="vtMore" hidden></button>
+    </section>
     <h2 class="sec-h" data-t="ptUpcoming"></h2>
     <div class="parties rounds" id="ptUpcoming"></div>
     <h2 class="sec-h" id="ptCampH" data-t="ptCamp" hidden></h2>
@@ -890,6 +917,13 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <span id="wtMsg" role="alert"></span>
     <div class="acts"><button type="button" class="btn btn-quiet" id="wtCancel" data-t="cancel"></button><button type="submit" class="btn btn-primary" id="wtSend" data-t="wtSend"></button></div>
   </form>
+</dialog>
+<div class="vt-toast" id="vtToast" role="status" hidden></div>
+<dialog class="info" id="vtDlg" aria-labelledby="vtT">
+  <h3 id="vtT"></h3>
+  <p class="meta" id="vtTxt" style="margin:0"></p>
+  <div class="auth-box" data-authbox></div>
+  <div class="acts"><button type="button" class="btn btn-quiet" id="vtClose" data-t="cancel"></button></div>
 </dialog>
 <dialog class="info wide" id="whDlg" aria-labelledby="whT">
   <h3 id="whT"></h3>
@@ -1337,6 +1371,17 @@ function calcClubTime() {
 }
 const clubTimeTxt = (g) => { const c = clubTime[g.id]; return c ? fill(T().clubTime, { m: c.m, p: c.p }) : ''; };
 let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), db = null, dbState = 'loading', logGame = null;
+// Wunschspiele (Abstimmung für den nächsten Stammtisch): Stand vom Server, eigene Stimmen kommen über /my.
+let vt = { day: '', max: 5, list: [] }, vtOpenAll = false, vtBusy = false, vtPend = null;
+const ICO_UP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21h4V9H2zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7z"/></svg>';
+Object.assign(TXT.de, { vtTitle: 'Wunschspiele für {d}', vtTitleToday: 'Wunschspiele für heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Wer eine Runde anbietet, sieht so, was gefragt ist. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
+  vtMine: 'Deine Stimmen: {n} von {m}.', vtNone: 'Noch keine Wünsche. Tippe in der Sammlung auf einer Spielekarte auf 👍.', vtN1: '1 Stimme', vtNn: '{n} Stimmen', vtBtn: 'Will ich am {d} spielen', vtBtnOn: 'Du willst das am {d} spielen. Nochmal tippen nimmt die Stimme zurück.',
+  vtPlanned: 'Runde geplant', vtAll: 'Alle {n} anzeigen', vtLess: 'Weniger anzeigen', vtLimit: 'Du hast schon {m} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück.',
+  vtLoginT: 'Abstimmen', vtLoginTxt: 'Zum Abstimmen melde dich mit Discord an. So zählt jede Stimme nur einmal.' });
+Object.assign(TXT.en, { vtTitle: 'Wish list for {d}', vtTitleToday: 'Wish list for today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Whoever offers a game can see what people want. After the club night, voting starts over.',
+  vtMine: 'Your votes: {n} of {m}.', vtNone: 'No wishes yet. Tap 👍 on a game card in the collection.', vtN1: '1 vote', vtNn: '{n} votes', vtBtn: 'I want to play this on {d}', vtBtnOn: 'You want to play this on {d}. Tap again to take your vote back.',
+  vtPlanned: 'Game planned', vtAll: 'Show all {n}', vtLess: 'Show less', vtLimit: 'You already used {m} votes for this club night. Take one back first.',
+  vtLoginT: 'Vote', vtLoginTxt: 'Sign in with Discord to vote. That way every vote counts only once.' });
 
 // Kampagnen (#kampagnen): Texte
 Object.assign(TXT.de, { subCamps: 'Kampagnen', cpTitle: 'Kampagnen-Mitspieler finden', cpNew: 'Kampagne anlegen', cpNewH: 'Neue Kampagnen', cpRunH: 'Laufende Kampagnen', cpNone: 'Gerade läuft keine Kampagne. Leg eine an!',
@@ -1635,7 +1680,7 @@ function memCard(g) {
     (pills ? '<div class="pills">' + pills + '</div>' : '') + (g.bestR.length ? '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' : '') +
     (g.inClub ? '<span class="mem-dup">' + esc(t.memDup) + '</span>' : '') + expHtml(g, 'played') + '<span class="mem-own"><b>' + esc(g.owners.length > 1 ? t.memOwners : t.memOwner) + ':</b> ' + esc(own) + '</span>' + (notes ? '<span class="meta">' + esc(notes) + '</span>' : '') +
     '<div class="actions">' + (g.owners.every((o) => isMine('memberGames', o.id)) ? '<button type="button" class="btn btn-primary" data-offer="' + esc(g.key) + '">' + esc(t.ptNew) + '</button>'
-      : '<button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>') + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
+      : '<button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>') + voteBtn(g) + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
 }
 // Aktuell gefilterte und sortierte Liste der Übersicht (auch Grundlage für das Zufallsspiel).
 function gridList() {
@@ -1686,7 +1731,7 @@ function renderGrid() {
 '</div>' +
       '<span class="meta">' + esc(t.bestWith + ' ' + bestTxt(g)) + '</span>' +
       expHtml(g, 'played') + (pc ? '<span class="meta">' + esc(fill(t.playedN, { n: pc })) + '</span>' : '') +
-      '<div class="actions"><button type="button" class="btn btn-primary" data-log="' + esc(g.key) + '">' + esc(t.logPlay) + '</button><a class="bgg" target="_blank" rel="noopener" href="' + g.link + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a></div></div></article>';
+      '<div class="actions"><button type="button" class="btn btn-primary" data-log="' + esc(g.key) + '">' + esc(t.logPlay) + '</button>' + voteBtn(g) + '<a class="bgg" target="_blank" rel="noopener" href="' + g.link + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a></div></div></article>';
   };
   if (!secs) $('grid').innerHTML = list.slice(0, S.limit).map(card).join('');
   else {
@@ -2405,6 +2450,7 @@ function renderParties() {
   $('ptCamp').innerHTML = cr.map(cpRoundCard).join(''); $('ptCampH').hidden = !cr.length;
   $('cntRounds').textContent = partyState === 'ready' ? String(up.length) : '';
   $('ptPastH').hidden = !items.length;
+  renderVotes();
   renderCamps();
 }
 $('viewParties').addEventListener('click', async (e) => {
@@ -2816,6 +2862,81 @@ $('bgForm').addEventListener('submit', async (e) => {
 /* ---------- „Hat jemand …?“: Spiel im Bot-Kanal suchen (nicht in der Sammlung, nicht bei Mitgliedern) ---------- */
 var wanted = [], wtGame = null, wtResults = [], wtActive = -1, pendingWtDel = null, wtHitAct = null;
 const WT_MONTHS = 3;
+/* ---------- Wunschspiele: Abstimmung für den nächsten Stammtisch ---------- */
+// Schlüssel wie auf dem Server: BGG-ID, ohne BGG-ID „n:“ + Name (Sammlung und Mitgliederspiele zählen zusammen).
+const vtKeyOf = (gameId, n) => (Number(gameId) > 0 ? String(Number(gameId)) : 'n:' + String(n || '').trim().toLowerCase());
+const vtKey = (g) => vtKeyOf(g.id, g.nDe);
+const vtItem = (k) => vt.list.find((x) => x.key === k);
+const vtMineHas = (k) => isMine('votes', k);
+const vtDayTxt = () => { const t = T(); return vt.day === todayIso() ? t.ptToday.toLowerCase() : dayLabel(vt.day); };
+function voteBtn(g) {
+  if (!vt.day) return '';
+  const t = T(), k = vtKey(g), x = vtItem(k), n = x ? x.n : 0, on = vtMineHas(k), tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt() });
+  return '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vote="' + esc(g.key) + '" aria-pressed="' + on + '" title="' + esc(tip) + '" aria-label="' + esc(tip + (n ? ' · ' + (n === 1 ? t.vtN1 : fill(t.vtNn, { n })) : '')) + '">' + ICO_UP + (n ? '<span>' + n + '</span>' : '') + '</button>';
+}
+// Steht für den Abstimmungstag schon eine Runde mit dem Spiel?
+const vtPlanned = (x) => parties.some((y) => String(y.p.date) === vt.day && (x.gameId ? Number(y.p.gameId) === Number(x.gameId) : String(y.p.game || '').trim().toLowerCase() === String(x.game).trim().toLowerCase()));
+function renderVotes() {
+  const t = T(), box = $('vtPanel'); if (!box) return;
+  box.hidden = !vt.day; if (!vt.day) return;
+  $('vtH').textContent = vt.day === todayIso() ? t.vtTitleToday : fill(t.vtTitle, { d: dayLabel(vt.day) });
+  const mineN = myIds && myIds.votes ? myIds.votes.size : 0;
+  $('vtIntro').textContent = fill(t.vtIntro, { m: vt.max }) + (me ? ' ' + fill(t.vtMine, { n: mineN, m: vt.max }) : '');
+  const show = vtOpenAll ? vt.list : vt.list.slice(0, 5);
+  $('vtList').innerHTML = !vt.list.length ? '<li class="st-empty">' + esc(t.vtNone) + '</li>' : show.map((x, i) => {
+    const g = x.gameId ? byId[x.gameId] : null, nm = g ? name(g) : x.game, on = vtMineHas(x.key), mg = memFor(x.gameId, x.game);
+    const tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt() });
+    let acts = '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vk="' + esc(x.key) + '" aria-pressed="' + on + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + '<span>' + x.n + '</span></button>';
+    if (vtPlanned(x)) acts += '<span class="pchip ok">' + ICO_OK + esc(t.vtPlanned) + '</span>';
+    else if (!g && mg && !rndMine(mg)) acts += '<button type="button" class="btn btn-quiet" data-vtbring="' + esc(mg.key) + '">' + esc(t.brAsk) + '</button>';
+    else acts += '<button type="button" class="btn btn-primary" data-vtoffer="' + esc(x.key) + '">' + esc(t.ptNew) + '</button>';
+    return '<li class="vt-row"><span class="rk">' + (i + 1) + '</span>' + thumbHtml({ guest: !g, gameId: x.gameId }, g, nm) +
+      '<div><div class="nm">' + esc(nm) + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div></div><div class="acts">' + acts + '</div></li>';
+  }).join('');
+  $('vtMore').hidden = vt.list.length <= 5; $('vtMore').textContent = vtOpenAll ? t.vtLess : fill(t.vtAll, { n: vt.list.length });
+}
+function setVotes(r) {
+  if (!r || typeof r !== 'object') return;
+  vt = { day: r.day || '', max: r.max || 5, list: Array.isArray(r.list) ? r.list : [] };
+  if (Array.isArray(r.mine) && myIds) myIds.votes = new Set(r.mine);
+  renderVotes(); renderGrid();
+}
+function openVtLogin() { const t = T(); $('vtT').textContent = t.vtLoginT; $('vtTxt').textContent = t.vtLoginTxt; renderAuth(); $('vtDlg').showModal(); }
+$('vtClose').onclick = () => $('vtDlg').close();
+$('vtDlg').addEventListener('click', (e) => { if (e.target === $('vtDlg') || e.target.closest('[data-login]')) $('vtDlg').close(); });
+async function doVote(info, btn) {
+  if (!me) { openVtLogin(); return; }
+  if (vtBusy) return;
+  const k = vtKeyOf(info.gameId, info.game), on = !vtMineHas(k);
+  if (on && myIds && myIds.votes && myIds.votes.size >= vt.max) { alertVt(fill(T().vtLimit, { m: vt.max }), btn); return; }
+  vtBusy = true; if (btn) btn.disabled = true;
+  try { setVotes(await api('POST', '/votes', { gameId: info.gameId || null, game: info.game, year: info.year || null, mem: !!info.mem, on })); }
+  catch (x) { alertVt(x && x.code === 'vote_limit' ? fill(T().vtLimit, { m: vt.max }) : x && x.code === 'rate_limited' ? T().errRate : x && (x.status === 401 || x.status === 403) ? T().vtLoginTxt : T().errSave, btn); }
+  finally { vtBusy = false; if (btn && btn.isConnected) btn.disabled = false; }
+}
+// Kurzer Hinweis direkt am Knopf (ohne Browser-Dialog).
+function alertVt(msg, btn) { if (btn) { btn.title = msg; btn.animate && btn.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }], 250); }
+  clearTimeout(vtPend); const el = $('vtToast'); el.textContent = msg; el.hidden = false; vtPend = setTimeout(() => { el.hidden = true; }, 4000); }
+document.addEventListener('click', (e) => {
+  let b;
+  if ((b = e.target.closest('button[data-vote]'))) {
+    const k = b.dataset.vote, g = all.find((x) => x.key === k) || memById(k); if (!g) return;
+    doVote({ gameId: g.id || null, game: g.nDe, year: g.y || null, mem: !!g.mem }, b); return;
+  }
+  if ((b = e.target.closest('button[data-vk]'))) { const x = vtItem(b.dataset.vk); if (x) doVote(x, b); return; }
+  if ((b = e.target.closest('[data-vtbring]'))) { openBring(b.dataset.vtbring); return; }
+  if ((b = e.target.closest('[data-vtoffer]'))) {
+    const x = vtItem(b.dataset.vtoffer); if (!x) return; const g = x.gameId ? byId[x.gameId] : null;
+    openParty();
+    pGame = g ? { n: name(g), gameId: g.id, guest: false, y: g.y } : { n: x.game, gameId: x.gameId || null, guest: true, y: x.year || null };
+    if (g && g.p2) $('pSeats').value = Math.min(Math.max(2, g.p2, x.n + 1), 30);
+    else $('pSeats').value = Math.min(Math.max(4, x.n + 1), 30);
+    if (vt.day >= todayIso()) { $('pDate').value = vt.day; calMonth = vt.day.slice(0, 7); }
+    renderPPick(); if (typeof renderCal === 'function') renderCal(); $('pTime').focus();
+  }
+});
+$('vtMore').onclick = () => { vtOpenAll = !vtOpenAll; renderVotes(); };
+
 function memFor(gameId, n) { const lc = String(n || '').trim().toLowerCase(); return memGames.find((g) => (gameId ? g.key === 'm' + gameId : g.key === 'm:' + lc)); }
 function wantedFor(gameId, n) { const lc = String(n || '').trim().toLowerCase(); return wanted.find((w) => (gameId ? Number(w.gameId) === Number(gameId) : !w.gameId && String(w.game).toLowerCase() === lc)); }
 function wtCard(w) {
@@ -3315,9 +3436,9 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []) }; }
+  try { const r = await api('GET', '/my'); me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []), votes: new Set(r.votes || []) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); loginFailed(e.code); } }
-  renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted();
+  renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted(); renderVotes();
 }
 function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
 function authHtml(qr) {
@@ -3626,6 +3747,7 @@ watch('/plays', (rows) => {
   dbState = 'ready'; renderPlays(); renderParties(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
   loadGuestWeights();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
+watch('/votes', setVotes, () => {}, 60000);
 watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
 watch('/campaigns', (rows) => { camps = Array.isArray(rows) ? rows : []; cpState = 'ready'; renderParties(); }, () => { if (cpState !== 'ready') { cpState = 'off'; renderCamps(); } }, 60000);
 watch('/member-games', (rows) => { memRows = Array.isArray(rows) ? rows : []; buildMemGames(); renderGrid(); renderMg(); }, () => {}, 60000);
