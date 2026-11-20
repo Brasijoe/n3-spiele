@@ -37,6 +37,7 @@ UI labels in quotes below are the German texts shown on the page (the admin view
 - **Event codes:** let anyone offer rounds on event days without Discord (see section 9).
 - **Logging via QR code:** for people without Discord (see section 9).
 - **Member-owned games ("Mitglieder besitzen"):** a second tab next to the collection where members list their own games and others can ask them to bring one (see section 9).
+- **Wish list ("Wunschspiele"):** signed-in users (Discord login or `/code`, members and non-members) tap 👍 on up to 5 games (collection or member games) they want to play at the next Stammtisch. The "Mitspieler gesucht" sub-page shows the ranked list with names and a prefilled "Runde anbieten" (or "Mitbringen anfragen" for a member game); games with a round planned that day show "Runde geplant". Votes count only for the next Stammtisch day from the Verwaltung settings and are deleted after it.
 - **"Does anyone have …?" ("Hat jemand …?"):** on the sub-page "Hat jemand …?" of the "Mitspieler-/Spielesuche" tab (sub-tabs "Mitspieler gesucht" | "Spiele gesucht" with counts; `#partys` and `#suche` open them directly), signed-in users look for a game that is neither in the collection nor owned by a member; the bot asks in the bot channel (see section 9).
 - **Campaigns ("Kampagnen", `#kampagnen`):** third sub-tab of "Mitspieler-/Spielesuche". Members start a campaign (game, start, rhythm, session length, rough number of sessions, seats; start and rhythm can stay open); the bot opens a private Discord thread for the players, posts each session there a week before and runs votes on rescheduling or cancelling a session (see section 9).
 - **Discord button:** next to the language switch. Signed out it is the Discord icon as a sign-in button ("Mit Discord anmelden" slides out on hover); signed in it is the Discord icon with a direct link to the bot channel. Login checks that the person is on the server (`DISCORD_GUILD_ID`, test server until go-live); if not, a dialog explains they must join first and shows the invite link (`DISCORD_URL`), also on the login popup.
@@ -55,6 +56,7 @@ src/discord.js     Discord bot (/party, /log, /code, /runden, buttons, modals), 
 src/booking.js     Stammtisch-day rule, member check, intro rule
 src/membergames.js member-owned games, BGG collection import, bring requests
 src/wanted.js     "Hat jemand …?" game requests in the bot channel
+src/votes.js      wish list votes for the next Stammtisch ("Wunschspiele")
 src/campaigns.js   campaigns ("Kampagnen"): schedule, private Discord thread, session posts, reschedule/cancel votes, invites
 src/games.js       GeekList games missing from the page (extra_games), cover proxy
 src/bgg.js         BGG XML API: search, GeekList, collection (token only here)
@@ -258,6 +260,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 | `test/join-rules.mjs` | who may join which round |
 | `test/member-games.mjs` | member games, BGG import, bring requests |
 | `test/wanted.mjs` | "Hat jemand …?" requests (same setup as `test/member-games.mjs`) |
+| `test/votes.mjs` | wish list votes (same setup as `test/wanted.mjs`) |
 | `test/campaigns.mjs` | campaigns: create, private thread, invites, reschedule/cancel votes, edit, open dates (same setup) |
 | `test/qr-log.cjs` | logging via QR key |
 | `test/member-code.mjs` | `/code` personal codes |
@@ -268,7 +271,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 
 ## 14. Data model
 
-D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` = web/discord/qr), `parties` (rounds; `attendees` JSON, `host_discord`, Discord message ids, `event_id`/`event_name`, `bring_id`, `play_id` once logged), `config` (`highlights`, `gamemeta`, `owners`, `booking`, `log_key`, `geeklist`), `rate`, `members`, `sessions`, `auth_handoff`, `events`, `member_games`, `bring_requests`, `wanted` ("Hat jemand …?"; `interested` JSON, `status` open/found/withdrawn/expired, `expires_at`), `extra_games`, `campaigns` (players JSON, `invited` JSON [{id, name, k, res, by, at, dm, msg}], `rule` JSON, `status` active/ended, `outcome` done/aborted, Discord post + thread ids), `campaign_sessions` (`planned`, `date`, `time`, `absent` JSON, `prop` JSON vote, `posted`, `cancelled`, `play_id`). Details and the shape of the built-in game data are in [`docs/HANDOVER.md`](docs/HANDOVER.md) section 3.
+D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` = web/discord/qr), `parties` (rounds; `attendees` JSON, `host_discord`, Discord message ids, `event_id`/`event_name`, `bring_id`, `play_id` once logged), `config` (`highlights`, `gamemeta`, `owners`, `booking`, `log_key`, `geeklist`), `rate`, `members`, `sessions`, `auth_handoff`, `events`, `member_games`, `bring_requests`, `wanted` ("Hat jemand …?"; `interested` JSON, `status` open/found/withdrawn/expired, `expires_at`), `extra_games`, `votes` (wish list; one row per `day` + `game_key` + `discord_id`, `game_key` = BGG id or `n:<name>`), `campaigns` (players JSON, `invited` JSON [{id, name, k, res, by, at, dm, msg}], `rule` JSON, `status` active/ended, `outcome` done/aborted, Discord post + thread ids), `campaign_sessions` (`planned`, `date`, `time`, `absent` JSON, `prop` JSON vote, `posted`, `cancelled`, `play_id`). Details and the shape of the built-in game data are in [`docs/HANDOVER.md`](docs/HANDOVER.md) section 3.
 
 ## 15. Go-live on the real N3 Discord server
 
