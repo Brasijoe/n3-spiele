@@ -91,6 +91,23 @@ export const headline = (r) => `**${r.host}** sucht Mitspielende${r.event_name ?
 export const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return `${d}.${m}.${y}`; };
 export const wdName = (iso) => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(iso + 'T12:00:00Z').getUTCDay()];
 
+// ---- Mindestzahl ----
+// min_players (inkl. Gastgeber, NULL = keine): Die Runde „steht“, sobald so viele fest dabei sind. Reservierte Plätze zählen
+// nicht mit, weil sie noch nicht bestätigt sind. Gibt null zurück, wenn keine Mindestzahl gesetzt ist.
+export function minInfo(r, now = new Date().toISOString()) {
+  const min = Number(r && r.min_players) || 0; if (min < 2) return null;
+  let att = {}; try { att = JSON.parse(r.attendees || '{}'); } catch { /* leer */ }
+  const have = Object.values(att).filter((a) => a && !a.out && !a.res).length + 1;
+  return { min, have, ok: have >= min, missing: Math.max(0, min - have) };
+}
+export const minText = (mi) => (mi.ok ? `✅ Mindestzahl erreicht (${mi.have}/${mi.min}) – die Runde findet statt` : `⏳ Mindestens ${mi.min}: es ${mi.missing === 1 ? 'fehlt noch 1' : `fehlen noch ${mi.missing}`}`);
+// „3-5“ (mind.–max.) oder „5“ (nur Plätze) aus dem Bearbeiten-Fenster in Discord.
+export function parseSeats(v) {
+  const m = /^\s*(\d{1,2})\s*(?:[-–\/]\s*(\d{1,2}))?\s*$/.exec(String(v || ''));
+  if (!m) return null;
+  return m[2] ? { min: +m[1], seats: +m[2] } : { min: null, seats: +m[1] };
+}
+
 // ---- Nachricht ----
 export function view(r, env = {}) {
   const att = JSON.parse(r.attendees || '{}'), now = new Date().toISOString();
@@ -110,7 +127,7 @@ export function view(r, env = {}) {
     ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
       { name: '📅 Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ` · ${r.time} Uhr` : ''}` },
-      { name: `🪑 ${r.seats} Plätze`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
+      { name: `🪑 ${r.seats} Plätze`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}${minInfo(r) ? '\n' + minText(minInfo(r)) : ''}` },
       { name: '👥 Dabei', value: dabei },
     ];
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
@@ -167,7 +184,7 @@ function editModal(r) {
     row('spiel', 'Spiel', r.game, { max_length: 120 }),
     row('datum', 'Datum (z. B. 17.11. oder 2026-11-17)', fmtDate(r.date), { max_length: 20 }),
     row('uhrzeit', 'Uhrzeit (HH:MM)', r.time || '18:00', { max_length: 5, min_length: 5 }),
-    row('plaetze', 'Plätze inkl. Gastgeber (2–30)', r.seats, { max_length: 2 }),
+    row('plaetze', 'Plätze (z. B. 5) oder mind.-max. (z. B. 3-5)', r.min_players ? `${r.min_players}-${r.seats}` : r.seats, { max_length: 5 }),
     row('hinweis', 'Hinweis / kurze Vorstellung', r.note || '', { required: false, max_length: 500, style: 2 }),
   ] } };
 }
@@ -191,6 +208,8 @@ async function cmdParty(i, env, ctx) {
   const date = opt(i, 'datum') ? parseDate(opt(i, 'datum')) : nextStammtischDate(rule); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17, 17.11., heute, morgen.');
   const time = str(opt(i, 'uhrzeit') || '18:00', 5); if (!/^\d{2}:\d{2}$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.');
   const seats = Number(opt(i, 'plaetze') || 4); if (!(seats >= 2 && seats <= 30)) return say('Plätze: 2 bis 30.');
+  const minP = opt(i, 'mindestens') ? Number(opt(i, 'mindestens')) : null;
+  if (minP != null && !(minP >= 2 && minP <= seats)) return say(`Mindestens: 2 bis ${seats} (nicht mehr als Plätze).`);
   const note = str(opt(i, 'hinweis'), 500);
   if (!isMember(rule, roles)) {
     if (guestsPaused(rule, berlinToday())) return say(pauseText(rule));
@@ -199,8 +218,8 @@ async function cmdParty(i, env, ctx) {
     if (!introOk(note)) return say(INTRO_HELP + ' Bitte `/party` noch einmal mit `hinweis` ausfüllen.');
   }
   const id = newId();
-  await env.DB.prepare("INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'{}',?12,?13)")
-    .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), note, new Date().toISOString(), w.id).run();
+  await env.DB.prepare("INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord, min_players) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'{}',?12,?13,?14)")
+    .bind(id, gameId, game.slice(0, 120), 0, year, date, time, seats, w.name, await sha256('discord:' + w.id), note, new Date().toISOString(), w.id, minP).run();
   const row = await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(id).first();
   // Per REST posten, damit wir die Nachricht später aktualisieren können; sonst normale Antwort.
   try {
@@ -308,7 +327,9 @@ async function editSubmit(i, env) {
   const game = str(f.spiel, 120); if (!game) return say('Das Spiel darf nicht leer sein.');
   const date = parseDate(f.datum); if (!date) return say('Datum nicht verstanden. Beispiele: 2026-11-17 oder 17.11.');
   const time = str(f.uhrzeit, 5); if (!/^\d{2}:\d{2}$/.test(time)) return say('Uhrzeit bitte als HH:MM, z. B. 18:00.');
-  const seats = Number(f.plaetze);
+  const sp = parseSeats(f.plaetze); if (!sp) return say('Plätze bitte als Zahl (z. B. 5) oder als mind.-max. (z. B. 3-5).');
+  const seats = sp.seats, minP = sp.min;
+  if (minP != null && !(minP >= 2 && minP <= seats)) return say('Mindestens: 2 bis zur Zahl der Plätze, z. B. 3-5.');
   const note = str(f.hinweis, 500);
   // Eigene Runde ohne Mitgliederrolle (Moderierende ausgenommen): neues Datum nur an Stammtisch-Tagen, Vorstellung bleibt Pflicht.
   if (!modOf(i) && !row.event_id) {
@@ -321,8 +342,8 @@ async function editSubmit(i, env) {
   const taken = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
   if (!(seats >= 2 && seats <= 30) || seats < taken) return say(`Plätze: 2 bis 30, mindestens ${taken} (so viele sind schon dabei).`);
   const same = game === row.game;
-  await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, date = ?4, time = ?5, seats = ?6, note = ?7 WHERE id = ?8')
-    .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, note, id).run();
+  await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, date = ?4, time = ?5, seats = ?6, note = ?7, min_players = ?8 WHERE id = ?9')
+    .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, note, minP, id).run();
   await syncParty(env, id, true);
   return done('Gespeichert ✓');
 }
@@ -377,6 +398,7 @@ export const COMMANDS = [
     { type: 3, name: 'datum', description: 'Standard: nächster Stammtisch. Format 2026-11-17, 17.11., heute, morgen' },
     { type: 3, name: 'uhrzeit', description: 'HH:MM, Standard 18:00' },
     { type: 4, name: 'plaetze', description: 'Plätze inkl. dir, Standard 4', min_value: 2, max_value: 30 },
+    { type: 4, name: 'mindestens', description: 'So viele (inkl. dir) müssen dabei sein, damit die Runde stattfindet', min_value: 2, max_value: 30 },
     { type: 3, name: 'hinweis', description: 'Zusatzinfo. Ohne Mitgliederrolle Pflicht: stell dich kurz vor', max_length: 500 },
   ] },
   { name: 'log', description: 'Eine gespielte Partie eintragen', options: [
@@ -432,6 +454,9 @@ export async function ensureCols(env) {
   // Discord-Thread zur Runde: ID und Stand (JSON {m: Mitglieder-IDs, n: Name, a: archiviert}).
   if (!have.has('discord_thread')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_thread TEXT').run();
   if (!have.has('thread_state')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN thread_state TEXT').run();
+  // Mindestzahl (inkl. Gastgeber) und das Datum, für das schon am Vortag erinnert wurde.
+  if (!have.has('min_players')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN min_players INTEGER').run();
+  if (!have.has('min_warn')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN min_warn TEXT').run();
   // Spiele, die Mitglieder selbst besitzen (Besitzer = Discord-Name, mit Zustimmung), und Anfragen „Bitte mitbringen“.
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS member_games (id TEXT PRIMARY KEY, discord_id TEXT NOT NULL, game_id INTEGER, game TEXT NOT NULL, year INTEGER, note TEXT NOT NULL DEFAULT \'\', data TEXT, consent_at TEXT NOT NULL, created_at TEXT NOT NULL)').run();
   await env.DB.prepare('CREATE INDEX IF NOT EXISTS member_games_owner ON member_games(discord_id)').run();
@@ -506,9 +531,10 @@ export async function openPartyThread(env, row, channelId, msgId) {
   try {
     const name = threadName(row);
     const th = await discord(env, 'POST', `/channels/${channelId}/messages/${msgId}/threads`, { name, auto_archive_duration: 10080 });
-    await env.DB.prepare('UPDATE parties SET discord_thread = ?1, thread_state = ?2 WHERE id = ?3').bind(th.id, JSON.stringify({ m: [], n: name }), row.id).run();
-    await discord(env, 'POST', `/channels/${th.id}/messages`, { content: `Absprachen zur Runde hier: wer bringt was mit, kleine Änderungen, Fragen. Alle, die dabei sind, werden automatisch hinzugefügt.`, allowed_mentions: { parse: [] } });
-    await syncThread(env, { ...row, discord_thread: th.id, thread_state: JSON.stringify({ m: [], n: name }) });
+    const mi = minInfo(row), st0 = JSON.stringify({ m: [], n: name, ...(mi && mi.ok ? { k: 1 } : {}) });
+    await env.DB.prepare('UPDATE parties SET discord_thread = ?1, thread_state = ?2 WHERE id = ?3').bind(th.id, st0, row.id).run();
+    await discord(env, 'POST', `/channels/${th.id}/messages`, { content: `Absprachen zur Runde hier: wer bringt was mit, kleine Änderungen, Fragen. Alle, die dabei sind, werden automatisch hinzugefügt.${mi ? `\nDie Runde findet statt, sobald mindestens ${mi.min} dabei sind (inkl. Gastgeber). Ich sage hier Bescheid.` : ''}`, allowed_mentions: { parse: [] } });
+    await syncThread(env, { ...row, discord_thread: th.id, thread_state: st0 });
   } catch (e) { console.log('party thread failed', e && e.message); }
 }
 // Mitglieder und Name des Threads an die Runde angleichen (nur Änderungen werden an Discord geschickt).
@@ -522,6 +548,14 @@ export async function syncThread(env, row) {
     if (name !== st.n) { await discord(env, 'PATCH', `/channels/${t}`, { name }); st.n = name; }
     for (const id of add.slice(0, 30)) { await discord(env, 'PUT', `/channels/${t}/thread-members/${id}`); have.add(id); }
     for (const id of rem.slice(0, 30)) { await discord(env, 'DELETE', `/channels/${t}/thread-members/${id}`); have.delete(id); }
+    // Mindestzahl: im Thread Bescheid sagen, sobald sie erreicht ist oder durch eine Absage wieder unterschritten wird.
+    const mi = minInfo(row), was = !!st.k;
+    if (mi && mi.ok !== was && !row.play_id && row.date >= berlinToday()) {
+      const txt = mi.ok ? `✅ **Mindestzahl erreicht:** ${mi.have} von mindestens ${mi.min} sind dabei – die Runde findet statt!`
+        : `⚠️ **Wieder unter der Mindestzahl:** nur noch ${mi.have} von mindestens ${mi.min} dabei, es ${mi.missing === 1 ? 'fehlt 1' : `fehlen ${mi.missing}`}.`;
+      await discord(env, 'POST', `/channels/${t}/messages`, { content: txt, allowed_mentions: { parse: [] } });
+    }
+    if (mi && mi.ok) st.k = 1; else delete st.k;
   } catch (e) { console.log('party thread sync failed', e && e.message); }
   st.m = [...have];
   await env.DB.prepare('UPDATE parties SET thread_state = ?1 WHERE id = ?2').bind(JSON.stringify(st), row.id).run();
@@ -584,6 +618,35 @@ async function notifyCancel(env, row) {
   }
 }
 
+// ---------- Mindestzahl: Erinnerung am Vortag ----------
+// Alle 20 Minuten, ab 12 Uhr am Vortag (Berlin): Runden, die die Mindestzahl noch nicht erreicht haben, bekommen einmal einen
+// Hinweis im Thread (an alle, die dabei sind), der Gastgeber zusätzlich eine Direktnachricht. Die Runde wird nicht automatisch
+// abgesagt: der Gastgeber entscheidet (mit weniger spielen, verschieben oder stornieren). min_warn = Datum, für das erinnert wurde.
+export async function warnMinPlayers(env, now = new Date()) {
+  const b = berlin(now); if (b.hour < 12) return 0;
+  const tomorrow = addDays(b.date, 1);
+  const { results } = await env.DB.prepare("SELECT * FROM parties WHERE min_players IS NOT NULL AND date = ?1 AND play_id IS NULL AND coalesce(min_warn, '') != date LIMIT 40").bind(tomorrow).all();
+  let n = 0;
+  for (const r of results) {
+    await env.DB.prepare('UPDATE parties SET min_warn = ?1 WHERE id = ?2').bind(r.date, r.id).run();
+    const mi = minInfo(r); if (!mi || mi.ok || !env.DISCORD_BOT_TOKEN) continue;
+    n++;
+    const when = `morgen (${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? `, ${r.time} Uhr` : ''})`;
+    const miss = mi.missing === 1 ? 'fehlt noch 1 Person' : `fehlen noch ${mi.missing} Personen`;
+    if (r.discord_thread && !tState(r).a) {
+      try { await discord(env, 'POST', `/channels/${r.discord_thread}/messages`, { content: `⏳ Die Runde ist ${when}: ${mi.have} von mindestens ${mi.min} sind dabei, es ${miss}. Kennt ihr noch jemanden? Weitersagen hilft!`, allowed_mentions: { parse: [] } }); }
+      catch (e) { console.log('min warn thread failed', e && e.message); }
+    }
+    if (r.host_discord) {
+      try {
+        const dm = await discord(env, 'POST', '/users/@me/channels', { recipient_id: r.host_discord });
+        await discord(env, 'POST', `/channels/${dm.id}/messages`, { content: `⏳ Deine Runde **${r.game}** ist ${when}, es ${miss} bis zur Mindestzahl (${mi.have}/${mi.min}). Du kannst sie trotzdem spielen, die Mindestzahl über „Verwalten“ → „Bearbeiten“ ändern, verschieben oder stornieren.`, allowed_mentions: { parse: [] } });
+      } catch (e) { console.log('min warn dm failed', e && e.message); }
+    }
+  }
+  return n;
+}
+
 // ---------- Übersicht offener Runden ----------
 // Eine Nachricht des Bots im Runden-Kanal (erster DISCORD_CHANNEL_ID), die sich selbst aktualisiert. Bei jeder neuen Runde
 // wird sie gelöscht und neu gepostet, damit sie unten bleibt. Gespeichert in config 'dc_overview' = {ch, msg, h}.
@@ -602,7 +665,8 @@ export async function overviewMessage(env) {
     if (r.date !== day) { day = r.date; lines.push(`\n**📅 ${wdName(r.date)}, ${fmtDate(r.date)}**`); }
     const { taken, free } = seatInfo(r), l = msgLink(env, r);
     const game = r.game.replace(/[[\]*_~`|]/g, '');
-    lines.push(`${r.time ? r.time + ' · ' : ''}${l ? `[${game}](${l})` : `**${game}**`} · 👑 ${r.host.replace(/[*_~`|]/g, '')} · ${taken}/${r.seats} dabei · ${free ? `**noch ${free} frei**` : '🔒 voll'}`);
+    const mi = minInfo(r), mt = mi ? (mi.ok ? ' · ✅ steht' : ` · ⏳ mind. ${mi.min}, ${mi.missing === 1 ? 'fehlt 1' : `fehlen ${mi.missing}`}`) : '';
+    lines.push(`${r.time ? r.time + ' · ' : ''}${l ? `[${game}](${l})` : `**${game}**`} · 👑 ${r.host.replace(/[*_~`|]/g, '')} · ${taken}/${r.seats} dabei · ${free ? `**noch ${free} frei**` : '🔒 voll'}${mt}`);
   }
   let desc = '';
   for (const x of lines) { if ((desc + '\n' + x).length > 3700) { desc += '\n… weitere auf der Webseite'; break; } desc += (desc ? '\n' : '') + x; }

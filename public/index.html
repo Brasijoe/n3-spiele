@@ -375,6 +375,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .seats { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .seat { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--club); box-sizing: border-box; }
 .seat.on { background: var(--club); }
+.seat.need { border-style: dashed; }
 .seat.res { background: repeating-linear-gradient(45deg, var(--club) 0 2px, transparent 2px 4px); }
 .cp-inv { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .cp-inv .pill { display: inline-flex; align-items: center; gap: 4px; }
@@ -791,7 +792,8 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <p class="pause-note" id="pPause" role="status" hidden></p>
     <div class="field"><span data-t="date"></span><input type="hidden" id="pDate"><div class="cal" id="pCal"></div><span class="note" id="pDateNote"></span></div>
     <label class="field"><span data-t="ptTime"></span><input type="time" id="pTime" value="18:00" step="300"></label>
-    <label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label>
+    <div class="br-dates"><label class="field"><span data-t="ptSeats"></span><input type="number" id="pSeats" min="2" max="30" step="1" required></label><label class="field"><span data-t="ptMinLbl"></span><input type="number" id="pMin" min="2" max="30" step="1"></label></div>
+    <span class="note" data-t="ptMinHelp" style="margin-top:-6px"></span>
     <label class="field" id="pHostWrap" hidden><span data-t="ptHost"></span><input type="text" id="pHost" maxlength="40"></label>
     <label class="field"><span id="pNoteLbl" data-t="note"></span><textarea id="pNote" maxlength="500" rows="2"></textarea><span class="note" id="pNoteHelp" hidden></span></label>
     <div class="auth-box" id="pAuth" data-authbox></div>
@@ -1055,7 +1057,7 @@ const TXT = {
     noteIntro: 'Hinweis mit kurzer Vorstellung (Pflicht)', noteIntroHelp: 'Da du ohne Mitgliederrolle anbietest: Schreib bitte kurz, wer du bist, ob du schon mal bei uns warst, wie gut du das Spiel kennst und ob du es erklären kannst oder erklärt bekommen möchtest. Mindestens {n} Zeichen ({c}/{n}).', errIntro: 'Bitte stell dich im Hinweis kurz vor (mindestens {n} Zeichen).', errStammtisch: 'Ohne Mitgliederrolle geht das nur an Stammtisch-Tagen ({r}).',
     ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Vorgeschlagene Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
-    ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
+    ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptMinLbl: 'Mindestens (inkl. dir)', ptMinPh: 'keine', ptMinHelp: 'Optional: so viele müssen dabei sein, damit die Runde stattfindet. Am Vortag erinnert der Discord-Bot, falls noch Leute fehlen.', ptMinOk: 'Findet statt', ptMinMiss: 'Mind. {m} · noch {n} fehlen', ptMinMiss1: 'Mind. {m} · noch 1 fehlt', ptErrMin: 'Mindestens: 2 bis zur Zahl der Plätze, oder leer lassen.', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
     ptLog: 'Als gespielt registrieren', ptPlayed: 'Gespielt', ptNotLogged: 'Noch nicht eingetragen', ptPlayers: '{n} Spieler', peNames: 'Mitspieler (mit Komma getrennt)', ptEditPlay: 'Ergebnis bearbeiten', ptWon: 'Gewonnen', ptDur: 'Dauer', ptPl: 'Spieler', ptMin: '{n} Min', ptAgo: 'vor {n} Tagen', ptYesterday: 'gestern', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
     ptBringNote: '{o} bringt das Spiel mit (auf Wunsch von {r}).', ptErrFull: 'Die Runde ist leider schon voll.', ptCreated: 'Runde angelegt.', ptNoteAuto: 'Runde: {n}', ptToday: 'Heute', ptTomorrow: 'Morgen', ptHostTag: 'organisiert', tabCollection: 'Sammlung', tabStats: 'Statistik', logGuest: 'Gastspiel eintragen', guestCta: 'Jemand hat ein eigenes Spiel mitgebracht? Tragt die Partie als Gastspiel ein.',
     guestTag: 'Gastspiel', clubTag: 'Sammlung', bggSearch: 'Spiel auf BoardGameGeek suchen', bggPh: 'Name eingeben, z. B. Cascadia', change: 'Ändern',
@@ -1158,7 +1160,7 @@ const TXT = {
     noteIntro: 'Note with a short introduction (required)', noteIntroHelp: 'As you’re offering without the member role: please write who you are, whether you’ve been with us before, how well you know the game and whether you can teach it or would like it explained. At least {n} characters ({c}/{n}).', errIntro: 'Please introduce yourself briefly in the note (at least {n} characters).', errStammtisch: 'Without the member role this is only possible on game nights ({r}).',
     ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Proposed games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
-    ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
+    ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptMinLbl: 'Minimum (incl. you)', ptMinPh: 'none', ptMinHelp: 'Optional: this many need to be in for the game to happen. The Discord bot sends a reminder the day before if people are still missing.', ptMinOk: 'Going ahead', ptMinMiss: 'Min. {m} · {n} more needed', ptMinMiss1: 'Min. {m} · 1 more needed', ptErrMin: 'Minimum: 2 up to the number of seats, or leave it empty.', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
     ptLog: 'Register as played', ptPlayed: 'Played', ptNotLogged: 'Not logged yet', ptPlayers: '{n} players', peNames: 'Players (comma-separated)', ptEditPlay: 'Edit result', ptWon: 'Winner', ptDur: 'Duration', ptPl: 'Players', ptMin: '{n} min', ptAgo: '{n} days ago', ptYesterday: 'yesterday', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
     ptBringNote: '{o} is bringing the game (requested by {r}).', ptErrFull: 'Sorry, this game is already full.', ptCreated: 'Game created.', ptNoteAuto: 'Players: {n}', ptToday: 'Today', ptTomorrow: 'Tomorrow', ptHostTag: 'host', tabCollection: 'Collection', tabStats: 'Statistics', logGuest: 'Log a guest game', guestCta: 'Someone brought their own game? Log the play as a guest game.',
     guestTag: 'Guest game', clubTag: 'Collection', bggSearch: 'Search BoardGameGeek', bggPh: 'Type a name, e.g. Cascadia', change: 'Change',
@@ -2074,7 +2076,7 @@ $('grid').addEventListener('click', (e) => {
   renderView(); renderParties(); window.scrollTo(0, 0); openParty();
   pGame = { n: g.nDe || g.nEn, gameId: g.id || null, guest: true, y: g.y || null };
   if (g.p2) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
-  renderPPick(); $('pTime').focus();
+  prefillMin(g); renderPPick(); $('pTime').focus();
 });
 $('grid').addEventListener('click', (e) => { const b = e.target.closest('button[data-log]'); if (!b) return; const g = all.find((x) => x.key === b.dataset.log); if (g) openLog(g); });
 
@@ -2160,7 +2162,7 @@ $('rndGo').onclick = () => {
   renderView(); renderParties(); window.scrollTo(0, 0); openParty();
   pGame = g.mem ? { n: g.nDe || g.nEn, gameId: g.id || null, guest: true, y: g.y || null } : { n: name(g), gameId: g.id, guest: false, y: g.y };
   if (g.p2) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
-  renderPPick(); $('pTime').focus();
+  prefillMin(g); renderPPick(); $('pTime').focus();
 };
 
 /* ---------- Gastspiele: BGG-Suche ---------- */
@@ -2362,7 +2364,10 @@ function partyCard(x, past) {
   const t = T(), p = x.p, g = partyGame(p), nm = partyName(p), ins = whoIn(p), seats = Math.max(2, Number(p.seats) || 2);
   const taken = ins.length + 1, free = Math.max(0, seats - taken), my = mine()[x.id];
   const th = thumbHtml(p, g, nm);
-  const dots = Array.from({ length: Math.min(seats, 30) }, (_, i) => '<span class="seat' + (i < taken ? ' on' : '') + '"></span>').join('');
+  // Mindestzahl: nur fest Zugesagte zählen (reservierte Plätze nicht). Noch fehlende Plätze bis zur Mindestzahl gestrichelt.
+  const minP = Number(p.minPlayers) || 0, have = ins.filter(([, a]) => !a.res).length + 1, miss = Math.max(0, minP - have);
+  const dots = Array.from({ length: Math.min(seats, 30) }, (_, i) => '<span class="seat' + (i < taken ? ' on' : i < minP ? ' need' : '') + '"></span>').join('');
+  const minChip = minP >= 2 ? (miss ? '<span class="pchip warn">' + esc(fill(miss === 1 ? t.ptMinMiss1 : t.ptMinMiss, { m: minP, n: miss })) + '</span>' : '<span class="pchip ok">' + ICO_OK + esc(t.ptMinOk) + '</span>') : '';
   let actions = '';
   if (!past && myRes(p)) actions += '<button type="button" class="btn btn-primary" data-pconfirm="' + esc(x.id) + '">' + esc(t.ptConfirm) + '</button>';
   else if (!past) {
@@ -2376,7 +2381,7 @@ function partyCard(x, past) {
   if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   const join = joinOpen === x.id ? '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
   return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + (!past && membersOnlyJoin(p) ? '<span class="src mem">' + esc(t.ptMemOnly) + '</span>' : '') + '</div></div>' +
-    '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
+    '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' + (minChip ? '<div>' + minChip + '</div>' : '') +
     '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => a.res ? '<span class="pill res" title="' + esc(t.ptResTag) + '">⏳ ' + esc(a.name) + ' · ' + esc(t.ptResTag) + '</span>' : '<span class="pill">' + esc(a.name) + '</span>').join('') + '</div>' +
     (p.note ? '<span class="meta">' + esc(partyNote(p.note)) + '</span>' : '') + join + '<div class="actions">' + actions + '</div></div></article>';
 }
@@ -2467,8 +2472,11 @@ function pPick(i) {
   else if (q) pGame = { n: q.slice(0, 120), gameId: null, guest: true, y: null }; else return;
   const g = !pGame.guest && byId[pGame.gameId];
   if (g && !$('pSeats').value) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
+  if (g) prefillMin(g);
   $('pMsg').textContent = ''; renderPPick(); $('pTime').focus();
 }
+// Mindestzahl aus BGG vorschlagen (nur wenn das Spiel mindestens 2 braucht und das Feld noch leer ist).
+function prefillMin(g) { if (g && g.p1 >= 2 && !$('pMin').value) $('pMin').value = Math.min(g.p1, Number($('pSeats').value) || 30, 30); }
 let pTimer = null;
 $('pQ').addEventListener('input', () => { pActive = 0; startLive($('pQ').value, (r) => { pResults = r; pActive = r.length ? Math.max(0, Math.min(pActive, r.length - 1)) : -1; renderPPick(); }); });
 $('pQ').addEventListener('keydown', (e) => {
@@ -2596,7 +2604,7 @@ var pEditId = null, pEditDate = null;
 function openParty() {
   pEditId = null; pEditDate = null; $('pH').textContent = T().ptNew; $('pSave').textContent = T().ptCreate; $('pEvToggle').hidden = false;
   pGame = null; pResults = []; pActive = -1; $('pQ').value = ''; $('pDate').value = nextEventDay(); $('pDate').min = todayIso(); $('pTime').value = '18:00';
-  $('pSeats').value = ''; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
+  $('pSeats').value = ''; $('pMin').value = ''; $('pMin').placeholder = T().ptMinPh; $('pNote').value = ''; $('pCode').value = showCode(savedCode()); $('pMsg').textContent = ''; $('pSave').disabled = false;
   try { $('pHost').value = localStorage.getItem('n3-name') || ''; } catch (e) {}
   const ev = lsGet('n3-event-code'); evInfo = null; $('pEvCode').value = ev; setEvMode(!!ev); if (ev) checkEv(true);
   renderPPick(); $('pModal').hidden = false; $('pQ').focus();
@@ -2607,7 +2615,7 @@ function openPartyEdit(x) {
   openParty(); setEvMode(false);
   pEditId = x.id; $('pH').textContent = t.ptEditTitle; $('pSave').textContent = t.ptSaveEdit; $('pEvToggle').hidden = true; $('pEvWrap').hidden = true; $('pHostWrap').hidden = true;
   pGame = { n: p.game, gameId: p.gameId || null, guest: !!p.guest, y: p.year || null };
-  $('pDate').value = p.date; pEditDate = p.date; $('pTime').value = p.time || ''; $('pSeats').value = p.seats; $('pNote').value = p.note || '';
+  $('pDate').value = p.date; pEditDate = p.date; $('pTime').value = p.time || ''; $('pSeats').value = p.seats; $('pMin').value = p.minPlayers || ''; $('pNote').value = p.note || '';
   renderPPick(); renderAuth(); applyEvDates(); $('pQ').blur();
 }
 function closeParty() { $('pModal').hidden = true; pEditId = null; pEditDate = null; }
@@ -2620,6 +2628,8 @@ $('pForm').addEventListener('submit', async (e) => {
   msg.className = 'err';
   if (!pGame) { msg.textContent = t.errPick; $('pQ').focus(); return; }
   if (!(seats >= 2 && seats <= 30)) { msg.textContent = t.ptErrSeats; return; }
+  const minP = $('pMin').value === '' ? null : Math.round(Number($('pMin').value));
+  if (minP != null && !(minP >= 2 && minP <= seats)) { msg.textContent = t.ptErrMin; $('pMin').focus(); return; }
   const host = $('pHost').value.trim().slice(0, 40), date = $('pDate').value;
   if (evMode) {
     if (!evInfo) { msg.textContent = t.evBad; $('pEvCode').focus(); return; }
@@ -2634,14 +2644,14 @@ $('pForm').addEventListener('submit', async (e) => {
   $('pSave').disabled = true; msg.className = 'ok'; msg.textContent = t.saving;
   if (pEditId) {
     try {
-      await api('PUT', '/parties/' + encodeURIComponent(pEditId), { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 500) });
+      await api('PUT', '/parties/' + encodeURIComponent(pEditId), { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, minPlayers: minP, note: $('pNote').value.trim().slice(0, 500) });
       refreshAll(); msg.textContent = t.saved; setTimeout(closeParty, 500);
-    } catch (err) { msg.className = 'err'; $('pSave').disabled = false; msg.textContent = err && err.code === 'seats_taken' ? t.ptSeatsTaken : err && err.code === 'already_logged' ? t.ptLoggedAlready : bookErr(err) || codeErr(err); }
+    } catch (err) { msg.className = 'err'; $('pSave').disabled = false; msg.textContent = err && err.code === 'seats_taken' ? t.ptSeatsTaken : err && err.code === 'bad_min' ? t.ptErrMin : err && err.code === 'already_logged' ? t.ptLoggedAlready : bookErr(err) || codeErr(err); }
     return;
   }
   try {
     if (!evMode) await ensureLogin(code);
-    const body = { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, note: $('pNote').value.trim().slice(0, 500) };
+    const body = { gameId: pGame.gameId, game: pGame.n, guest: pGame.guest, year: pGame.y || null, date, time: $('pTime').value || '', seats, minPlayers: minP, note: $('pNote').value.trim().slice(0, 500) };
     if (evMode) body.host = host;
     const r = await api('POST', '/parties', body, evMode ? { 'X-Event-Code': normEv($('pEvCode').value) } : {});
     if (evMode) lsSet('n3-name', host);
