@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS parties (
   discord_msg TEXT,
   host_discord TEXT,
   event_id TEXT,
-  event_name TEXT
+  event_name TEXT,
+  waitlist TEXT
 );
 CREATE INDEX IF NOT EXISTS parties_date ON parties(date);
 
