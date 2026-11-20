@@ -428,6 +428,31 @@ dialog.info form.pe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 1
 dialog.info form.pe .wide { grid-column: 1 / -1; }
 .gl-list { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 720px) { .st-panel, .st-filters { padding-inline: 18px; } .months { gap: 3px; } .mlabels { gap: 3px; font-size: 10px; } }
+/* Shelf of Shame: zwei Monats-Spotlights aus den nie gespielten Spielen */
+.shame { padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
+.shame-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; }
+.shame-head h2 { margin: 0; display: flex; align-items: center; gap: 10px; }
+.shame-head p { margin: 4px 0 0; max-width: 680px; }
+.shame-mon { font: 700 12px var(--font-body); text-transform: uppercase; letter-spacing: .06em; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 4px 10px; }
+.shame-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.shame-card { position: relative; display: grid; grid-template-columns: 120px 1fr; gap: 14px; padding: 14px; border: 2px dashed var(--line-strong); border-radius: 10px; background: var(--surface); }
+.shame-card.done { border-style: solid; border-color: #2b7a40; }
+.shame-cv { position: relative; aspect-ratio: 1; border-radius: 8px; background: var(--cover); display: flex; align-items: center; justify-content: center; }
+.shame-cv img { max-width: 92%; max-height: 92%; object-fit: contain; filter: grayscale(.35) sepia(.25); transition: filter .4s ease; }
+.shame-card:hover .shame-cv img, .shame-card.done .shame-cv img { filter: none; }
+.shame-cv .badge { right: -8px; top: -8px; }
+.shame-dust { position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.65); color: #fff; border-radius: 4px; padding: 2px 6px; }
+.shame-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.shame-info h3 { margin: 0; font-family: var(--font-display); font-size: 19px; line-height: 1.2; color: var(--fg); }
+.shame-info .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.shame-card .actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; align-self: end; }
+.shame-card .actions .btn { min-height: 38px; padding: 0 14px; font-size: 13px; }
+.shame-ok { font-size: 13px; font-weight: 700; color: #2b7a40; }
+.shame-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); }
+.shame-card { grid-template-rows: 1fr auto; } .shame-cv { grid-row: 1 / 3; align-self: start; }
+@media (max-width: 600px) { .shame { padding: 20px 18px; } .shame-head h2 { font-size: 22px; flex-wrap: wrap; } .shame-grid { grid-template-columns: 1fr; }
+  .shame-card { grid-template-columns: 84px 1fr; gap: 10px 12px; } .shame-cv { grid-row: 1; } .shame-cv .badge { width: 34px !important; height: 34px !important; font-size: 12px !important; }
+  .shame-card .actions { grid-column: 1 / -1; } .shame-card .actions .btn { flex: 1 1 auto; } .shame-dust { display: none; } .shame-info h3 { font-size: 17px; } }
 /* Zufallsspiel: Würfel, Mischen, Enthüllung */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .rnd-btn { display: inline-flex; align-items: center; gap: 8px; }
@@ -512,6 +537,14 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <a class="btn btn-primary" id="hlBgg" target="_blank" rel="noopener" href="https://boardgamegeek.com" data-t="viewBgg"></a>
       <button type="button" class="btn btn-outline" id="hlLog" data-t="logPlay"></button>
     </div>
+  </section>
+
+  <section class="panel shame" id="shame" aria-labelledby="shameH" hidden>
+    <div class="shame-head">
+      <div><h2 id="shameH" class="sec-h">Shelf of Shame <span class="shame-mon" id="shameMon"></span></h2><p class="meta" id="shameSub"></p></div>
+      <button type="button" class="btn btn-quiet" id="shameAll"></button>
+    </div>
+    <div class="shame-grid" id="shameList"></div>
   </section>
 
   <section class="panel filters" aria-label="Filter">
@@ -971,7 +1004,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 <script>
 (async function () {
 const TXT = {
-  de: { rndBtn: 'Zufallsspiel', rndBtnT: 'Ein zufälliges Spiel aus den gefilterten Spielen würfeln', rndRolling: 'Es wird gewürfelt …', rndTitle: 'Der Würfel ist gefallen!', rndFrom: 'Gewürfelt aus {n} Spielen, die zu deinen Filtern passen.', rndFrom1: 'Nur ein Spiel passt zu deinen Filtern.', rndAgain: 'Nochmal würfeln', rndGo: 'Mitspieler suchen', rndClose: 'Schließen', rndEmptyT: 'Nichts zu würfeln', rndEmpty: 'Kein Spiel passt zu den aktiven Filtern. Setz ein paar Filter zurück und würfle dann noch einmal.', rndPicked: 'Gewürfelt: {n}',
+  de: { shSub: 'Diese Spiele stehen im Regal und wurden noch nie im Club gespielt. Jeden Monat holen wir zwei davon ins Rampenlicht – je besser die BGG-Wertung, desto größer die Chance.', shAll: 'Alle {n} ungespielten Spiele zeigen', shAll1: 'Das ungespielte Spiel zeigen', shTag: 'Spotlight im {m}', shDust: 'Seit {d} im Regal', shDone: 'Diesen Monat gespielt – eins weniger im Regal der Schande!', shFind: 'Mitspieler suchen', shAllDone: 'Jedes Spiel der Sammlung wurde schon mindestens einmal gespielt. Das Regal der Schande ist leer!', shCard: 'Shelf of Shame', rndBtn: 'Zufallsspiel', rndBtnT: 'Ein zufälliges Spiel aus den gefilterten Spielen würfeln', rndRolling: 'Es wird gewürfelt …', rndTitle: 'Der Würfel ist gefallen!', rndFrom: 'Gewürfelt aus {n} Spielen, die zu deinen Filtern passen.', rndFrom1: 'Nur ein Spiel passt zu deinen Filtern.', rndAgain: 'Nochmal würfeln', rndGo: 'Mitspieler suchen', rndClose: 'Schließen', rndEmptyT: 'Nichts zu würfeln', rndEmpty: 'Kein Spiel passt zu den aktiven Filtern. Setz ein paar Filter zurück und würfle dann noch einmal.', rndPicked: 'Gewürfelt: {n}',
     dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Discord-Kanal #mitspieler-gesucht angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Discord-Kanal #spiele-gesucht Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
@@ -1074,7 +1107,7 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { rndBtn: 'Random game', rndBtnT: 'Roll a random game from the filtered games', rndRolling: 'Rolling the dice …', rndTitle: 'The die is cast!', rndFrom: 'Rolled from {n} games that match your filters.', rndFrom1: 'Only one game matches your filters.', rndAgain: 'Roll again', rndGo: 'Find players', rndClose: 'Close', rndEmptyT: 'Nothing to roll', rndEmpty: 'No game matches the active filters. Reset a few filters, then roll again.', rndPicked: 'Rolled: {n}',
+  en: { shSub: 'These games sit on the shelf and have never been played at the club. Every month we put two of them in the spotlight – the better the BGG rating, the bigger the chance.', shAll: 'Show all {n} unplayed games', shAll1: 'Show the unplayed game', shTag: 'Spotlight for {m}', shDust: 'On the shelf since {d}', shDone: 'Played this month – one less on the shelf of shame!', shFind: 'Find players', shAllDone: 'Every game in the collection has been played at least once. The shelf of shame is empty!', shCard: 'Shelf of Shame', rndBtn: 'Random game', rndBtnT: 'Roll a random game from the filtered games', rndRolling: 'Rolling the dice …', rndTitle: 'The die is cast!', rndFrom: 'Rolled from {n} games that match your filters.', rndFrom1: 'Only one game matches your filters.', rndAgain: 'Roll again', rndGo: 'Find players', rndClose: 'Close', rndEmptyT: 'Nothing to roll', rndEmpty: 'No game matches the active filters. Reset a few filters, then roll again.', rndPicked: 'Rolled: {n}',
     dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the Discord channel #mitspieler-gesucht. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the Discord channel #spiele-gesucht that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
@@ -1637,6 +1670,68 @@ function memCard(g) {
     '<div class="actions">' + (g.owners.every((o) => isMine('memberGames', o.id)) ? '<button type="button" class="btn btn-primary" data-offer="' + esc(g.key) + '">' + esc(t.ptNew) + '</button>'
       : '<button type="button" class="btn btn-primary" data-bring="' + esc(g.key) + '">' + esc(t.brAsk) + '</button>') + (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></div></article>';
 }
+/* ---------- Shelf of Shame: zwei Monats-Spotlights aus den Spielen, die noch nie im Club gespielt wurden ---------- */
+// Die Auswahl bleibt den ganzen Monat gleich, ohne etwas zu speichern: Grundlage sind die Spiele, die vor dem Monatsersten
+// noch nie gespielt wurden, und der Zufall ist mit dem Monat geseedet. Gewichtete Ziehung ohne Zurücklegen
+// (Efraimidis-Spirakis: Schlüssel u^(1/w), die zwei größten gewinnen); Gewicht wächst quadratisch mit der BGG-Wertung über 5.
+var SHAME_N = 2;
+var shameW = (g) => { const r = Number(g.r) || 0; return r > 5 ? (r - 5) * (r - 5) : 0.25; };
+function shameRand(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h ^= h >>> 16; h = Math.imul(h, 2246822507); h ^= h >>> 13; h = Math.imul(h, 3266489909); h ^= h >>> 16;
+  return ((h >>> 0) + 0.5) / 4294967296;
+}
+var playedIn = (g, ids, nms) => !!((g.id && ids.has(Number(g.id))) || [g.nDe, g.nEn].some((n) => n && nms.has(String(n).trim().toLowerCase())));
+function shamePick(pool, mon, n) {
+  return pool.map((g) => ({ g, k: Math.log(shameRand(mon + '|' + g.key)) / shameW(g) })).sort((a, b) => b.k - a.k).slice(0, n).map((x) => x.g);
+}
+var shameCache = null; // var: renderGrid kann schon vor dieser Zeile laufen
+function shameSet() { const d = shameData(); return d ? d.keys : new Set(); }
+function shameData() {
+  if (dbState !== 'ready') return null;
+  const mon = todayIso().slice(0, 7);
+  if (shameCache && shameCache.plays === plays && shameCache.mon === mon) return shameCache;
+  const start = mon + '-01', early = plays.filter((p) => !p.date || String(p.date) < start);
+  const ids = new Set(early.map((p) => Number(p.gameId)).filter(Boolean)), nms = new Set(early.map((p) => String(p.game || '').trim().toLowerCase()).filter(Boolean));
+  const picks = shamePick(games.filter((g) => !playedIn(g, ids, nms)), mon, SHAME_N);
+  const never = games.filter((g) => !playedIn(g, playedIds, playedNames));
+  shameCache = { plays, mon, picks, never, keys: new Set(picks.map((g) => g.key)) };
+  return shameCache;
+}
+function renderShame() {
+  const el = $('shame'), d = shameData();
+  if (!d) { el.hidden = true; return; }
+  const t = T(), mName = new Date(d.mon + '-15T12:00:00').toLocaleDateString(de() ? 'de-DE' : 'en-GB', { month: 'long' });
+  el.hidden = false;
+  $('shameMon').textContent = new Date(d.mon + '-15T12:00:00').toLocaleDateString(de() ? 'de-DE' : 'en-GB', { month: 'long', year: 'numeric' });
+  $('shameSub').textContent = d.picks.length ? t.shSub : t.shAllDone;
+  $('shameAll').hidden = !d.never.length;
+  $('shameAll').textContent = d.never.length === 1 ? t.shAll1 : fill(t.shAll, { n: d.never.length });
+  $('shameList').innerHTML = d.picks.map((g) => {
+    const n = name(g), done = playedIn(g, playedIds, playedNames);
+    const dust = g.added && g.added !== '2026-11-01' ? fill(t.shDust, { d: g.added.split('-').reverse().join('.') }) : '';
+    const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '') + modePill(g);
+    return '<article class="shame-card' + (done ? ' done' : '') + '"><div class="shame-cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 40) : '') +
+      (dust ? '<span class="shame-dust">' + esc(dust) + '</span>' : '') + '</div><div class="shame-info">' +
+      '<span class="shame-tag">' + esc(fill(t.shTag, { m: mName })) + '</span><h3>' + esc(n) + '</h3>' +
+      '<span class="meta">' + esc([g.y || '', catNames(g).slice(0, 2).join(', ')].filter(Boolean).join(' · ')) + '</span>' +
+      (pills ? '<div class="pills">' + pills + '</div>' : '') + (done ? '<span class="shame-ok">✓ ' + esc(t.shDone) + '</span>' : '') + '</div>' +
+      '<div class="actions"><button type="button" class="btn btn-primary" data-shfind="' + esc(g.key) + '">' + esc(t.shFind) + '</button>' +
+      '<button type="button" class="btn btn-outline" data-shlog="' + esc(g.key) + '">' + esc(t.logPlay) + '</button>' +
+      (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></article>';
+  }).join('');
+}
+$('shameList').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-shfind],button[data-shlog]'); if (!b) return;
+  const g = games.find((x) => x.key === (b.dataset.shfind || b.dataset.shlog)); if (!g) return;
+  if (b.dataset.shlog) openLog(g); else seekPlayers(g);
+});
+$('shameAll').onclick = () => {
+  // Setzt den Filter „Im Club gespielt: Noch nie“ (im Filter-Knopf als aktiver Filter gezählt) und springt zur Liste.
+  S.src = 'club'; S.played = 'never'; S.limit = PAGE; renderFilters(); renderGrid();
+  const f = $('srcTabs'); if (f) f.scrollIntoView({ behavior: reduceMotionQ() ? 'auto' : 'smooth', block: 'start' });
+};
 // Aktuell gefilterte und sortierte Liste der Übersicht (auch Grundlage für das Zufallsspiel).
 function gridList() {
   const t = T();
@@ -1680,6 +1775,7 @@ function renderGrid() {
     const info = infoParts ? '<div class="cv-info">' + infoParts + '</div>' : '';
     return '<article class="card" tabindex="-1"><div class="cv" data-cvinfo>' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + badge(g, 44) +
       '<div class="cv-tl">' + (g.types.length ? '<span class="type">' + esc(typeTxt(g)) + '</span>' : '') + lnIcon(g) + '</div>' + info + '</div><div class="body">' +
+      (shameSet().has(g.key) ? '<span class="shame-tag">★ ' + esc(t.shCard) + '</span>' : '') +
       '<h3>' + esc(n) + '</h3><span class="meta">' + g.y + ' · ' + esc(catNames(g).slice(0, 2).join(', ')) + '</span>' +
       '<div class="pills"><span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span><span class="pill">' + esc(tTxt(g)) + '</span><span class="pill">' + esc(t.weights[g.wl]) + '</span>' + modePill(g) +
       g.langs.map((l) => '<span class="pill lg" title="' + esc(t.langNames[l]) + '">' + l.toUpperCase() + '</span>').join('') +
@@ -1896,7 +1992,7 @@ function renderAdmPlays() {
 $('hlQ').addEventListener('input', fillHlAdd);
 $('apQ').addEventListener('input', renderAdmPlays);
 
-function renderAll() { renderStatic(); renderFilters(); renderSlider(); renderGrid(); renderPlays(); renderAdmin(); renderMg(); renderStats(); renderParties(); renderView(); renderAdminLink(); if (logGame === GUEST_PENDING || (logGame && logGame.guest)) renderPick(); if (typeof renderAutoBtn === 'function') renderAutoBtn(); }
+function renderAll() { renderStatic(); renderFilters(); renderSlider(); renderShame(); renderGrid(); renderPlays(); renderAdmin(); renderMg(); renderStats(); renderParties(); renderView(); renderAdminLink(); if (logGame === GUEST_PENDING || (logGame && logGame.guest)) renderPick(); if (typeof renderAutoBtn === 'function') renderAutoBtn(); }
 
 $('hlList').addEventListener('input', (e) => {
   const ta = e.target.closest('textarea'); if (!ta) return;
@@ -2153,15 +2249,15 @@ $('rndDlg').addEventListener('close', rndClear);
 $('rndDlg').addEventListener('click', (e) => { if (e.target === $('rndDlg')) closeRnd(); });
 // „Mitspieler suchen“: Runde anbieten mit dem Spiel vorausgewählt (Regeln für Mitglieder/Stammtisch gelten wie immer);
 // fremdes Mitgliederspiel: Mitbringen anfragen.
-$('rndGo').onclick = () => {
-  const g = rndGame; if (!g) return; closeRnd();
+$('rndGo').onclick = () => { const g = rndGame; if (!g) return; closeRnd(); seekPlayers(g); };
+function seekPlayers(g) {
   if (g.mem && !rndMine(g)) { openBring(g.key); return; }
   try { history.replaceState(null, '', '#partys'); } catch (x) { location.hash = 'partys'; }
   renderView(); renderParties(); window.scrollTo(0, 0); openParty();
   pGame = g.mem ? { n: g.nDe || g.nEn, gameId: g.id || null, guest: true, y: g.y || null } : { n: name(g), gameId: g.id, guest: false, y: g.y };
   if (g.p2) $('pSeats').value = Math.min(Math.max(2, g.p2), 30);
   renderPPick(); $('pTime').focus();
-};
+}
 
 /* ---------- Gastspiele: BGG-Suche ---------- */
 const GUEST_PENDING = { guest: true, pending: true, p1: 1, p2: 30 };
@@ -3623,7 +3719,7 @@ watch('/plays', (rows) => {
   // „Im Club gespielt“: jede eingetragene Partie zählt, auch Gastspiele (per BGG-ID oder Name).
   playedIds = new Set(plays.map((p) => Number(p.gameId)).filter(Boolean)); playedNames = new Set(plays.map((p) => String(p.game || '').trim().toLowerCase()).filter(Boolean));
   calcClubTime();
-  dbState = 'ready'; renderPlays(); renderParties(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
+  dbState = 'ready'; renderPlays(); renderParties(); renderShame(); renderGrid(); renderSlider(); renderStats(); if (canEdit) renderAdmin();
   loadGuestWeights();
 }, () => { dbState = 'off'; renderPlays(); renderStats(); }, 20000);
 watch('/wanted', (rows) => { wanted = Array.isArray(rows) ? rows : []; renderWanted(); }, () => {}, 60000);
