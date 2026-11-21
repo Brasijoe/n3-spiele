@@ -139,7 +139,7 @@ const ida = await login('559');
 r = await call('POST', '/wanted', hans, { game: 'Webspiel' }); const w5 = await r.json(); assert.equal(r.status, 200);
 r = await call('POST', `/wanted/${w5.id}/found`, null, {}); assert.equal(r.status, 403);
 r = await call('POST', `/wanted/${w5.id}/found`, hans, {}); assert.equal((await r.json()).error, 'own');
-r = await call('POST', `/wanted/${w5.id}/found`, gast, { round: { date: wed, time: '18:00', seats: 4 } }); assert.equal((await r.json()).error, 'members_only_offer');
+r = await call('POST', `/wanted/${w5.id}/found`, gast, { round: { date: wed, time: '18:00', seats: 4 } }); assert.equal((await r.json()).error, 'stammtisch_only');
 r = await call('POST', `/wanted/${w5.id}/found`, fritz, { round: { date: wed, time: '25:00', seats: 4 } }); assert.equal((await r.json()).error, 'bad_time');
 r = await call('POST', `/wanted/${w5.id}/found`, fritz, { round: { date: wed, time: '18:15', seats: 3, note: '' } }); let j = await r.json(); assert.equal(r.status, 200, JSON.stringify(j)); assert.ok(j.partyId);
 await wait();

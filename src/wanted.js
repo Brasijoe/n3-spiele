@@ -212,7 +212,6 @@ const ERR = {
   guests_paused: (x) => x.pause,
   stammtisch_only: (x) => `Ohne Mitgliederrolle kannst du Runden nur an Stammtisch-Tagen anlegen (${x.rule}). Nächste Termine: ${x.next}.`,
   intro_missing: () => INTRO_HELP,
-  members_only_offer: () => 'Runden anlegen können nur Mitglieder (mit der Mitgliederrolle). Drück stattdessen „Hab ich (Termin später)“, dann meldet sich die suchende Person bei dir.',
   req_stammtisch_only: (x, r) => `${r.req_name} hat keine Mitgliederrolle und kann deshalb nur an Stammtisch-Tagen mitspielen (${x.rule}). Nächste Termine: ${x.next}.`,
 };
 const errText = (res, r) => (ERR[res.err] || (() => 'Da ist etwas schiefgelaufen.'))(res, r);
@@ -232,8 +231,6 @@ export async function markFound(env, ctx, r, finder, round, fromDiscord = false)
     const hint = str(round.note, 500);
     const rule = await getBooking(env), info = { rule: ruleText(rule), next: nextStammtische(berlinToday(), rule, 4).map(fmtDay).join(', ') };
     // Gleiche Regeln wie bei /party: ohne Mitgliederrolle nur Stammtisch-Tage und mit kurzer Vorstellung.
-    // Runden anbieten nur mit Mitgliederrolle („Hab ich (Termin später)“ geht weiterhin).
-    if (!finder.member) return { err: 'members_only_offer' };
     if (!finder.member) {
       if (guestsPaused(rule, berlinToday())) return { err: 'guests_paused', pause: pauseText(rule) };
       if (!isStammtisch(date, rule)) return { err: 'stammtisch_only', ...info };

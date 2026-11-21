@@ -73,12 +73,6 @@ await new Promise((res) => setTimeout(res, 3000));
 assert.match(sql("SELECT COUNT(*) AS n FROM votes WHERE day < '2021-01-01'").toString(), /"n": 0/);
 assert.match(sql(`SELECT COUNT(*) AS n FROM votes WHERE day = '${day}'`).toString(), /"n": 7/);
 console.log('expiry ok');
-// Runden anbieten nur für Mitglieder; Nicht-Mitglieder spielen bei bestehenden Runden mit (am Stammtisch-Tag).
-r = await call('POST', '/parties', gast, { game: 'CATAN', gameId: 13, date: day, time: '18:00', seats: 4, note: 'Hallo, ich bin neu hier und würde gern CATAN spielen, kenne die Regeln.' });
-assert.equal(r.status, 403); assert.equal((await r.json()).error, 'members_only_offer');
-r = await call('POST', '/parties', eva, { game: 'CATAN', gameId: 13, date: day, time: '18:00', seats: 4 }); assert.equal(r.status, 200); const pid = (await r.json()).id;
-r = await call('POST', `/parties/${pid}/join`, gast, { key: 'gastkey01', name: 'Gast' }); assert.equal(r.status, 200);
-console.log('members only offer ok');
 // Ohne Stammtisch-Tage keine Abstimmung
 await fetch(W + '/admin/booking', { method: 'PUT', headers: { 'content-type': 'application/json', 'x-admin-token': 'test-admin-pw' }, body: JSON.stringify({ memberRole: '777', weekdays: [], monthly: [] }) });
 r = await (await call('GET', '/votes')).json(); assert.equal(r.day, ''); assert.deepEqual(r.list, []);
