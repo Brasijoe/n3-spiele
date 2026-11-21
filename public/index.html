@@ -1411,13 +1411,13 @@ let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), 
 // Wunschspiele (Abstimmung für den nächsten Stammtisch): Stand vom Server, eigene Stimmen kommen über /my.
 let vt = { day: '', max: 5, list: [] }, vtOpenAll = false, vtBusy = false, vtPend = null;
 const ICO_UP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21h4V9H2zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7z"/></svg>';
-Object.assign(TXT.de, { vtTitle: 'Wunschspiele für {d}', vtTitleToday: 'Wunschspiele für heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Mitglieder sehen so, was gefragt ist, und bieten passende Runden an. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
+Object.assign(TXT.de, { vtTitle: 'Wunschspiele für {d}', vtTitleToday: 'Wunschspiele für heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Wer eine Runde anbietet, sieht so, was gefragt ist. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
   vtMine: 'Deine Stimmen: {n} von {m}.', vtNone: 'Noch keine Wünsche. Tippe in der Sammlung auf einer Spielekarte auf 👍.', vtN1: '1 Stimme', vtNn: '{n} Stimmen', vtBtn: 'Will ich am {d} spielen', vtBtnOn: 'Du willst das am {d} spielen. Nochmal tippen nimmt die Stimme zurück.',
-  vtPlanned: 'Runde geplant', vtWho: 'Gewählt von: {n}', vtMemOffer: 'Runden aus der Wunschliste bieten Mitglieder an; du kannst abstimmen.', vtAll: 'Alle {n} anzeigen', vtLess: 'Weniger anzeigen', vtLimit: 'Du hast schon {m} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück.',
+  vtPlanned: 'Runde geplant', vtWho: 'Gewählt von: {n}', vtAll: 'Alle {n} anzeigen', vtLess: 'Weniger anzeigen', vtLimit: 'Du hast schon {m} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück.',
   vtLoginT: 'Abstimmen', vtLoginTxt: 'Zum Abstimmen melde dich mit Discord an. So zählt jede Stimme nur einmal.' });
-Object.assign(TXT.en, { vtTitle: 'Wish list for {d}', vtTitleToday: 'Wish list for today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Members see what people want and offer matching games. After the club night, voting starts over.',
+Object.assign(TXT.en, { vtTitle: 'Wish list for {d}', vtTitleToday: 'Wish list for today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Whoever offers a game can see what people want. After the club night, voting starts over.',
   vtMine: 'Your votes: {n} of {m}.', vtNone: 'No wishes yet. Tap 👍 on a game card in the collection.', vtN1: '1 vote', vtNn: '{n} votes', vtBtn: 'I want to play this on {d}', vtBtnOn: 'You want to play this on {d}. Tap again to take your vote back.',
-  vtPlanned: 'Game planned', vtWho: 'Voted by: {n}', vtMemOffer: 'Members offer games from the wish list; you can vote.', vtAll: 'Show all {n}', vtLess: 'Show less', vtLimit: 'You already used {m} votes for this club night. Take one back first.',
+  vtPlanned: 'Game planned', vtWho: 'Voted by: {n}', vtAll: 'Show all {n}', vtLess: 'Show less', vtLimit: 'You already used {m} votes for this club night. Take one back first.',
   vtLoginT: 'Vote', vtLoginTxt: 'Sign in with Discord to vote. That way every vote counts only once.' });
 
 // Kampagnen (#kampagnen): Texte
@@ -3003,8 +3003,6 @@ const vtMineHas = (k) => isMine('votes', k);
 const vtDayTxt = () => { const t = T(); return vt.day === todayIso() ? t.ptToday.toLowerCase() : dayLabel(vt.day); };
 // Beim Überfahren des Daumens: wer schon abgestimmt hat.
 const vtWho = (x) => (x && x.names && x.names.length ? '\n' + fill(T().vtWho, { n: x.names.join(', ') }) : '');
-// Runden aus der Wunschliste anbieten (und Mitbringen anfragen) nur für angemeldete Mitglieder; alle anderen stimmen nur ab.
-const vtCanOffer = () => !!(me && me.member);
 function voteBtn(g) {
   if (!vt.day) return '';
   const t = T(), k = vtKey(g), x = vtItem(k), n = x ? x.n : 0, on = vtMineHas(k), tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt() }) + vtWho(x);
@@ -3017,14 +3015,13 @@ function renderVotes() {
   box.hidden = !vt.day; if (!vt.day) return;
   $('vtH').textContent = vt.day === todayIso() ? t.vtTitleToday : fill(t.vtTitle, { d: dayLabel(vt.day) });
   const mineN = myIds && myIds.votes ? myIds.votes.size : 0;
-  $('vtIntro').textContent = fill(t.vtIntro, { m: vt.max }) + (vtCanOffer() ? '' : ' ' + t.vtMemOffer) + (me ? ' ' + fill(t.vtMine, { n: mineN, m: vt.max }) : '');
+  $('vtIntro').textContent = fill(t.vtIntro, { m: vt.max }) + (me ? ' ' + fill(t.vtMine, { n: mineN, m: vt.max }) : '');
   const show = vtOpenAll ? vt.list : vt.list.slice(0, 5);
   $('vtList').innerHTML = !vt.list.length ? '<li class="st-empty">' + esc(t.vtNone) + '</li>' : show.map((x, i) => {
     const g = x.gameId ? byId[x.gameId] : null, nm = g ? name(g) : x.game, on = vtMineHas(x.key), mg = memFor(x.gameId, x.game);
     const tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt() }) + vtWho(x);
     let acts = '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vk="' + esc(x.key) + '" aria-pressed="' + on + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + '<span>' + x.n + '</span></button>';
     if (vtPlanned(x)) acts += '<span class="pchip ok">' + ICO_OK + esc(t.vtPlanned) + '</span>';
-    else if (!vtCanOffer()) { /* Nicht-Mitglieder: nur abstimmen */ }
     else if (!g && mg && !rndMine(mg)) acts += '<button type="button" class="btn btn-quiet" data-vtbring="' + esc(mg.key) + '">' + esc(t.brAsk) + '</button>';
     else acts += '<button type="button" class="btn btn-primary" data-vtoffer="' + esc(x.key) + '">' + esc(t.ptNew) + '</button>';
     return '<li class="vt-row"><span class="rk">' + (i + 1) + '</span>' + thumbHtml({ guest: !g, gameId: x.gameId }, g, nm) +
@@ -3063,7 +3060,7 @@ document.addEventListener('click', (e) => {
   if ((b = e.target.closest('button[data-vk]'))) { const x = vtItem(b.dataset.vk); if (x) doVote(x, b); return; }
   if ((b = e.target.closest('[data-vtbring]'))) { openBring(b.dataset.vtbring); return; }
   if ((b = e.target.closest('[data-vtoffer]'))) {
-    const x = vtItem(b.dataset.vtoffer); if (!x || !vtCanOffer()) return; const g = x.gameId ? byId[x.gameId] : null;
+    const x = vtItem(b.dataset.vtoffer); if (!x) return; const g = x.gameId ? byId[x.gameId] : null;
     openParty();
     pGame = g ? { n: name(g), gameId: g.id, guest: false, y: g.y } : { n: x.game, gameId: x.gameId || null, guest: true, y: x.year || null };
     if (g && g.p2) $('pSeats').value = Math.min(Math.max(2, g.p2, x.n + 1), 30);
