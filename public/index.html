@@ -573,7 +573,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   #viewCollection { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
   #viewCollection > * { grid-column: 1 / -1; }
   /* Filter als Seitenleiste rechts neben den Spielen (bleibt beim Scrollen stehen); mit « ausklappen, mit » einklappen. Standard: eingeklappt. */
-  #viewCollection > .filters { grid-column: 2; grid-row: 2 / span 4; align-self: start; position: sticky; top: 16px; padding: 22px; gap: 14px; max-height: calc(100vh - 32px); overflow: auto; }
+  #viewCollection > .filters { grid-column: 2; grid-row: 2 / span 4; align-self: start; padding: 22px; gap: 14px; }
   #viewCollection > section[aria-label="Spiele"], #viewCollection > .recent, #viewCollection > .admin { grid-column: 1; }
   #fsToggle { display: flex; align-items: center; justify-content: center; gap: 8px; align-self: flex-start; min-height: 40px; min-width: 40px; padding: 0 10px; border: 1px solid var(--line, #ccc); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; font-weight: 700; cursor: pointer; }
   #fsToggle .fs-ico { font-size: 20px; line-height: 1; }
@@ -593,7 +593,9 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   #viewCollection > .filters .rate-box .group-label { flex: 0 0 100%; }
   #viewCollection > .filters #fltBtn { display: none; }
   #viewCollection > .filters .bar, #viewCollection > .filters .bar > .row { flex-direction: column; align-items: stretch; }
-  #viewCollection > .filters .adv { grid-template-columns: 1fr; padding: 14px; }
+  #viewCollection > .filters .adv { grid-template-columns: minmax(0, 1fr); padding: 14px; box-sizing: border-box; min-width: 0; }
+  #viewCollection > .filters .adv * { max-width: 100%; box-sizing: border-box; min-width: 0; }
+  #viewCollection > .filters .adv select, #viewCollection > .filters .adv input[type=range] { width: 100%; }
   #viewCollection .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
   #viewCollection .guest-cta { order: 10; }
   /* Unterreiter der Mitspieler-/Spielesuche als Seitenleiste links. */
@@ -1703,8 +1705,9 @@ function renderFilters() {
   const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'play', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
     [S.pMode !== 'box', S.rMin > 0 || S.rMax < 10, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0, !!S.played].filter(Boolean).length;
   $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt; if (typeof fsSet === 'function') fsSet($('viewCollection').classList.contains('fs-open'));
-  $('advBtn').hidden = !S.flt;
-  $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !(S.flt && S.adv);
+  const deskF = window.matchMedia && matchMedia('(min-width: 1100px)').matches; // Desktop: Filter-Seitenleiste, Schnellfilter immer offen
+  $('advBtn').hidden = !(S.flt || deskF);
+  $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !((S.flt || deskF) && S.adv);
   $('recPctL').textContent = fill(t.recPct, { p: S.recPct });
   $('rateBox').hidden = !S.flt; $('rateL').textContent = t.rateL; $('rateV').textContent = S.rMin.toFixed(1) + ' – ' + S.rMax.toFixed(1);
   $('rMin').setAttribute('aria-label', t.rateAria[0]); $('rMax').setAttribute('aria-label', t.rateAria[1]);
@@ -2301,6 +2304,7 @@ document.querySelector('.filters').addEventListener('click', (e) => {
   S.limit = PAGE; renderFilters(); renderGrid();
 });
 $('advBtn').onclick = () => { S.adv = !S.adv; renderFilters(); };
+try { matchMedia('(min-width: 1100px)').addEventListener('change', () => renderFilters()); } catch (x) { /* alte Browser */ }
 $('fltBtn').onclick = () => { S.flt = !S.flt; renderFilters(); };
 // Desktop: Filter-Seitenleiste rechts ein-/ausklappen (Standard eingeklappt, Wahl wird im Browser gemerkt).
 function fsSet(open) {
