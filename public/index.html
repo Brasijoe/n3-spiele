@@ -357,8 +357,9 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .cp-sess .acts2 { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; max-width: 260px; margin: 0 auto; }
 .cp-sess .acts2 .btn { width: 100%; justify-content: center; }
 /* Kampagnen-Karten: Knöpfe unten, gleich breit (nebeneinander in gleich großen Spalten). */
-.parties.camps .party .actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
-.parties.camps .party .actions .btn { width: 100%; justify-content: center; }
+.parties.camps .party .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.parties.camps .party .actions .btn { width: 100%; min-width: 0; box-sizing: border-box; justify-content: center; text-align: center; white-space: normal; }
+.parties.camps .party .actions > .btn:only-child, .parties.camps .party .actions > .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .parties.camps .party .actions .btn-primary:first-child, .parties.camps .party .actions > .meta { grid-column: 1 / -1; }
 .btn.mini { min-height: 34px; padding: 4px 10px; font-size: 13px; }
 .cp-prop { background: var(--camp-soft); color: var(--camp-ink); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; }
