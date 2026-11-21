@@ -1032,6 +1032,13 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   <p style="margin:4px 0 12px"><a class="btn btn-discord" id="joinLink" href="#" target="_blank" rel="noopener"></a></p>
   <div class="acts"><button type="button" class="btn btn-quiet" id="joinClose" data-t="ciClose"></button><button type="button" class="btn btn-outline" data-login data-t="joinRetry"></button></div>
 </dialog>
+<dialog class="info" id="ncDlg" aria-labelledby="ncT">
+  <h3 id="ncT" data-t="ncT"></h3>
+  <p class="meta" data-t="ncTxt"></p>
+  <label class="consent" style="margin:6px 0 10px"><input type="checkbox" id="ncChk"><span data-t="ncChk"></span></label>
+  <p class="meta" data-t="ncNote"></p>
+  <div class="acts"><button type="button" class="btn btn-quiet" id="ncNo" data-t="cancel"></button><button type="button" class="btn btn-primary" id="ncGo" data-t="ncGo" disabled></button></div>
+</dialog>
 <dialog class="info" id="expDlg" aria-labelledby="expT">
   <h3 id="expT"></h3>
   <ul class="exp-list" id="expL"></ul>
@@ -1074,6 +1081,10 @@ const TXT = {
     admBk: 'Runden: Mitglieder und Stammtisch-Tage', admBkNote: 'Mitglieder (Discord-Rolle unten) können Runden an jedem Tag anbieten. Alle anderen nur an Stammtisch-Tagen und mit einer kurzen Vorstellung im Hinweis; Runden mit Event-Code sind davon ausgenommen. Rollen-ID leer = keine Einschränkung. Rollen-ID: in Discord Entwicklermodus an, Rechtsklick auf die Rolle → „Rollen-ID kopieren“.', admBkRole: 'Discord-Rollen-ID der Mitglieder', admBkWeekly: 'Jede Woche', admBkMonthly: 'Jeden Monat', admBkExtra: 'Zusätzliche Tage', admBkSkip: 'Fällt aus', admBkSave: 'Speichern', admBkOk: 'Gespeichert. Nächste Stammtische: {n}', admBkBad: 'Bitte Daten als TT.MM.JJJJ eingeben, durch Komma getrennt.', admBkLast: 'letzter',
     admEv: 'Event-Codes', admEvNote: 'Mit einem Event-Code kann jede Person ohne Discord eine Runde anbieten (mit Namen), bis einschließlich „Code gültig bis“ und nur an den Eventtagen. In Discord steht dann der Eventname dabei. Code leer lassen = er wird automatisch erzeugt.', admEvName: 'Eventname', admEvCode: 'Code (optional, mind. 6 Zeichen)', admEvCodePh: 'leer = automatisch', admEvFrom: 'Event von', admEvTo: 'Event bis', admEvUntil: 'Code gültig bis', admEvAdd: 'Event-Code anlegen', admEvNone: 'Noch keine Event-Codes.', admEvValid: 'gültig bis {d}', admEvExpired: 'abgelaufen ({d})', admEvCopy: 'Link kopieren', admEvCopied: 'Link kopiert.', admEvDel: 'Löschen', admEvTaken: 'Diesen Code gibt es schon.', admEvShort: 'Der Code braucht mindestens 6 Buchstaben oder Ziffern.', admEvBad: 'Bitte Name und alle drei Daten ausfüllen („bis“ nicht vor „von“).', admEvMade: 'Event-Code {c} ist aktiv.',
     evUseEvent: 'Ich habe einen Event-Code', evUsePersonal: 'Doch mit persönlichem Code', evCode: 'Event-Code', evHint: 'Den Code bekommst du vom Orga-Team des Events.', evInfo: 'Event „{n}“ · {d}', evBad: 'Diesen Event-Code gibt es nicht.', evExpired: 'Dieser Event-Code ist abgelaufen.', evDateErr: 'Bitte einen Tag des Events wählen ({d}).', evOver: 'Die Eventtage sind schon vorbei.',
+    ncT: 'Dein Discord-Name wird angezeigt', ncGo: 'Weiter',
+    ncTxt: 'Mit der Discord-Anmeldung steht dein Discord-Name (dein Spitzname auf dem N3-Server) öffentlich auf dieser Seite und im N3-Discord: bei Runden, die du anlegst oder denen du beitrittst, auf Wartelisten, bei eingetragenen Partien, bei Abstimmungen, Spielsuchen und Kampagnen sowie bei Spielen, die du selbst einträgst.',
+    ncChk: 'Ich bin einverstanden, dass mein Discord-Name dort angezeigt wird.',
+    ncNote: 'Ohne dieses Häkchen ist keine Anmeldung möglich. Eigene Runden und Partien kannst du jederzeit selbst löschen.',
     cancel: 'Abbrechen', save: 'Speichern', saving: 'Wird gespeichert …', saved: 'Gespeichert.',
     errLen: 'Bitte deinen persönlichen Code eingeben (8 Zeichen).', errCode: 'Der Code stimmt nicht. Hol dir mit /code auf dem Discord-Server einen neuen.', errOff: 'Speichern ist in dieser Ansicht nicht möglich.', errSave: 'Speichern hat nicht geklappt. Bitte gleich noch einmal versuchen.',
     gPlayers: 'Spieler', gWeight: 'Komplexität', gTime: 'Spieldauer', gType: 'Spieltyp', gFeel: 'Spielgefühl', solo: 'Solo',
@@ -1177,6 +1188,10 @@ const TXT = {
     admBk: 'Games: members and game nights', admBkNote: 'Members (Discord role below) can offer games on any day. Everyone else only on game nights and with a short introduction in the note; games with an event code are exempt. Empty role ID = no restriction. Role ID: turn on developer mode in Discord, right-click the role → “Copy Role ID”.', admBkRole: 'Discord role ID of members', admBkWeekly: 'Every week', admBkMonthly: 'Every month', admBkExtra: 'Extra days', admBkSkip: 'Cancelled', admBkSave: 'Save', admBkOk: 'Saved. Next game nights: {n}', admBkBad: 'Please enter dates as DD.MM.YYYY, separated by commas.', admBkLast: 'last',
     admEv: 'Event codes', admEvNote: 'With an event code anyone can offer a game without Discord (with their name), up to and including “Code valid until”, and only on the event days. Discord then shows the event name. Leave the code empty to generate one.', admEvName: 'Event name', admEvCode: 'Code (optional, min. 6 characters)', admEvCodePh: 'empty = automatic', admEvFrom: 'Event from', admEvTo: 'Event to', admEvUntil: 'Code valid until', admEvAdd: 'Create event code', admEvNone: 'No event codes yet.', admEvValid: 'valid until {d}', admEvExpired: 'expired ({d})', admEvCopy: 'Copy link', admEvCopied: 'Link copied.', admEvDel: 'Delete', admEvTaken: 'This code already exists.', admEvShort: 'The code needs at least 6 letters or digits.', admEvBad: 'Please fill in the name and all three dates (“to” not before “from”).', admEvMade: 'Event code {c} is active.',
     evUseEvent: 'I have an event code', evUsePersonal: 'Use my personal code instead', evCode: 'Event code', evHint: 'You get the code from the event’s organisers.', evInfo: 'Event “{n}” · {d}', evBad: 'This event code doesn’t exist.', evExpired: 'This event code has expired.', evDateErr: 'Please pick a day of the event ({d}).', evOver: 'The event days are already over.',
+    ncT: 'Your Discord name will be shown', ncGo: 'Continue',
+    ncTxt: 'When you sign in with Discord, your Discord name (your nickname on the N3 server) is shown publicly on this page and in the N3 Discord: on rounds you create or join, on waitlists, on logged plays, on votes, game searches and campaigns, and on games you add yourself.',
+    ncChk: 'I agree that my Discord name is shown there.',
+    ncNote: 'You cannot sign in without ticking this box. You can delete your own rounds and plays yourself at any time.',
     cancel: 'Cancel', save: 'Save', saving: 'Saving …', saved: 'Saved.',
     errLen: 'Please enter your personal code (8 characters).', errCode: 'Wrong code. Get a new one with /code on the Discord server.', errOff: 'Saving isn’t possible in this view.', errSave: 'Saving didn’t work. Please try again in a moment.',
     gPlayers: 'Players', gWeight: 'Complexity', gTime: 'Play time', gType: 'Game type', gFeel: 'Play style', solo: 'Solo',
@@ -2107,6 +2122,7 @@ function closeLog() { $('modal').hidden = true; logGame = null; logParty = null;
 let logNames = '';
 const codeErr = (e) => { const t = T(), c = e && e.code;
   if (c === 'bad_session') { setSession(''); renderAuth(); return t.errSession; }
+  if (c === 'consent_required') return t.ncNote;
   if (c === 'login_required') return t.errLogin;
   if (c === 'not_member') return t.errNotMember; if (c === 'no_role') return t.errNoRole; if (c === 'no_channel') return t.errNoChannel;
   return codeErr0(e); };
@@ -3551,6 +3567,11 @@ async function api(method, path, body, extra) {
   if (typeof sess !== 'undefined' && sess && !hd['X-Member-Code'] && !hd['X-Event-Code'] && !hd['X-Log-Key']) hd['X-Session'] = sess;
   const res = await fetch('/api' + path, { method, headers: hd, body: body === undefined ? undefined : JSON.stringify(body) });
   let data = null; try { data = await res.json(); } catch (e) {}
+  // Noch keine Zustimmung zur Namensanzeige: einmal fragen und mit Häkchen wiederholen, sonst abmelden.
+  if (res.status === 403 && data && data.error === 'consent_required' && !hd['X-Name-Consent']) {
+    if (await askConsent()) return api(method, path, body, Object.assign({}, extra || {}, { 'X-Name-Consent': '1' }));
+    if (sess) logout();
+  }
   if (!res.ok) throw Object.assign(new Error((data && data.error) || 'http_' + res.status), { status: res.status, code: data && data.error, data });
   return data;
 }
@@ -3568,11 +3589,14 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []), votes: new Set(r.votes || []) }; }
+  try { const r = await api('GET', '/my');
+    // Bestehende Anmeldung ohne Zustimmung (von vor dem Häkchen): einmal fragen, ohne Häkchen abmelden.
+    if (r.nameConsent === false) { if (!(await askConsent())) { await logout(); return; } await api('POST', '/auth/consent'); }
+    me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []), votes: new Set(r.votes || []) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); loginFailed(e.code); } }
   renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted(); renderVotes();
 }
-function loginErr(c) { const t = T(); return c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
+function loginErr(c) { const t = T(); return c === 'consent_required' ? t.ncNote : c === 'not_member' ? t.errNotMember : c === 'no_role' ? t.errNoRole : c === 'no_channel' ? t.errNoChannel : c === 'bad_session' ? t.errSession : c ? t.errSave + ' (' + c + ')' : ''; }
 function authHtml(qr) {
   const t = T();
   if (me) return '<span>' + esc(fill(t.loggedAs, { n: me.name })) + '</span><button type="button" class="linkbtn" data-logout>' + esc(t.logout) + '</button>';
@@ -3622,10 +3646,24 @@ function renderAuth() {
   if (typeof applyEvDates === 'function' && !$('pModal').hidden) applyEvDates();
   if (typeof renderPtHow === 'function') renderPtHow();
 }
-function startLogin() {
+// Vor jeder Anmeldung: Häkchen, dass der Discord-Name öffentlich angezeigt werden darf (Dialog ncDlg). Ergibt true/false.
+let ncWait = null;
+function askConsent() {
+  if (ncWait) return ncWait;
+  const d = $('ncDlg'); $('ncChk').checked = false; $('ncGo').disabled = true;
+  ncWait = new Promise((res) => {
+    const end = (ok) => { $('ncGo').onclick = $('ncNo').onclick = d.onclose = null; if (d.open) d.close(); ncWait = null; res(ok); };
+    $('ncGo').onclick = () => end($('ncChk').checked); $('ncNo').onclick = () => end(false); d.onclose = () => end(false);
+  });
+  d.showModal();
+  return ncWait;
+}
+$('ncChk').onchange = () => { $('ncGo').disabled = !$('ncChk').checked; };
+async function startLogin() {
+  if (!(await askConsent())) return;
   const n = Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) => x.toString(16).padStart(2, '0')).join('');
   lsSet('n3-login-nonce', n); authMsg = '';
-  const u = '/api/auth/discord?n=' + n;
+  const u = '/api/auth/discord?c=1&n=' + n;
   const w = window.open(u, 'n3login', 'width=520,height=760');
   if (!w) { location.href = u; return; } // Popup blockiert: ganze Seite leiten, nach der Rückkehr holt pollLogin die Anmeldung ab
   pollLogin(n);

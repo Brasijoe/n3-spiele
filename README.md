@@ -134,6 +134,8 @@ The page is publicly readable. Writing needs one of these:
 | **QR club key** (poster in the club) | Anyone in the club | Log plays with just a name |
 | **Admin password** (`ADMIN_TOKEN`) | Admins | Everything in "Verwaltung", edit/delete all plays and rounds |
 
+**Name consent:** before any web sign-in (Discord popup or /code) people must tick a box agreeing that their Discord name is shown publicly in rounds, waitlists, plays, votes, searches, campaigns and member games. The first agreement is stored with a timestamp in `members.name_consent_at`. Without it the OAuth callback and every signed-in write answer `consent_required`; the page then shows the checkbox dialog and retries with header `X-Name-Consent: 1`. Users signed in before this rule are asked once on their next visit (`POST /api/auth/consent`); cancelling signs them out.
+
 Sessions last 180 days and are stored only as a hash (table `sessions`). Membership and roles are re-checked via the bot at most every 10 minutes; anyone who leaves the server is logged out and loses their code. Signed-in users see "Bearbeiten" only on their own plays and rounds, and the server rejects edits of other people's entries.
 
 OAuth setup (one time): Discord Developer Portal → the app → **OAuth2** → **Redirects**: add `https://n3-spiele.nerdnexus.workers.dev/api/auth/callback`; copy the **Client Secret** into the Cloudflare secret `DISCORD_CLIENT_SECRET`.
