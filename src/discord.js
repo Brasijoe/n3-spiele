@@ -5,6 +5,7 @@ import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
 import { wantedButton, wantedSubmit } from './wanted.js';
 import { campaignButton, campaignSubmit, openCampaignCount } from './campaigns.js';
+import { promoteWaitlist, addWait, removeWait, waitOf, waitPos } from './waitlist.js';
 import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP, guestsPaused, pauseText } from './booking.js';
 
 const enc = new TextEncoder();
@@ -106,12 +107,16 @@ export function view(r, env = {}) {
   // Klare Felder statt langer Textzeile: Feldnamen fett, Werte normal, keine Leerräume.
   const bar = '🟧'.repeat(Math.min(taken, r.seats)) + '⬜'.repeat(Math.max(0, r.seats - taken));
   const dabei = [`👑 ${hostTxt}`, ...people.map((x) => '🙋 ' + x), ...(logged ? [] : reserved.map((x) => '⏳ ' + x + ' – reserviert'))].join('\n').slice(0, 1000);
+  // Warteliste: wer nachrückt, sobald ein Platz frei wird (Reihenfolge der Anmeldung).
+  const wl = logged ? [] : waitOf(r);
+  const wlTxt = wl.map((e, n) => `${n + 1}. ${/^d\d{5,}$/.test(e.k) ? `<@${e.k.slice(1)}>` : e.did ? `<@${e.did}>` : e.name}`).join('\n').slice(0, 1000);
   const fields = logged
     ? [{ name: '✅ Gespielt am', value: fmtDate(r.date) }, { name: `👥 Spielende (${taken})`, value: dabei }]
     : [
       { name: '📅 Wann', value: `${wdName(r.date)}, ${fmtDate(r.date)}${r.time ? ` · ${r.time} Uhr` : ''}` },
       { name: `🪑 ${r.seats} Plätze`, value: `${bar}  ${free ? `noch ${free} frei` : '🔒 voll'}` },
       { name: '👥 Dabei', value: dabei },
+      ...(wl.length ? [{ name: `🕒 Warteliste (${wl.length})`, value: wlTxt }] : []),
     ];
   if (r.note) fields.push({ name: '💬 Hinweis', value: r.note.slice(0, 500) });
   // Eine Karte: Titel, Angaben, darunter das große Bild (Discord setzt Bilder immer ans Ende).
@@ -123,7 +128,10 @@ export function view(r, env = {}) {
   }
   const embeds = [embed];
   const components = logged ? [] : [{ type: 1, components: [
-    { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id, disabled: !free && !reserved.length },
+    // Voll: derselbe Knopf setzt auf die Warteliste (reservierte Personen bestätigen damit weiterhin ihren Platz).
+    free || reserved.length
+      ? { type: 2, style: 3, label: 'Ich bin dabei', emoji: { name: '✋' }, custom_id: 'join:' + r.id }
+      : { type: 2, style: 1, label: 'Auf die Warteliste', emoji: { name: '🕒' }, custom_id: 'join:' + r.id },
     { type: 2, style: 2, label: 'Absagen', custom_id: 'leave:' + r.id },
     { type: 2, style: 1, label: 'Verwalten (Ersteller)', emoji: { name: '⚙️' }, custom_id: 'manage:' + r.id },
   ] }];
@@ -157,7 +165,7 @@ export async function expireReservations(env, row, all = false) {
 export async function sweepReservations(env) {
   const { results } = await env.DB.prepare("SELECT * FROM parties WHERE attendees LIKE '%\"res\":1%' AND date >= ?1 LIMIT 50").bind(berlinToday()).all();
   let n = 0;
-  for (const r of results) { const f = await expireReservations(env, r); if (f !== r) { n++; if (f.discord_msg && env.DISCORD_BOT_TOKEN) await syncParty(env, f.id, true).catch((e) => console.log('res sync failed', e && e.message)); } }
+  for (const r of results) { const f = await expireReservations(env, r); if (f !== r) { n++; await promoteWaitlist(env, f.id); if (f.discord_msg && env.DISCORD_BOT_TOKEN) await syncParty(env, f.id, true).catch((e) => console.log('res sync failed', e && e.message)); } }
   return n;
 }
 const done = (text) => reply({ type: 7, data: { content: text, embeds: [], components: [] } });
@@ -239,15 +247,33 @@ async function button(i, env, ctx) {
   if (act === 'join' || act === 'release') row = await expireReservations(env, row);
   if (act === 'join') {
     if (isOwner) return say('Du bist der Gastgeber und hast schon einen Platz.');
+    // Frei gewordene Plätze (z. B. abgelaufene Reservierung) gehen zuerst an die Warteliste.
+    if (waitOf(row).length) await promoteWaitlist(env, id, ctx);
     const rule = await getBooking(env);
     if (!canJoin(rule, row, (i.member && i.member.roles) || [])) return say(joinMembersOnly(rule));
     const r = await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2))
       WHERE id = ?3 AND play_id IS NULL AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0 AND key != ?1) + 1 < seats`)
       .bind(key, JSON.stringify({ name: w.name, at: new Date().toISOString() }), id).run();
-    if (!r.meta.changes) return say('Leider schon voll.');
+    if (!r.meta.changes) {
+      // Voll: auf die Warteliste setzen (rückt automatisch nach, sobald jemand absagt).
+      const res = await addWait(env, id, { k: key, name: w.name, did: w.id });
+      if (res.err === 'gone') return say('Diese Runde ist schon vorbei oder eingetragen.');
+      if (res.err === 'already_in') return say('Du bist schon dabei.');
+      if (res.err === 'wait_full') return say('Leider voll, und auch die Warteliste ist voll.');
+      if (res.err) return say('Leider schon voll. Bitte nochmal versuchen.');
+      if (ctx) ctx.waitUntil(syncParty(env, id, true).catch((e) => console.log('waitlist sync failed', e && e.message)));
+      return say(res.already ? `Du stehst schon auf der Warteliste (Platz ${res.pos}).` : `🕒 Die Runde ist voll. Du stehst jetzt auf der Warteliste (Platz ${res.pos}). Wird ein Platz frei, rückst du automatisch nach und bekommst eine Direktnachricht. Mit „Absagen“ nimmst du dich wieder von der Liste.`);
+    }
+    await removeWait(env, id, key, w.id);
   } else if (act === 'leave') {
     if (isOwner) return say('Als Gastgeber kannst du nicht absagen, sondern die Runde über „Verwalten“ stornieren.');
+    if (waitPos(row, key, w.id)) {
+      await removeWait(env, id, key, w.id);
+      if (ctx) ctx.waitUntil(syncParty(env, id, true).catch((e) => console.log('waitlist sync failed', e && e.message)));
+      return say('Du stehst nicht mehr auf der Warteliste.');
+    }
     await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, id).run();
+    await promoteWaitlist(env, id, ctx);
   } else if (act === 'manage') {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können die Runde verwalten.');
     if (row.play_id) return say('Die Runde ist schon als gespielt registriert.');
@@ -277,8 +303,9 @@ async function button(i, env, ctx) {
   } else if (act === 'release') {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können Reservierungen freigeben.');
     await expireReservations(env, row, true);
+    const moved = await promoteWaitlist(env, id, ctx);
     await syncParty(env, id, true);
-    return done('Reservierungen freigegeben ✓ Die Plätze sind jetzt für alle frei.');
+    return done(`Reservierungen freigegeben ✓ ${moved.length ? `Von der Warteliste nachgerückt: ${moved.length}.` : 'Die Plätze sind jetzt für alle frei.'}`);
   } else if (act === 'cancelno') {
     if (!isHost) return say('Nur der Ersteller oder Moderierende können das entscheiden.');
     return reply(managePanel(row));
@@ -323,6 +350,8 @@ async function editSubmit(i, env) {
   const same = game === row.game;
   await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, date = ?4, time = ?5, seats = ?6, note = ?7 WHERE id = ?8')
     .bind(game, same ? row.game_id : null, same ? row.year : null, date, time, seats, note, id).run();
+  // Mehr Plätze: Warteliste rückt nach.
+  if (seats > row.seats) await promoteWaitlist(env, id);
   await syncParty(env, id, true);
   return done('Gespeichert ✓');
 }
@@ -432,6 +461,8 @@ export async function ensureCols(env) {
   // Discord-Thread zur Runde: ID und Stand (JSON {m: Mitglieder-IDs, n: Name, a: archiviert}).
   if (!have.has('discord_thread')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN discord_thread TEXT').run();
   if (!have.has('thread_state')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN thread_state TEXT').run();
+  // Warteliste für volle Runden: JSON [{k, name, did?, at}] (siehe waitlist.js).
+  if (!have.has('waitlist')) await env.DB.prepare('ALTER TABLE parties ADD COLUMN waitlist TEXT').run();
   // Spiele, die Mitglieder selbst besitzen (Besitzer = Discord-Name, mit Zustimmung), und Anfragen „Bitte mitbringen“.
   await env.DB.prepare('CREATE TABLE IF NOT EXISTS member_games (id TEXT PRIMARY KEY, discord_id TEXT NOT NULL, game_id INTEGER, game TEXT NOT NULL, year INTEGER, note TEXT NOT NULL DEFAULT \'\', data TEXT, consent_at TEXT NOT NULL, created_at TEXT NOT NULL)').run();
   await env.DB.prepare('CREATE INDEX IF NOT EXISTS member_games_owner ON member_games(discord_id)').run();
@@ -576,7 +607,8 @@ export async function cancelPartyMessage(env, row, internal = false) {
 }
 // Direktnachricht an alle Mitspielenden mit Discord (ohne Gastgeber). Fehler (DMs gesperrt) werden ignoriert.
 async function notifyCancel(env, row) {
-  const ids = partyDiscordIds(row).filter((x) => x !== String(row.host_discord || '')).slice(0, 30);
+  const wl = waitOf(row).map((e) => e.did || (/^d\d{5,}$/.test(e.k) ? e.k.slice(1) : null)).filter(Boolean);
+  const ids = [...new Set([...partyDiscordIds(row), ...wl])].filter((x) => x !== String(row.host_discord || '')).slice(0, 30);
   const text = `❌ Die Runde **${row.game}** am ${wdName(row.date)}, ${fmtDate(row.date)}${row.time ? ` um ${row.time} Uhr` : ''} von **${row.host}** wurde abgesagt.`;
   for (const id of ids) {
     try { const dm = await discord(env, 'POST', '/users/@me/channels', { recipient_id: id }); await discord(env, 'POST', `/channels/${dm.id}/messages`, { content: text, allowed_mentions: { parse: [] } }); }
@@ -602,7 +634,7 @@ export async function overviewMessage(env) {
     if (r.date !== day) { day = r.date; lines.push(`\n**📅 ${wdName(r.date)}, ${fmtDate(r.date)}**`); }
     const { taken, free } = seatInfo(r), l = msgLink(env, r);
     const game = r.game.replace(/[[\]*_~`|]/g, '');
-    lines.push(`${r.time ? r.time + ' · ' : ''}${l ? `[${game}](${l})` : `**${game}**`} · 👑 ${r.host.replace(/[*_~`|]/g, '')} · ${taken}/${r.seats} dabei · ${free ? `**noch ${free} frei**` : '🔒 voll'}`);
+    lines.push(`${r.time ? r.time + ' · ' : ''}${l ? `[${game}](${l})` : `**${game}**`} · 👑 ${r.host.replace(/[*_~`|]/g, '')} · ${taken}/${r.seats} dabei · ${free ? `**noch ${free} frei**` : '🔒 voll'}${waitOf(r).length ? ` · 🕒 ${waitOf(r).length} auf Warteliste` : ''}`);
   }
   let desc = '';
   for (const x of lines) { if ((desc + '\n' + x).length > 3700) { desc += '\n… weitere auf der Webseite'; break; } desc += (desc ? '\n' : '') + x; }
