@@ -6,7 +6,7 @@ import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { campaignRoute, postDueSessions, tidyCampaigns, linkSessionPlay, linkCampaignPlays } from './campaigns.js';
 import { addWait, removeWait, promoteWaitlist, sweepWaitlists, waitOf } from './waitlist.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
-import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations, refreshOverview, tidyChannel, renameThreads, linkLoggedPlays } from './discord.js';
+import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations, refreshOverview, tidyChannel, renameThreads, linkLoggedPlays, warnMinPlayers } from './discord.js';
 
 const enc = new TextEncoder();
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -104,7 +104,7 @@ const NOTE_MAX = 500;
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 
 const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', names: r.names || '', createdAt: r.created_at });
-const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), waitlist: waitOf(r).map((e) => ({ k: e.k, name: e.name, at: e.at, ...(e.did ? { did: 1 } : {}) })), playId: r.play_id, event: r.event_name || '', createdAt: r.created_at });
+const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, minPlayers: r.min_players || null, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), waitlist: waitOf(r).map((e) => ({ k: e.k, name: e.name, at: e.at, ...(e.did ? { did: 1 } : {}) })), playId: r.play_id, event: r.event_name || '', createdAt: r.created_at });
 
 // Discord-Aktualisierungen laufen im Hintergrund; Fehler dürfen die Webseite nie stören.
 const bg = (ctx, p) => ctx.waitUntil(p.catch((e) => console.log('discord sync failed', e && e.message)));
@@ -206,6 +206,7 @@ async function route(req, env, ctx, url) {
     const b = await body(req), ev = auth.event;
     const game = str(b.game, 120), date = str(b.date, 10), time = str(b.time, 5), seats = int(b.seats), host = ev ? str(b.host, 40) : auth.member.name, note = str(b.note, NOTE_MAX);
     if (ev && !host) return fail(400, 'name_missing');
+    const minP = int(b.minPlayers); if (minP != null && !(minP >= 2 && minP <= seats)) return fail(400, 'bad_min');
     if (!game || !host || !isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     if (ev && (date < ev.date_from || date > ev.date_to || date < berlinToday())) return fail(400, 'event_date');
     // Ohne Mitgliederrolle (und ohne Event-Code): nur Stammtisch-Tage, und der Hinweis muss eine kurze Vorstellung enthalten.
@@ -222,8 +223,8 @@ async function route(req, env, ctx, url) {
     if (ev && !(await allow(env, 'ev:' + ev.id, 60, 86400))) return fail(429, 'rate_limited');
     await ensureCols(env);
     const id = newId(), hostKey = newId() + newId();
-    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord, event_id, event_name) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12,?13,?14,?15)')
-      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), note, new Date().toISOString(), ev ? null : auth.member.discord_id, ev ? ev.id : null, ev ? ev.name : null).run();
+    await env.DB.prepare('INSERT INTO parties(id, game_id, game, guest, year, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord, event_id, event_name, min_players) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,\'{}\',?12,?13,?14,?15,?16)')
+      .bind(id, int(b.gameId), game, b.guest ? 1 : 0, int(b.year), date, time, seats, host, await sha256(hostKey), note, new Date().toISOString(), ev ? null : auth.member.discord_id, ev ? ev.id : null, ev ? ev.name : null, minP).run();
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => announceParty(env, id, null, true)));
     return json({ id, hostKey });
   }
@@ -324,6 +325,7 @@ async function route(req, env, ctx, url) {
     const taken = Object.values(JSON.parse(row.attendees || '{}')).filter((a) => !a.out).length + 1;
     if (!isDate(date) || !(seats >= 2 && seats <= 30) || (time && !/^\d{2}:\d{2}$/.test(time))) return fail(400, 'invalid');
     if (seats < taken) return fail(400, 'seats_taken');
+    const minP = int(b.minPlayers); if (minP != null && !(minP >= 2 && minP <= seats)) return fail(400, 'bad_min');
     const note = str(b.note, NOTE_MAX);
     // Eigene Runde ohne Mitgliederrolle: ein neues Datum muss ein Stammtisch-Tag sein, die Vorstellung bleibt Pflicht.
     if (who.member && !row.event_id) {
@@ -334,8 +336,8 @@ async function route(req, env, ctx, url) {
       }
     }
     const same = game === row.game && (b.gameId == null || int(b.gameId) === row.game_id);
-    await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, guest = ?4, date = ?5, time = ?6, seats = ?7, note = ?8 WHERE id = ?9')
-      .bind(game, same ? row.game_id : int(b.gameId), same ? row.year : int(b.year), same ? row.guest : (b.guest ? 1 : 0), date, time, seats, note, g[1]).run();
+    await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, guest = ?4, date = ?5, time = ?6, seats = ?7, note = ?8, min_players = ?9 WHERE id = ?10')
+      .bind(game, same ? row.game_id : int(b.gameId), same ? row.year : int(b.year), same ? row.guest : (b.guest ? 1 : 0), date, time, seats, note, b.minPlayers === undefined ? row.min_players : minP, g[1]).run();
     if (seats > row.seats) await promoteWaitlist(env, g[1], ctx);
     if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
     return json({ ok: true });
@@ -522,6 +524,8 @@ export default {
       ctx.waitUntil((async () => { try { await ensureCols(env); await backfillMemberGames(env, 2); } catch (e) { console.log('member games backfill failed', e.code || e.message); } })());
       ctx.waitUntil((async () => {
         try { await ensureCols(env); const n = await sweepReservations(env); if (n) console.log('reservations expired', n); } catch (e) { console.log('reservation sweep failed', e.code || e.message); }
+        // Mindestzahl nicht erreicht: am Vortag ab 12 Uhr einmal im Thread und per Direktnachricht an den Gastgeber erinnern.
+        try { const n = await warnMinPlayers(env); if (n) console.log('min player warnings', n); } catch (e) { console.log('min warn failed', e.code || e.message); }
         try { const n = await sweepWaitlists(env, discordOn(env) ? (id) => syncParty(env, id, true) : null); if (n) console.log('waitlist moved up', n); } catch (e) { console.log('waitlist sweep failed', e.code || e.message); }
         try { const n = await linkLoggedPlays(env); if (n) console.log('rounds linked to plays', n); } catch (e) { console.log('round link failed', e.code || e.message); }
         try { const n = await linkCampaignPlays(env); if (n) console.log('campaign sessions linked to plays', n); } catch (e) { console.log('campaign link failed', e.code || e.message); }
