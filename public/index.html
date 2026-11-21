@@ -382,6 +382,8 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .who { display: flex; flex-wrap: wrap; gap: 6px; }
 .who .pill.host { font-weight: 700; }
 .who .pill.res { background: transparent; border: 1px dashed var(--line-strong); color: var(--muted); }
+.who .pill.wl { background: transparent; border: 1px dotted var(--line-strong); color: var(--muted); }
+.party .wpos { font-size: 13px; font-weight: 600; color: var(--muted); align-self: center; }
 .party .actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
 .party .actions .btn { flex: 1 1 auto; min-height: 40px; font-size: 13px; padding: 0 12px; }
 .party .actions .btn-primary:first-child { flex-basis: 100%; }
@@ -1089,7 +1091,7 @@ const TXT = {
     noteIntro: 'Hinweis mit kurzer Vorstellung (Pflicht)', noteIntroHelp: 'Da du ohne Mitgliederrolle anbietest: Schreib bitte kurz, wer du bist, ob du schon mal bei uns warst, wie gut du das Spiel kennst und ob du es erklären kannst oder erklärt bekommen möchtest. Mindestens {n} Zeichen ({c}/{n}).', errIntro: 'Bitte stell dich im Hinweis kurz vor (mindestens {n} Zeichen).', errStammtisch: 'Ohne Mitgliederrolle geht das nur an Stammtisch-Tagen ({r}).',
     ptIntro: 'Du willst an einem Spieleabend etwas Bestimmtes spielen? Leg eine Runde an (einmal mit Discord anmelden), andere tragen sich ein. Nach dem Spielen lässt sich die Partie mit einem Klick eintragen. Deine eigenen Runden kannst du bearbeiten.',
     ptUpcoming: 'Vorgeschlagene Runden', ptPast: 'Vergangene Runden', ptNone: 'Gerade ist keine Runde geplant. Biete doch eine an!', ptGame: 'Spiel (Sammlung oder BGG-Suche)', ptTime: 'Uhrzeit',
-    ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptYourName: 'Dein Name', ptOk: 'Eintragen',
+    ptConfirm: 'Platz bestätigen', ptRelease: 'Reservierungen freigeben', ptResTag: 'reserviert', ptSeats: 'Plätze insgesamt (inkl. dir)', ptHost: 'Dein Name', ptFree: '{n} frei', ptFull: 'voll', ptJoin: 'Ich bin dabei', ptLeave: 'Absagen', ptWait: 'Auf die Warteliste', ptWaitPos: 'Warteliste: Platz {n}', ptWaitLeave: 'Von der Warteliste nehmen', ptWaitN: '{n} auf Warteliste', ptWaitTag: 'Warteliste', ptWaitHint: 'Die Runde ist voll. Auf der Warteliste rückst du automatisch nach, sobald jemand absagt (mit Discord-Anmeldung bekommst du dann eine Direktnachricht).', ptErrNotFull: 'Gerade ist ein Platz frei geworden. Du kannst direkt mitspielen.', ptErrWaitFull: 'Die Warteliste ist leider voll.', ptErrAlready: 'Du bist schon dabei.', ptYourName: 'Dein Name', ptOk: 'Eintragen',
     ptLog: 'Als gespielt registrieren', ptPlayed: 'Gespielt', ptNotLogged: 'Noch nicht eingetragen', ptPlayers: '{n} Spieler', peNames: 'Mitspieler (mit Komma getrennt)', ptEditPlay: 'Ergebnis bearbeiten', ptWon: 'Gewonnen', ptDur: 'Dauer', ptPl: 'Spieler', ptMin: '{n} Min', ptAgo: 'vor {n} Tagen', ptYesterday: 'gestern', ptLogged: 'Als gespielt registriert ✓', ptDel: 'Runde löschen', ptAt: '{d}, {t} Uhr', ptErrName: 'Bitte einen Namen eingeben.', ptErrSeats: 'Bitte 2 bis 30 Plätze angeben.',
     ptBringNote: '{o} bringt das Spiel mit (auf Wunsch von {r}).', ptErrFull: 'Die Runde ist leider schon voll.', ptCreated: 'Runde angelegt.', ptNoteAuto: 'Runde: {n}', ptToday: 'Heute', ptTomorrow: 'Morgen', ptHostTag: 'organisiert', tabCollection: 'Sammlung', tabStats: 'Statistik', logGuest: 'Gastspiel eintragen', guestCta: 'Jemand hat ein eigenes Spiel mitgebracht? Tragt die Partie als Gastspiel ein.',
     guestTag: 'Gastspiel', clubTag: 'Sammlung', bggSearch: 'Spiel auf BoardGameGeek suchen', bggPh: 'Name eingeben, z. B. Cascadia', change: 'Ändern',
@@ -1192,7 +1194,7 @@ const TXT = {
     noteIntro: 'Note with a short introduction (required)', noteIntroHelp: 'As you’re offering without the member role: please write who you are, whether you’ve been with us before, how well you know the game and whether you can teach it or would like it explained. At least {n} characters ({c}/{n}).', errIntro: 'Please introduce yourself briefly in the note (at least {n} characters).', errStammtisch: 'Without the member role this is only possible on game nights ({r}).',
     ptIntro: 'Want to play something specific on a game night? Offer a game (sign in with Discord once) and others sign up. Afterwards you can log the play in one click. You can edit your own games.',
     ptUpcoming: 'Proposed games', ptPast: 'Past games', ptNone: 'Nothing planned right now. Why not offer a game?', ptGame: 'Game (collection or BGG search)', ptTime: 'Time',
-    ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptYourName: 'Your name', ptOk: 'Join',
+    ptConfirm: 'Confirm my seat', ptRelease: 'Release reserved seats', ptResTag: 'reserved', ptSeats: 'Total seats (incl. you)', ptHost: 'Your name', ptFree: '{n} open', ptFull: 'full', ptJoin: 'I’m in', ptLeave: 'Cancel', ptWait: 'Join the waitlist', ptWaitPos: 'Waitlist: position {n}', ptWaitLeave: 'Leave the waitlist', ptWaitN: '{n} on waitlist', ptWaitTag: 'waitlist', ptWaitHint: 'This game is full. On the waitlist you move up automatically as soon as someone cancels (signed in with Discord, you get a direct message).', ptErrNotFull: 'A seat just opened up. You can join directly.', ptErrWaitFull: 'Sorry, the waitlist is full.', ptErrAlready: 'You’re already in.', ptYourName: 'Your name', ptOk: 'Join',
     ptLog: 'Register as played', ptPlayed: 'Played', ptNotLogged: 'Not logged yet', ptPlayers: '{n} players', peNames: 'Players (comma-separated)', ptEditPlay: 'Edit result', ptWon: 'Winner', ptDur: 'Duration', ptPl: 'Players', ptMin: '{n} min', ptAgo: '{n} days ago', ptYesterday: 'yesterday', ptLogged: 'Registered as played ✓', ptDel: 'Delete game', ptAt: '{d}, {t}', ptErrName: 'Please enter a name.', ptErrSeats: 'Please enter 2 to 30 seats.',
     ptBringNote: '{o} is bringing the game (requested by {r}).', ptErrFull: 'Sorry, this game is already full.', ptCreated: 'Game created.', ptNoteAuto: 'Players: {n}', ptToday: 'Today', ptTomorrow: 'Tomorrow', ptHostTag: 'host', tabCollection: 'Collection', tabStats: 'Statistics', logGuest: 'Log a guest game', guestCta: 'Someone brought their own game? Log the play as a guest game.',
     guestTag: 'Guest game', clubTag: 'Collection', bggSearch: 'Search BoardGameGeek', bggPh: 'Type a name, e.g. Cascadia', change: 'Change',
@@ -2363,7 +2365,7 @@ $('viewStats').addEventListener('click', (e) => { const c = e.target.closest('bu
 $('stMore').onclick = () => { ST.rankLimit = 1000; renderStats(); };
 
 /* ---------- Mitspieler finden (Runden) ---------- */
-let parties = [], partyState = 'loading', logParty = null, pGame = null, pResults = [], pActive = -1, joinOpen = null, pendingPDel = null;
+let parties = [], partyState = 'loading', logParty = null, pGame = null, pResults = [], pActive = -1, joinOpen = null, joinWait = false, pendingPDel = null;
 const MINE_KEY = 'n3-party-mine';
 const mine = () => { try { return JSON.parse(localStorage.getItem(MINE_KEY) || '{}'); } catch (e) { return {}; } };
 const setMine = (m) => { try { localStorage.setItem(MINE_KEY, JSON.stringify(m)); } catch (e) {} };
@@ -2372,6 +2374,14 @@ const todayIso = () => isoDay(new Date());
 // Reservierte Plätze (Runde aus „Hat jemand …?“) zählen mit, bis sie bestätigt, abgesagt oder abgelaufen sind.
 const resLive = (a) => !!(a && a.res && !a.out && !(a.until && a.until < new Date().toISOString()));
 const myRes = (p) => !!(me && me.id && resLive((p.attendees || {})['d' + me.id]));
+// Warteliste: eigener Platz (1-basiert, 0 = nicht drauf). Schlüssel aus diesem Browser oder 'd<Discord-ID>' (über Discord eingetragen).
+const myWaitPos = (p, my) => { const wl = p.waitlist || []; return wl.findIndex((e) => (my && my.wait && e.k === my.wait) || (me && me.id && e.k === 'd' + me.id)) + 1; };
+// Nachgerückt? Dann gilt der Wartelisten-Schlüssel als Zusage (Absagen funktioniert damit).
+function adoptWaitKeys() {
+  const m = mine(); let ch = false;
+  for (const x of parties) { const my = m[x.id]; if (my && my.wait && x.p.attendees && x.p.attendees[my.wait] && !x.p.attendees[my.wait].out) { my.att = my.wait; delete my.wait; ch = true; } }
+  if (ch) setMine(m);
+}
 function whoIn(p) { return Object.entries(p.attendees || {}).filter(([, a]) => a && !a.out && a.name && (!a.res || resLive(a))).sort((a, b) => String(a[1].at).localeCompare(String(b[1].at))); }
 function partyGame(p) { return p.guest ? null : byId[p.gameId]; }
 function partyName(p) { const g = partyGame(p); return g ? name(g) : String(p.game || '?'); }
@@ -2406,23 +2416,26 @@ function partyCard(x, past) {
   if (past) return pastPartyCard(x);
   const t = T(), p = x.p, g = partyGame(p), nm = partyName(p), ins = whoIn(p), seats = Math.max(2, Number(p.seats) || 2);
   const taken = ins.length + 1, free = Math.max(0, seats - taken), my = mine()[x.id];
+  const wl = p.playId ? [] : (p.waitlist || []), wpos = myWaitPos(p, my);
   const th = thumbHtml(p, g, nm);
   const dots = Array.from({ length: Math.min(seats, 30) }, (_, i) => '<span class="seat' + (i < taken ? ' on' : '') + '"></span>').join('');
   let actions = '';
   if (!past && myRes(p)) actions += '<button type="button" class="btn btn-primary" data-pconfirm="' + esc(x.id) + '">' + esc(t.ptConfirm) + '</button>';
   else if (!past) {
     if (my && my.att && p.attendees && p.attendees[my.att] && !p.attendees[my.att].out) actions += '<button type="button" class="btn btn-quiet" data-pleave="' + esc(x.id) + '">' + esc(t.ptLeave) + '</button>';
+    else if (wpos) actions += '<span class="wpos">' + esc(fill(t.ptWaitPos, { n: wpos })) + '</span><button type="button" class="btn btn-quiet" data-pwleave="' + esc(x.id) + '">' + esc(t.ptWaitLeave) + '</button>';
     else if (free > 0 && joinOpen !== x.id && !(my && my.host) && !isMine('parties', x.id)) actions += '<button type="button" class="btn btn-primary" data-pjoin="' + esc(x.id) + '">' + esc(t.ptJoin) + '</button>';
+    else if (!free && !p.playId && joinOpen !== x.id && !(my && my.host) && !isMine('parties', x.id)) actions += '<button type="button" class="btn btn-outline" data-pwait="' + esc(x.id) + '">' + esc(t.ptWait) + '</button>';
   }
   if (String(p.date) <= todayIso()) actions += p.playId ? '<span class="done">' + esc(t.ptLogged) + '</span>' : '<button type="button" class="btn ' + (past ? 'btn-primary' : 'btn-outline') + '" data-plog="' + esc(x.id) + '">' + esc(t.ptLog) + '</button>';
   const own = isMine('parties', x.id);
   if (own && !past && !p.playId) actions += '<button type="button" class="btn btn-quiet" data-pedit="' + esc(x.id) + '">' + esc(t.edit) + '</button>';
   if (!past && (canEdit || own) && Object.values(p.attendees || {}).some(resLive)) actions += '<button type="button" class="btn btn-quiet" data-prelease="' + esc(x.id) + '">' + esc(t.ptRelease) + '</button>';
   if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
-  const join = joinOpen === x.id ? '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
+  const join = joinOpen === x.id ? (joinWait ? '<span class="meta">' + esc(t.ptWaitHint) + '</span>' : '') + '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
   return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + (!past && membersOnlyJoin(p) ? '<span class="src mem">' + esc(t.ptMemOnly) + '</span>' : '') + '</div></div>' +
-    '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull)) + '</span></div>' +
-    '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => a.res ? '<span class="pill res" title="' + esc(t.ptResTag) + '">⏳ ' + esc(a.name) + ' · ' + esc(t.ptResTag) + '</span>' : '<span class="pill">' + esc(a.name) + '</span>').join('') + '</div>' +
+    '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull) + (wl.length ? ' · ' + fill(t.ptWaitN, { n: wl.length }) : '')) + '</span></div>' +
+    '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => a.res ? '<span class="pill res" title="' + esc(t.ptResTag) + '">⏳ ' + esc(a.name) + ' · ' + esc(t.ptResTag) + '</span>' : '<span class="pill">' + esc(a.name) + '</span>').join('') + wl.map((e, i) => '<span class="pill wl" title="' + esc(t.ptWaitTag) + '">🕒 ' + (i + 1) + '. ' + esc(e.name) + '</span>').join('') + '</div>' +
     (p.note ? '<span class="meta">' + esc(partyNote(p.note)) + '</span>' : '') + join + '<div class="actions">' + actions + '</div></div></article>';
 }
 // Vom Bot angelegte Mitbring-Runden speichern den Hinweis auf Deutsch; auf Englisch übersetzt anzeigen.
@@ -2439,6 +2452,7 @@ function renderParties() {
   renderPtHow();
   $('ptState').textContent = partyState === 'off' || dbState === 'off' ? t.recentOff : partyState !== 'ready' ? '…' : '';
   $('ptState').hidden = !$('ptState').textContent;
+  adoptWaitKeys();
   const up = parties.filter((x) => String(x.p.date) >= td).sort((a, b) => (String(a.p.date) + (a.p.time || '')).localeCompare(String(b.p.date) + (b.p.time || '')));
   const lim = isoDay(new Date(Date.now() - 30 * 864e5));
   const past = parties.filter((x) => String(x.p.date) < td && String(x.p.date) >= lim);
@@ -2459,8 +2473,14 @@ $('viewParties').addEventListener('click', async (e) => {
   if ((b = e.target.closest('#subRounds [data-cpabs]'))) { b.disabled = true; try { await api('POST', '/campaigns/s/' + b.dataset.cpabs + '/absent', { on: b.dataset.on === '1' }); } catch (x) {} refreshAll(); return; }
   if ((b = e.target.closest('[data-cpgo]'))) { e.preventDefault(); try { history.replaceState(null, '', '#kampagnen'); } catch (x) { location.hash = 'kampagnen'; } renderView(); renderCamps(); window.scrollTo(0, 0); return; }
   if ((b = e.target.closest('button[data-pe]'))) { openPlayEdit(b.dataset.pe); return; }
-  if ((b = e.target.closest('[data-pjoin]'))) { joinOpen = b.dataset.pjoin; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
-  if (e.target.closest('[data-pjoincancel]')) { joinOpen = null; renderParties(); return; }
+  if ((b = e.target.closest('[data-pwait]'))) { joinOpen = b.dataset.pwait; joinWait = true; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = (me && me.name) || localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
+  if ((b = e.target.closest('[data-pwleave]'))) {
+    const id = b.dataset.pwleave, m = mine(), my = m[id], x = parties.find((y) => y.id === id); if (!x) return;
+    const k = my && my.wait && (x.p.waitlist || []).some((w) => w.k === my.wait) ? my.wait : me && me.id ? 'd' + me.id : null; if (!k) return;
+    b.disabled = true; try { await api('POST', '/parties/' + id + '/leave', { key: k }); if (my) delete my.wait; setMine(m); } catch (y) {} refreshAll(); return;
+  }
+  if ((b = e.target.closest('[data-pjoin]'))) { joinOpen = b.dataset.pjoin; joinWait = false; renderParties(); const i = document.querySelector('[data-pjoinform] input'); if (i) { try { i.value = localStorage.getItem('n3-name') || ''; } catch (x) {} i.focus(); } return; }
+  if (e.target.closest('[data-pjoincancel]')) { joinOpen = null; joinWait = false; renderParties(); return; }
   if ((b = e.target.closest('[data-pconfirm]'))) {
     const id = b.dataset.pconfirm; b.disabled = true;
     try { const r = await api('POST', '/parties/' + id + '/join', { key: rid(), name: (me && me.name) || '?' }); const m = mine(); m[id] = Object.assign(m[id] || {}, { att: r.key }); setMine(m); } catch (y) {}
@@ -2490,6 +2510,12 @@ $('viewParties').addEventListener('submit', async (e) => {
   const t = T(), id = f.dataset.pjoinform, nm = f.querySelector('input').value.trim().slice(0, 40), msg = f.parentNode.querySelector('[data-pjoinmsg]');
   if (!nm) { msg.textContent = t.ptErrName; return; }
   const x = parties.find((y) => y.id === id); if (!x) { msg.textContent = t.errOff; return; }
+  if (joinWait) {
+    if (membersOnlyJoin(x.p) && me && me.member === false) { msg.textContent = fill(t.ptErrJoinMember, { r: ruleTxt() }); return; }
+    try { const r = await api('POST', '/parties/' + id + '/wait', { key: rid(), name: nm }); const m = mine(); m[id] = Object.assign(m[id] || {}, { wait: r.key }); setMine(m); try { localStorage.setItem('n3-name', nm); } catch (y) {} joinOpen = null; joinWait = false; refreshAll(); renderParties(); }
+    catch (y) { const c = y && y.code; msg.textContent = c === 'not_full' ? t.ptErrNotFull : c === 'wait_full' ? t.ptErrWaitFull : c === 'already_in' ? t.ptErrAlready : c === 'rate_limited' ? t.errRate : c === 'join_login' ? t.ptErrJoinLogin : c === 'join_members_only' ? fill(t.ptErrJoinMember, { r: ruleTxt() }) : y && y.status === 409 ? t.ptErrFull : t.errSave; if (c === 'not_full') { joinWait = false; refreshAll(); } }
+    return;
+  }
   if (whoIn(x.p).length + 1 >= (Number(x.p.seats) || 2)) { msg.textContent = t.ptErrFull; return; }
   if (membersOnlyJoin(x.p) && me && me.member === false) { msg.textContent = fill(t.ptErrJoinMember, { r: ruleTxt() }); return; }
   const key = rid();

@@ -5,6 +5,7 @@ import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membe
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { votesRoute, expireVotes, myVotes } from './votes.js';
 import { campaignRoute, postDueSessions, tidyCampaigns, linkSessionPlay, linkCampaignPlays } from './campaigns.js';
+import { addWait, removeWait, promoteWaitlist, sweepWaitlists, waitOf } from './waitlist.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
 import { handleInteraction, registerCommands, ensureCols, stillMember, normCode, codeHash, discordOn, announceParty, syncParty, cancelPartyMessage, berlinToday, channelIds, archiveOldThreads, expireReservations, sweepReservations, refreshOverview, tidyChannel, renameThreads, linkLoggedPlays } from './discord.js';
 
@@ -104,7 +105,7 @@ const NOTE_MAX = 500;
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
 
 const playOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, players: r.players, winner: r.winner, note: r.note, duration: r.duration, firstPlay: !!r.first_play, loggedBy: r.logged_by || '', via: r.via || '', names: r.names || '', createdAt: r.created_at });
-const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), playId: r.play_id, event: r.event_name || '', createdAt: r.created_at });
+const partyOut = (r) => ({ id: r.id, gameId: r.game_id, game: r.game, guest: !!r.guest, year: r.year, date: r.date, time: r.time, seats: r.seats, host: r.host, note: r.note, attendees: JSON.parse(r.attendees || '{}'), waitlist: waitOf(r).map((e) => ({ k: e.k, name: e.name, at: e.at, ...(e.did ? { did: 1 } : {}) })), playId: r.play_id, event: r.event_name || '', createdAt: r.created_at });
 
 // Discord-Aktualisierungen laufen im Hintergrund; Fehler dürfen die Webseite nie stören.
 const bg = (ctx, p) => ctx.waitUntil(p.catch((e) => console.log('discord sync failed', e && e.message)));
@@ -248,7 +249,10 @@ async function route(req, env, ctx, url) {
     let did = null;
     if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (!u.err) did = u.member.discord_id; }
     // Reservierter Platz (Runde aus „Hat jemand …?“): angemeldet bestätigen, auch wenn sonst alles belegt ist.
-    const cur = await expireReservations(env, await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first());
+    const cur0 = await expireReservations(env, await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first());
+    // Frei gewordene Plätze gehen zuerst an die Warteliste.
+    if (cur0 && waitOf(cur0).length) await promoteWaitlist(env, g[1], ctx);
+    const cur = cur0 && waitOf(cur0).length ? await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first() : cur0;
     const mine = did && cur ? (JSON.parse(cur.attendees || '{}'))['d' + did] : null;
     if (mine && mine.res && !mine.out) {
       await env.DB.prepare(`UPDATE parties SET attendees = json_set(attendees, '$.' || ?1, json(?2)) WHERE id = ?3`).bind('d' + did, JSON.stringify({ name: mine.name || name, at: new Date().toISOString(), did }), g[1]).run();
@@ -259,8 +263,34 @@ async function route(req, env, ctx, url) {
       WHERE id = ?3 AND date >= ?4 AND (SELECT count(*) FROM json_each(parties.attendees) WHERE coalesce(json_extract(value, '$.out'), 0) = 0) + 1 < seats`)
       .bind(key, JSON.stringify(did ? { name, at: new Date().toISOString(), did } : { name, at: new Date().toISOString() }), g[1], new Date(Date.now() - 864e5).toISOString().slice(0, 10)).run();
     if (!r.meta.changes) return fail(409, 'full_or_gone');
+    await removeWait(env, g[1], key, did);
     if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
     return json({ ok: true });
+  }
+  if ((g = path.match(/^\/parties\/([\w-]+)\/wait$/)) && m === 'POST') {
+    // Warteliste: nur, wenn die Runde voll ist. Es gelten dieselben Regeln wie beim Mitspielen.
+    if (!(await allow(env, 'join:' + ip, 30, 600))) return fail(429, 'rate_limited');
+    const b = await body(req), key = str(b.key, 32), name = str(b.name, 40);
+    if (!KEY_RE.test(key) || !name) return fail(400, 'invalid');
+    await ensureCols(env);
+    const prow = await env.DB.prepare('SELECT date, event_id FROM parties WHERE id = ?1').bind(g[1]).first();
+    if (!prow) return fail(409, 'full_or_gone');
+    const rule = await getBooking(env);
+    let did = null;
+    if (!joinOpenToAll(rule, prow)) {
+      const u = await checkMember(req, env, ip);
+      if (u.err === 'rate_limited') return fail(429, u.err);
+      if (u.err || !canJoin(rule, prow, u.member.roles)) return fail(403, u.err ? 'join_login' : 'join_members_only');
+      did = u.member.discord_id;
+    } else if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (!u.err) did = u.member.discord_id; }
+    const res = await addWait(env, g[1], { k: key, name, did });
+    if (res.err === 'gone') return fail(409, 'full_or_gone');
+    if (res.err === 'not_full') return fail(409, 'not_full');
+    if (res.err === 'already_in') return fail(409, 'already_in');
+    if (res.err === 'wait_full') return fail(409, 'wait_full');
+    if (res.err) return fail(503, 'busy');
+    if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
+    return json({ ok: true, pos: res.pos, key: res.already ? (waitOf(await env.DB.prepare('SELECT waitlist FROM parties WHERE id = ?1').bind(g[1]).first())[res.pos - 1] || {}).k : key });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)\/release$/)) && m === 'POST') {
     // Gastgeber (oder Verwaltung) gibt alle reservierten Plätze frei.
@@ -269,14 +299,20 @@ async function route(req, env, ctx, url) {
     if (!row) return fail(404, 'not_found');
     const who = await ownerOrAdmin(req, env, ip, row.host_discord); if (who.err) return fail(status(who.err), who.err);
     await expireReservations(env, row, true);
+    await promoteWaitlist(env, g[1], ctx);
     if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
     return json({ ok: true });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)\/leave$/)) && m === 'POST') {
     const b = await body(req), key = str(b.key, 32);
     if (!KEY_RE.test(key)) return fail(400, 'invalid');
-    await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, g[1]).run();
-    if (discordOn(env)) bg(ctx, ensureCols(env).then(() => syncParty(env, g[1])));
+    await ensureCols(env);
+    // Auf der Warteliste? Dann nur von der Liste nehmen. Sonst Platz frei machen; die Warteliste rückt nach.
+    if (!(await removeWait(env, g[1], key, null))) {
+      await env.DB.prepare("UPDATE parties SET attendees = json_set(attendees, '$.' || ?1 || '.out', 1) WHERE id = ?2 AND json_type(attendees, '$.' || ?1) IS NOT NULL").bind(key, g[1]).run();
+      await promoteWaitlist(env, g[1], ctx);
+    }
+    if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
     return json({ ok: true });
   }
   if ((g = path.match(/^\/parties\/([\w-]+)$/)) && m === 'PUT') {
@@ -303,6 +339,7 @@ async function route(req, env, ctx, url) {
     const same = game === row.game && (b.gameId == null || int(b.gameId) === row.game_id);
     await env.DB.prepare('UPDATE parties SET game = ?1, game_id = ?2, year = ?3, guest = ?4, date = ?5, time = ?6, seats = ?7, note = ?8 WHERE id = ?9')
       .bind(game, same ? row.game_id : int(b.gameId), same ? row.year : int(b.year), same ? row.guest : (b.guest ? 1 : 0), date, time, seats, note, g[1]).run();
+    if (seats > row.seats) await promoteWaitlist(env, g[1], ctx);
     if (discordOn(env)) bg(ctx, syncParty(env, g[1]));
     return json({ ok: true });
   }
@@ -488,6 +525,7 @@ export default {
       ctx.waitUntil((async () => { try { await ensureCols(env); await backfillMemberGames(env, 2); } catch (e) { console.log('member games backfill failed', e.code || e.message); } })());
       ctx.waitUntil((async () => {
         try { await ensureCols(env); const n = await sweepReservations(env); if (n) console.log('reservations expired', n); } catch (e) { console.log('reservation sweep failed', e.code || e.message); }
+        try { const n = await sweepWaitlists(env, discordOn(env) ? (id) => syncParty(env, id, true) : null); if (n) console.log('waitlist moved up', n); } catch (e) { console.log('waitlist sweep failed', e.code || e.message); }
         try { const n = await linkLoggedPlays(env); if (n) console.log('rounds linked to plays', n); } catch (e) { console.log('round link failed', e.code || e.message); }
         try { const n = await linkCampaignPlays(env); if (n) console.log('campaign sessions linked to plays', n); } catch (e) { console.log('campaign link failed', e.code || e.message); }
         // Kampagnen: Sitzungen eine Woche vorher im Thread posten.

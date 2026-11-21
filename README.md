@@ -171,7 +171,9 @@ Settings in the admin view under "Runden: Mitglieder und Stammtisch-Tage": membe
 
 The calendar on nerd-nexus.de/termine (WordPress plugin EventPrime) offers no readable feed with dates, which is why the Stammtisch days come from this rule.
 
-Tests: `node test/booking.mjs`, `node test/join-rules.mjs`.
+**Waitlist ("Warteliste")** for full rounds: when a round is full, the Discord button turns into "Auf die Warteliste" (join waitlist) and the web card shows the same button. The same join rules apply (members only on non-Stammtisch days). The post and card list waiting people in order. As soon as a seat frees up (someone cancels, the host raises the seat count, a reserved seat expires or is released), the first person moves up automatically: they get a direct message from the bot (if they have Discord), are added to the round's thread, and the thread gets a short note. "Absagen" / "Von der Warteliste nehmen" removes someone from the list. If the round is cancelled, waiting people get the cancel DM too. A 20-minute cron fills any free seats that are still open (`sweepWaitlists`). Max 20 people per waitlist. Stored in `parties.waitlist` (JSON `[{k, name, did?, at}]`, see `src/waitlist.js`); API `POST /api/parties/:id/wait`, leaving uses `POST /api/parties/:id/leave`.
+
+Tests: `node test/booking.mjs`, `node test/join-rules.mjs`, `node test/waitlist.mjs`.
 
 ## 9. Admin view ("Verwaltung")
 
@@ -258,6 +260,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 | `test/web-login.mjs` | Discord login, sessions, own-entry permissions |
 | `test/booking.mjs` | Stammtisch-day rule, intro note |
 | `test/join-rules.mjs` | who may join which round |
+| `test/waitlist.mjs` | waitlist: join when full, move-up with DM and thread note, rules, cancel (same setup as `test/threads.mjs`) |
 | `test/member-games.mjs` | member games, BGG import, bring requests |
 | `test/wanted.mjs` | "Hat jemand …?" requests (same setup as `test/member-games.mjs`) |
 | `test/votes.mjs` | wish list votes (same setup as `test/wanted.mjs`) |
@@ -271,7 +274,7 @@ npm test                         # unit tests: BGG parser, Discord, games
 
 ## 14. Data model
 
-D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` = web/discord/qr), `parties` (rounds; `attendees` JSON, `host_discord`, Discord message ids, `event_id`/`event_name`, `bring_id`, `play_id` once logged), `config` (`highlights`, `gamemeta`, `owners`, `booking`, `log_key`, `geeklist`), `rate`, `members`, `sessions`, `auth_handoff`, `events`, `member_games`, `bring_requests`, `wanted` ("Hat jemand …?"; `interested` JSON, `status` open/found/withdrawn/expired, `expires_at`), `extra_games`, `votes` (wish list; one row per `day` + `game_key` + `discord_id`, `game_key` = BGG id or `n:<name>`), `campaigns` (players JSON, `invited` JSON [{id, name, k, res, by, at, dm, msg}], `rule` JSON, `status` active/ended, `outcome` done/aborted, Discord post + thread ids), `campaign_sessions` (`planned`, `date`, `time`, `absent` JSON, `prop` JSON vote, `posted`, `cancelled`, `play_id`). Details and the shape of the built-in game data are in [`docs/HANDOVER.md`](docs/HANDOVER.md) section 3.
+D1 tables: `plays` (plays; `guest` for guest games, `by_discord` = owner, `via` = web/discord/qr), `parties` (rounds; `attendees` JSON, `waitlist` JSON, `host_discord`, Discord message ids, `event_id`/`event_name`, `bring_id`, `play_id` once logged), `config` (`highlights`, `gamemeta`, `owners`, `booking`, `log_key`, `geeklist`), `rate`, `members`, `sessions`, `auth_handoff`, `events`, `member_games`, `bring_requests`, `wanted` ("Hat jemand …?"; `interested` JSON, `status` open/found/withdrawn/expired, `expires_at`), `extra_games`, `votes` (wish list; one row per `day` + `game_key` + `discord_id`, `game_key` = BGG id or `n:<name>`), `campaigns` (players JSON, `invited` JSON [{id, name, k, res, by, at, dm, msg}], `rule` JSON, `status` active/ended, `outcome` done/aborted, Discord post + thread ids), `campaign_sessions` (`planned`, `date`, `time`, `absent` JSON, `prop` JSON vote, `posted`, `cancelled`, `play_id`). Details and the shape of the built-in game data are in [`docs/HANDOVER.md`](docs/HANDOVER.md) section 3.
 
 ## 15. Go-live on the real N3 Discord server
 
