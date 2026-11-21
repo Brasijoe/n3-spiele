@@ -352,7 +352,8 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .cp-sess { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .cp-sess li { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; font-size: 14px; }
 .cp-sess .r1 { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; color: var(--fg); }
-.cp-sess .acts2 { display: flex; flex-wrap: wrap; gap: 6px; }
+.cp-sess .acts2 { display: flex; flex-direction: column; align-items: stretch; gap: 6px; max-width: 260px; }
+.cp-sess .acts2 .btn { width: 100%; justify-content: center; }
 .btn.mini { min-height: 34px; padding: 4px 10px; font-size: 13px; }
 .cp-prop { background: var(--camp-soft); color: var(--camp-ink); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; }
 .cp-h { font-size: 13px; font-weight: 700; color: var(--muted); margin: 4px 0 0; }
@@ -407,6 +408,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 @media (hover: none) { .vote[data-tip]::after { display: none; } }
 @media (prefers-reduced-motion: reduce) { .vote[data-tip]::after { transition: none; } }
 .vote.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.vote.locked { cursor: default; opacity: .75; }
 .vote:disabled { opacity: .6; cursor: default; }
 .vt-panel { display: flex; flex-direction: column; gap: 10px; }
 .vt-panel h2 { margin: 0; }
@@ -552,12 +554,21 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 @media (prefers-reduced-motion: reduce) { .party.flash { animation: none; } }
 /* Desktop (ab 1100px): Elemente nebeneinander. Darunter (Handy/Tablet) bleibt alles wie bisher. */
 .pt-side, .pt-main { display: contents; }
+.stm-hide { display: none !important; } /* Stammtisch bewusst schlicht: nur Datum, Spiel wünschen, Liste */
+#fsToggle { display: none; }
 @media (min-width: 1100px) {
-  #viewCollection { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+  #viewCollection { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
   #viewCollection > * { grid-column: 1 / -1; }
-  /* Filter als Seitenleiste links neben den Spielen (bleibt beim Scrollen stehen, Schnellfilter immer offen). */
-  #viewCollection > .filters { grid-column: 1; grid-row: 2 / span 4; align-self: start; position: sticky; top: 16px; padding: 22px; gap: 14px; max-height: calc(100vh - 32px); overflow: auto; }
-  #viewCollection > section[aria-label="Spiele"], #viewCollection > .recent, #viewCollection > .admin { grid-column: 2; }
+  /* Filter als Seitenleiste rechts neben den Spielen (bleibt beim Scrollen stehen); mit « ausklappen, mit » einklappen. Standard: eingeklappt. */
+  #viewCollection > .filters { grid-column: 2; grid-row: 2 / span 4; align-self: start; position: sticky; top: 16px; padding: 22px; gap: 14px; max-height: calc(100vh - 32px); overflow: auto; }
+  #viewCollection > section[aria-label="Spiele"], #viewCollection > .recent, #viewCollection > .admin { grid-column: 1; }
+  #fsToggle { display: flex; align-items: center; justify-content: center; gap: 8px; align-self: flex-start; min-height: 40px; min-width: 40px; padding: 0 10px; border: 1px solid var(--line, #ccc); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; font-weight: 700; cursor: pointer; }
+  #fsToggle .fs-ico { font-size: 20px; line-height: 1; }
+  #viewCollection:not(.fs-open) { grid-template-columns: minmax(0, 1fr) 56px; }
+  #viewCollection:not(.fs-open) > .filters { padding: 8px; align-items: center; overflow: visible; }
+  #viewCollection:not(.fs-open) > .filters > :not(#fsToggle) { display: none !important; }
+  #viewCollection:not(.fs-open) #fsToggle { flex-direction: column; padding: 10px 0; width: 40px; }
+  #viewCollection:not(.fs-open) #fsToggle .fs-lbl { writing-mode: vertical-rl; font-size: 13px; letter-spacing: .04em; }
   #viewCollection > .filters .row { flex-direction: column; align-items: stretch; }
   #viewCollection > .filters .row > .field { flex: 0 0 auto !important; }
   #viewCollection > .filters input:not([type=range]), #viewCollection > .filters select { width: 100%; box-sizing: border-box; min-width: 0; }
@@ -573,22 +584,13 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   #viewCollection .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
   #viewCollection .guest-cta { order: 10; }
   /* Unterreiter der Mitspieler-/Spielesuche als Seitenleiste links. */
-  #viewParties { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; align-items: start; }
-  #viewParties > * { grid-column: 2; grid-row: 1; }
-  #viewParties > .subtabs { grid-column: 1; flex-direction: column; flex-wrap: nowrap; gap: 4px; border-bottom: 0; background: var(--surface); border-radius: 8px; padding: 10px; position: sticky; top: 16px; }
-  #viewParties > .subtabs a { white-space: nowrap; justify-content: space-between; border-bottom: 0; margin-bottom: 0; border-left: 4px solid transparent; border-radius: 4px; padding: 10px 12px; }
+  .wrap { max-width: min(1840px, 100%); padding-left: 32px; padding-right: 32px; }
+  #viewParties { display: grid; grid-template-columns: minmax(0, 1fr) 236px; gap: 24px; align-items: start; }
+  #viewParties > * { grid-column: 1; grid-row: 1; }
+  #viewParties > .subtabs { grid-column: 2; flex-direction: column; flex-wrap: nowrap; gap: 4px; border-bottom: 0; background: var(--surface); border-radius: 8px; padding: 10px; position: sticky; top: 16px; }
+  #viewParties > .subtabs a { white-space: nowrap; justify-content: space-between; border-bottom: 0; margin-bottom: 0; border-left: 0; border-right: 4px solid transparent; border-radius: 4px; padding: 10px 12px; }
   #viewParties > .subtabs a:hover { background: var(--bg); }
   #viewParties > .subtabs a[aria-current="page"] { background: var(--bg); }
-  #subRounds { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px 24px; align-items: start; }
-  #subRounds > .pt-side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 20px; }
-  #subRounds > .pt-main { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-  #subRounds .pt-side .pt-head { flex-direction: column; align-items: flex-start; }
-  #subRounds .parties { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-  #subRounds .pt-main > .sec-h:first-child { margin-top: 0; }
-  #viewStats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
-  #viewStats > * { grid-column: 1 / -1; }
-  #viewStats > section:nth-of-type(2), #viewStats > section:nth-of-type(4) { grid-column: 1; }
-  #viewStats > section:nth-of-type(3), #viewStats > section:nth-of-type(5) { grid-column: 2; }
 }
 </style>
 
@@ -636,6 +638,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   </section>
 
   <section class="panel filters" aria-label="Filter">
+    <button type="button" id="fsToggle" aria-expanded="false"><span class="fs-ico" aria-hidden="true">«</span><span class="fs-lbl"></span></button>
     <div class="row">
       <label class="field" style="flex: 1 1 280px;"><span data-t="search"></span>
         <input type="search" id="q" autocomplete="off">
@@ -811,7 +814,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <div class="pt-how" id="ptHow"></div>
     </section>
     <p class="meta" id="ptState" style="margin:0"></p>
-    <section class="panel st-panel acc-b vt-teaser" id="vtTeaser" hidden>
+    <section class="panel st-panel acc-b vt-teaser stm-hide" id="vtTeaser" hidden>
       <h2 id="vtTH"></h2>
       <ol class="vt-mini" id="vtTList"></ol>
       <a class="btn btn-outline" href="#stammtisch" data-stmgo-tab data-t="stmGo"></a>
@@ -830,14 +833,14 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <!-- Nächster Stammtisch: Wunschspiele (Abstimmung) und die für den Tag schon geplanten Runden in einer Liste. -->
     <section class="panel st-panel acc-b" id="vtPanel" aria-labelledby="vtH">
       <div class="pt-head"><div><span class="stm-kick" data-t="stmKick"></span><h2 id="vtH"></h2></div>
-        <div class="row" style="gap:8px"><button type="button" class="btn btn-primary" id="stmOffer" data-t="stmOffer"></button><a class="btn btn-outline" id="stmDc" target="_blank" rel="noopener" hidden data-t="stmDc"></a></div></div>
-      <p class="meta" id="vtIntro" style="margin:0"></p>
-      <div class="kpis stm-kpis" id="stmKpis"></div>
+        <div class="row stm-hide" style="gap:8px"><button type="button" class="btn btn-primary" id="stmOffer" data-t="stmOffer"></button><a class="btn btn-outline" id="stmDc" target="_blank" rel="noopener" hidden data-t="stmDc"></a></div></div>
+      <p class="meta stm-hide" id="vtIntro" style="margin:0"></p>
+      <div class="kpis stm-kpis stm-hide" id="stmKpis"></div>
       <div class="stm-add"><label class="field"><span data-t="stmAdd"></span><input type="search" id="stmQ" autocomplete="off" spellcheck="false"></label><ul class="stm-res" id="stmRes"></ul></div>
-      <p class="meta" id="stmLater" style="margin:0"></p>
+      <p class="meta stm-hide" id="stmLater" style="margin:0"></p>
     </section>
     <p class="meta" id="vtState" style="margin:0" hidden></p>
-    <div class="stm-bar"><div class="group" id="stmFilter" role="group"></div><span class="meta" id="stmLegend"></span></div>
+    <div class="stm-bar stm-hide"><div class="group" id="stmFilter" role="group"></div><span class="meta" id="stmLegend"></span></div>
     <ol class="vt-list stm-list" id="vtList"></ol>
     <button type="button" class="btn btn-quiet vt-more" id="vtMore" hidden></button>
   </div>
@@ -1504,14 +1507,14 @@ let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), 
 // Wunschspiele (Abstimmung für den nächsten Stammtisch): Stand vom Server, eigene Stimmen kommen über /my.
 let vt = { day: '', max: 5, list: [] }, vtOpenAll = false, vtBusy = false, vtPend = null;
 const ICO_UP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21h4V9H2zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7z"/></svg>';
-Object.assign(TXT.de, { subStm: 'Stammtisch', stmKick: 'Nächster Stammtisch', stmTitle: '{d}', stmOffer: 'Runde für diesen Tag anbieten', stmDc: 'Abstimmung in Discord', stmAdd: 'Spiel wünschen (Sammlung oder Mitgliederspiele)', stmAddPh: 'Name eingeben …', stmNoHit: 'Kein Spiel gefunden. Spiele, die niemand im Club hat, findest du über „Spiele gesucht“.',
+Object.assign(TXT.de, { vtLockedTip: 'Du bist bei der geplanten Runde dabei. Das zählt automatisch als deine Stimme.', fsOpen: 'Filter', fsClose: 'Filter einklappen', subStm: 'Stammtisch', stmKick: 'Nächster Stammtisch', stmTitle: '{d}', stmOffer: 'Runde für diesen Tag anbieten', stmDc: 'Abstimmung in Discord', stmAdd: 'Spiel wünschen (Sammlung oder Mitgliederspiele)', stmAddPh: 'Name eingeben …', stmNoHit: 'Kein Spiel gefunden. Spiele, die niemand im Club hat, findest du über „Spiele gesucht“.',
   stmKWish: 'Wunschspiele', stmKVotes: 'Stimmen', stmKPeople: 'Personen', stmKRounds: 'Runden geplant', stmKFree: 'freie Plätze', stmFAll: 'Alle', stmFWish: 'Nur Wünsche', stmFPlan: 'Schon geplant', stmLegend: 'Blau = Wunsch · Orange = Runde steht schon',
   stmPlanned: 'Schon geplant', stmPlanInfo: '{t} Uhr · {a}/{s} dabei · {f}', stmPlanFree: 'noch {n} frei', stmPlanFull: 'voll', stmToRound: 'Zur Runde', stmLater: 'Danach: {l}', stmLaterN: '{d} ({n} Runden)', stmLaterN1: '{d} (1 Runde)', stmNone: 'Für diesen Tag gibt es noch keine Wünsche und keine Runden. Wünsch dir oben ein Spiel oder biete eine Runde an.', stmNoneF: 'Nichts in dieser Auswahl.', stmGo: 'Zum Stammtisch', stmTeaser: 'Wunschspiele für {d}', stmTeaserNone: 'Noch keine Wünsche.', stmNoDay: 'Gerade ist kein Stammtisch eingetragen.',
   vtTitle: '{d}', vtTitleToday: 'Heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Wer eine Runde anbietet, sieht so, was gefragt ist. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
   vtMine: 'Deine Stimmen: {n} von {m}.', vtNone: 'Noch keine Wünsche. Tippe in der Sammlung auf einer Spielekarte auf 👍.', vtN1: '1 Stimme', vtNn: '{n} Stimmen', vtBtn: 'Wunschspiel für den Stammtisch am {d}: Tippe, wenn du das spielen willst (bis zu {m} Stimmen). Wer eine Runde anbietet, sieht, was gefragt ist.', vtBtnOn: 'Du hast dir das für den Stammtisch am {d} gewünscht. Nochmal tippen nimmt die Stimme zurück.',
   vtPlanned: 'Runde geplant', vtWho: 'Gewählt von: {n}', vtAll: 'Alle {n} anzeigen', vtLess: 'Weniger anzeigen', vtLimit: 'Du hast schon {m} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück.',
   vtLoginT: 'Abstimmen', vtLoginTxt: 'Zum Abstimmen melde dich mit Discord an. So zählt jede Stimme nur einmal.' });
-Object.assign(TXT.en, { subStm: 'Club night', stmKick: 'Next club night', stmTitle: '{d}', stmOffer: 'Offer a game for this day', stmDc: 'Vote in Discord', stmAdd: 'Wish for a game (collection or member games)', stmAddPh: 'Type a name …', stmNoHit: 'No game found. For games nobody at the club has, use “Games wanted”.',
+Object.assign(TXT.en, { vtLockedTip: 'You are in the planned game. That counts as your vote automatically.', fsOpen: 'Filters', fsClose: 'Collapse filters', subStm: 'Club night', stmKick: 'Next club night', stmTitle: '{d}', stmOffer: 'Offer a game for this day', stmDc: 'Vote in Discord', stmAdd: 'Wish for a game (collection or member games)', stmAddPh: 'Type a name …', stmNoHit: 'No game found. For games nobody at the club has, use “Games wanted”.',
   stmKWish: 'wished games', stmKVotes: 'votes', stmKPeople: 'people', stmKRounds: 'games planned', stmKFree: 'free seats', stmFAll: 'All', stmFWish: 'Wishes only', stmFPlan: 'Already planned', stmLegend: 'Blue = wish · Orange = game already planned',
   stmPlanned: 'Already planned', stmPlanInfo: '{t} · {a}/{s} in · {f}', stmPlanFree: '{n} free', stmPlanFull: 'full', stmToRound: 'Go to game', stmLater: 'After that: {l}', stmLaterN: '{d} ({n} games)', stmLaterN1: '{d} (1 game)', stmNone: 'No wishes and no games for this day yet. Wish for a game above or offer one.', stmNoneF: 'Nothing in this selection.', stmGo: 'Go to club night', stmTeaser: 'Wish list for {d}', stmTeaserNone: 'No wishes yet.', stmNoDay: 'No club night is scheduled right now.',
   vtTitle: '{d}', vtTitleToday: 'Today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Whoever offers a game can see what people want. After the club night, voting starts over.',
@@ -1686,7 +1689,7 @@ function renderFilters() {
   $('mechs').innerHTML = chips('mechs', topMechs.map((c) => [c.idx, (de() ? D.mechsDe : D.mechs)[c.idx] + ' (' + c.n + ')']));
   const nAct = (S.src === 'mem' ? [] : ['langs']).concat(['players', 'weight', 'time', 'types', 'play', 'feel', 'cats', 'mechs']).reduce((n, k) => n + S[k].length, 0) +
     [S.pMode !== 'box', S.rMin > 0 || S.rMax < 10, S.minVotes > 0, S.rankMax > 0, S.wMin > 1 || S.wMax < 5, S.maxTime < 240, S.maxAge > 0, S.yearFrom > 0, !!S.played].filter(Boolean).length;
-  $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt;
+  $('fltBtn').textContent = (S.flt ? t.fltClose : t.fltOpen) + (nAct ? ' (' + nAct + ')' : ''); $('fltBtn').setAttribute('aria-expanded', String(S.flt)); $('quick').hidden = !S.flt; if (typeof fsSet === 'function') fsSet($('viewCollection').classList.contains('fs-open'));
   $('advBtn').hidden = !S.flt;
   $('advBtn').textContent = S.adv ? t.advClose : t.advOpen; $('advBtn').setAttribute('aria-expanded', String(S.adv)); $('adv').hidden = !(S.flt && S.adv);
   $('recPctL').textContent = fill(t.recPct, { p: S.recPct });
@@ -2286,6 +2289,17 @@ document.querySelector('.filters').addEventListener('click', (e) => {
 });
 $('advBtn').onclick = () => { S.adv = !S.adv; renderFilters(); };
 $('fltBtn').onclick = () => { S.flt = !S.flt; renderFilters(); };
+// Desktop: Filter-Seitenleiste rechts ein-/ausklappen (Standard eingeklappt, Wahl wird im Browser gemerkt).
+function fsSet(open) {
+  $('viewCollection').classList.toggle('fs-open', open); $('fsToggle').setAttribute('aria-expanded', String(open));
+  $('fsToggle').querySelector('.fs-ico').textContent = open ? '»' : '«';
+  const n = (($('fltBtn').textContent.match(/\((\d+)\)/) || [])[1]);
+  $('fsToggle').querySelector('.fs-lbl').textContent = open ? T().fsClose : T().fsOpen + (n ? ' (' + n + ')' : '');
+  $('fsToggle').title = open ? T().fsClose : T().fsOpen;
+}
+var fsOpen = false; try { fsOpen = localStorage.getItem('n3fs') === '1'; } catch { /* ohne Speicher */ }
+fsSet(fsOpen);
+$('fsToggle').onclick = () => { fsOpen = !fsOpen; try { localStorage.setItem('n3fs', fsOpen ? '1' : '0'); } catch { /* egal */ } fsSet(fsOpen); };
 $('q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = PAGE; renderGrid(); });
 $('playedF').onchange = (e) => { S.played = e.target.value; S.limit = PAGE; renderFilters(); renderGrid(); };
 $('sort').onchange = (e) => { S.sort = e.target.value; renderGrid(); };
@@ -3094,14 +3108,15 @@ const WT_MONTHS = 3;
 const vtKeyOf = (gameId, n) => (Number(gameId) > 0 ? String(Number(gameId)) : 'n:' + String(n || '').trim().toLowerCase());
 const vtKey = (g) => vtKeyOf(g.id, g.nDe);
 const vtItem = (k) => vt.list.find((x) => x.key === k);
-const vtMineHas = (k) => isMine('votes', k);
+const vtLocked = (k) => !!(myIds && myIds.locked && myIds.locked.has(k));
+const vtMineHas = (k) => isMine('votes', k) || vtLocked(k);
 const vtDayTxt = () => { const t = T(); return vt.day === todayIso() ? t.ptToday.toLowerCase() : dayLabel(vt.day); };
 // Beim Überfahren des Daumens: wer schon abgestimmt hat.
 const vtWho = (x) => (x && x.names && x.names.length ? '\n' + fill(T().vtWho, { n: x.names.join(', ') }) : '');
 function voteBtn(g) {
   if (!vt.day) return '';
-  const t = T(), k = vtKey(g), x = vtItem(k), n = x ? x.n : 0, on = vtMineHas(k), tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max }) + vtWho(x);
-  return '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vote="' + esc(g.key) + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip + (n ? ' · ' + (n === 1 ? t.vtN1 : fill(t.vtNn, { n })) : '')) + '">' + ICO_UP + (n ? '<span>' + n + '</span>' : '') + '</button>';
+  const t = T(), k = vtKey(g), x = vtItem(k), n = x ? x.n : 0, on = vtMineHas(k), lk = vtLocked(k), tip = (lk ? t.vtLockedTip : fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max })) + vtWho(x);
+  return '<button type="button" class="vote' + (on ? ' on' : '') + (lk ? ' locked' : '') + '" data-vote="' + esc(g.key) + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip + (n ? ' · ' + (n === 1 ? t.vtN1 : fill(t.vtNn, { n })) : '')) + '">' + ICO_UP + (n ? '<span>' + n + '</span>' : '') + '</button>';
 }
 // Steht für den Abstimmungstag schon eine Runde mit dem Spiel?
 const vtPlanned = (x) => parties.some((y) => String(y.p.date) === vt.day && (x.gameId ? Number(y.p.gameId) === Number(x.gameId) : String(y.p.game || '').trim().toLowerCase() === String(x.game).trim().toLowerCase()));
@@ -3206,6 +3221,7 @@ function setVotes(r) {
   if (!r || typeof r !== 'object') return;
   vt = { day: r.day || '', max: r.max || 5, list: Array.isArray(r.list) ? r.list : [], post: r.post || (r.day === vt.day ? vt.post : '') || '' };
   if (Array.isArray(r.mine) && myIds) myIds.votes = new Set(r.mine);
+  if (Array.isArray(r.locked) && myIds) myIds.locked = new Set(r.locked);
   renderVotes(); renderGrid();
 }
 function openVtLogin() { const t = T(); $('vtT').textContent = t.vtLoginT; $('vtTxt').textContent = t.vtLoginTxt; renderAuth(); $('vtDlg').showModal(); }
@@ -3215,10 +3231,11 @@ async function doVote(info, btn) {
   if (!me) { openVtLogin(); return; }
   if (vtBusy) return;
   const k = vtKeyOf(info.gameId, info.game), on = !vtMineHas(k);
+  if (vtLocked(k)) { alertVt(T().vtLockedTip, btn); return; }
   if (on && myIds && myIds.votes && myIds.votes.size >= vt.max) { alertVt(fill(T().vtLimit, { m: vt.max }), btn); return; }
   vtBusy = true; if (btn) btn.disabled = true;
   try { setVotes(await api('POST', '/votes', { gameId: info.gameId || null, game: info.game, year: info.year || null, mem: !!info.mem, on })); }
-  catch (x) { alertVt(x && x.code === 'vote_limit' ? fill(T().vtLimit, { m: vt.max }) : x && x.code === 'rate_limited' ? T().errRate : x && (x.status === 401 || x.status === 403) ? T().vtLoginTxt : T().errSave, btn); }
+  catch (x) { alertVt(x && x.code === 'in_round' ? T().vtLockedTip : x && x.code === 'vote_limit' ? fill(T().vtLimit, { m: vt.max }) : x && x.code === 'rate_limited' ? T().errRate : x && (x.status === 401 || x.status === 403) ? T().vtLoginTxt : T().errSave, btn); }
   finally { vtBusy = false; if (btn && btn.isConnected) btn.disabled = false; }
 }
 // Kurzer Hinweis direkt am Knopf (ohne Browser-Dialog).
@@ -3744,7 +3761,7 @@ function isMine(kind, id) { return !!(myIds && myIds[kind] && myIds[kind].has(id
 function setSession(tok) { sess = tok || ''; lsSet('n3-session', sess); if (!sess) { me = null; myIds = null; } }
 async function loadMy() {
   if (!sess) { renderAuth(); return; }
-  try { const r = await api('GET', '/my'); me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []), votes: new Set(r.votes || []) }; }
+  try { const r = await api('GET', '/my'); me = { id: r.id || null, name: r.name, member: r.member !== false, bggUser: r.bggUser || '', bggSynced: !!r.bggSynced }; myIds = { plays: new Set(r.plays), parties: new Set(r.parties), memberGames: new Set(r.memberGames || []), wanted: new Set(r.wanted || []), wantedJoined: new Set(r.wantedJoined || []), votes: new Set(r.votes || []), locked: new Set(r.votesLocked || []) }; }
   catch (e) { if (e && (e.status === 401 || e.status === 403)) { setSession(''); loginFailed(e.code); } }
   renderAuth(); renderPlays(); renderParties(); renderMg(); renderGrid(); renderWanted(); renderVotes();
 }

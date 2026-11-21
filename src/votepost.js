@@ -95,6 +95,7 @@ export async function votePollButton(i, env, ctx) {
   const mine = (await env.DB.prepare('SELECT 1 FROM votes WHERE day = ?1 AND game_key = ?2 AND discord_id = ?3').bind(day, key, w.id).first());
   const res = await castVote(env, day, w.id, w.name, { game: v.game, gameId: v.gameId, year: v.year, mem: v.mem }, !mine);
   if (res === 'vote_limit') return say(`Du hast schon ${VOTE_MAX} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück (nochmal auf den Knopf oder auf der Webseite).`);
+  if (res === 'in_round') return say(`Du bist bei der geplanten Runde mit **${clean(v.game)}** dabei. Das zählt schon automatisch als deine Stimme.`);
   ctx.waitUntil(syncVotePoll(env).catch((e) => console.log('vote post refresh failed', e && e.message)));
   const left = VOTE_MAX - (await env.DB.prepare('SELECT COUNT(*) AS n FROM votes WHERE day = ?1 AND discord_id = ?2').bind(day, w.id).first()).n;
   return say(mine ? `Deine Stimme für **${clean(v.game)}** ist zurückgenommen.` : `👍 Notiert: Du willst am ${dayTxt(day)} **${clean(v.game)}** spielen. Noch ${left} Stimme${left === 1 ? '' : 'n'} übrig. Nochmal klicken nimmt sie zurück.`);
@@ -124,6 +125,7 @@ async function addVote(i, env, ctx, g) {
   await ensureVotes(env);
   const res = await castVote(env, day, w.id, w.name, { game: g.game, gameId: g.gameId, year: g.year, mem: g.mem }, true);
   if (res === 'vote_limit') return say(`Du hast schon ${VOTE_MAX} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück (Knopf im Post oder auf der Webseite).`);
+  if (res === 'in_round') return say(`Du bist bei der geplanten Runde mit **${clean(g.game)}** dabei. Das zählt schon automatisch als deine Stimme.`);
   ctx.waitUntil(syncVotePoll(env).catch((e) => console.log('vote post refresh failed', e && e.message)));
   const left = VOTE_MAX - (await env.DB.prepare('SELECT COUNT(*) AS n FROM votes WHERE day = ?1 AND discord_id = ?2').bind(day, w.id).first()).n;
   return say(`👍 Notiert: Du willst am ${dayTxt(day)} **${clean(g.game)}** spielen. Noch ${left} Stimme${left === 1 ? '' : 'n'} übrig.`);
