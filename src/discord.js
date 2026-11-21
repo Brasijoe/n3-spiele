@@ -5,6 +5,7 @@ import { warmCover } from './games.js';
 import { bringButton, bringSubmit } from './membergames.js';
 import { wantedButton, wantedSubmit } from './wanted.js';
 import { campaignButton, campaignSubmit, openCampaignCount } from './campaigns.js';
+import { votePollButton, voteAddButton, voteAddSubmit } from './votepost.js';
 import { promoteWaitlist, addWait, removeWait, waitOf, waitPos } from './waitlist.js';
 import { getBooking, isMember, canJoin, isStammtisch, nextStammtische, ruleText, introOk, INTRO_HELP, guestsPaused, pauseText } from './booking.js';
 
@@ -41,7 +42,7 @@ export async function verifySignature(pubKeyHex, sigHex, timestamp, bodyText) {
 }
 
 // ---- Datum (Europe/Berlin) ----
-const berlin = (d = new Date()) => {
+export const berlin = (d = new Date()) => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' }).formatToParts(d).map((x) => [x.type, x.value]));
   return { date: `${p.year}-${p.month}-${p.day}`, hour: +p.hour, minute: +p.minute, wd: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday) };
 };
@@ -412,8 +413,8 @@ export async function handleInteraction(req, env, ctx) {
     if (i.type === 4) return await autocomplete(i, env, ctx);
     if (i.type === 2) return i.data.name === 'party' ? await cmdParty(i, env, ctx) : i.data.name === 'log' ? await cmdLog(i, env) : i.data.name === 'code' ? await cmdCode(i, env) : i.data.name === 'runden' ? reply({ type: 4, data: { ...(await overviewMessage(env)), flags: 64 } }) : say('Unbekannter Befehl.');
     const cid = String((i.data && i.data.custom_id) || '');
-    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('camp') ? await campaignButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : await button(i, env, ctx);
-    if (i.type === 5) return cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('camp') ? await campaignSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
+    if (i.type === 3) return cid.startsWith('bring') ? await bringButton(i, env, ctx) : cid.startsWith('camp') ? await campaignButton(i, env, ctx) : cid.startsWith('want') ? await wantedButton(i, env, ctx) : cid.startsWith('vote:') ? await votePollButton(i, env, ctx) : cid.startsWith('voteadd') ? await voteAddButton(i, env, ctx) : await button(i, env, ctx);
+    if (i.type === 5) return cid === 'voteadd' ? await voteAddSubmit(i, env, ctx) : cid.startsWith('bring') ? await bringSubmit(i, env, ctx) : cid.startsWith('camp') ? await campaignSubmit(i, env, ctx) : cid.startsWith('want') ? await wantedSubmit(i, env, ctx) : await editSubmit(i, env);
   } catch (e) { console.log('discord error', e && e.message); return say('Da ist etwas schiefgelaufen. Bitte nochmal versuchen.'); }
   return say('Nicht unterstützt.');
 }
