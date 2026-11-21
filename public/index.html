@@ -535,9 +535,9 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   #viewCollection .shame-cv { grid-row: 1; }
   #viewCollection .shame-card .actions { grid-column: 1 / -1; grid-row: 2; }
   #viewCollection .guest-cta { order: 10; }
-  #subRounds { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px 24px; align-items: start; }
-  #subRounds > .pt-side { display: flex; flex-direction: column; gap: 20px; }
-  #subRounds > .pt-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  #subRounds { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px 24px; align-items: start; }
+  #subRounds > .pt-side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 20px; }
+  #subRounds > .pt-main { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
   #subRounds .pt-side .pt-head { flex-direction: column; align-items: flex-start; }
   #subRounds .vt-panel { padding: 22px; }
   #subRounds .vt-row { grid-template-columns: 22px 44px minmax(0, 1fr); }
