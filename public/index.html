@@ -512,8 +512,24 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 /* Desktop (ab 1100px): Elemente nebeneinander. Darunter (Handy/Tablet) bleibt alles wie bisher. */
 .pt-side, .pt-main { display: contents; }
 @media (min-width: 1100px) {
-  #viewCollection { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  #viewCollection { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
   #viewCollection > * { grid-column: 1 / -1; }
+  /* Filter als Seitenleiste links neben den Spielen (bleibt beim Scrollen stehen, Schnellfilter immer offen). */
+  #viewCollection > .filters { grid-column: 1; grid-row: 2 / span 4; align-self: start; position: sticky; top: 16px; padding: 22px; gap: 14px; max-height: calc(100vh - 32px); overflow: auto; }
+  #viewCollection > section[aria-label="Spiele"], #viewCollection > .recent, #viewCollection > .admin { grid-column: 2; }
+  #viewCollection > .filters .row { flex-direction: column; align-items: stretch; }
+  #viewCollection > .filters .row > .field { flex: 0 0 auto !important; }
+  #viewCollection > .filters input:not([type=range]), #viewCollection > .filters select { width: 100%; box-sizing: border-box; min-width: 0; }
+  #viewCollection > .filters #quick { display: block !important; }
+  #viewCollection > .filters #quick .group { gap: 6px; }
+  #viewCollection > .filters #quick .group-label { flex: 0 0 100%; margin-top: 4px; }
+  #viewCollection > .filters .chip { min-height: 34px; padding: 0 11px; font-size: 13px; }
+  #viewCollection > .filters .rate-box { display: flex !important; }
+  #viewCollection > .filters .rate-box .group-label { flex: 0 0 100%; }
+  #viewCollection > .filters #fltBtn { display: none; }
+  #viewCollection > .filters .bar, #viewCollection > .filters .bar > .row { flex-direction: column; align-items: stretch; }
+  #viewCollection > .filters .adv { grid-template-columns: 1fr; padding: 14px; }
+  #viewCollection .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
   #viewCollection .guest-cta { order: 10; }
   #subRounds { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px 24px; align-items: start; }
   #subRounds > .pt-side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 20px; }
