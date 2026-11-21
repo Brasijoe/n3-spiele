@@ -36,7 +36,7 @@ export async function pollMessage(env, day, closed = false) {
     const names = v.names.slice(0, 6).map(clean).join(', ') + (v.names.length > 6 ? ' …' : '');
     return `${i + 1}. **${clean(v.game)}** · 👍 ${v.n} (${names})${r ? ` · 📅 Runde ${r.time || ''} geplant` : ''}`;
   });
-  let desc = closed ? 'Die Abstimmung ist vorbei. Danke fürs Mitmachen!' : `Was wollt ihr beim Stammtisch spielen? Jede Person hat bis zu ${VOTE_MAX} Stimmen. Stimmt unten für die Top-Wünsche ab. Mit ➕ schlagt ihr ein anderes Spiel aus der Sammlung oder den Mitgliederspielen vor. Wer eine Runde anbietet, sieht so, was gefragt ist.`;
+  let desc = closed ? 'Die Abstimmung ist vorbei. Danke fürs Mitmachen!' : `Was wollt ihr beim Stammtisch spielen? Jede Person hat bis zu ${VOTE_MAX} Stimmen. Stimmt unten für die Top-Wünsche ab. Mit ➕ schlagt ihr ein anderes Spiel vor (Sammlung, Mitgliederspiele oder ein Gastspiel, das jemand mitbringt). Wer eine Runde anbietet, sieht so, was gefragt ist.`;
   desc += '\n\n**🗳️ Wünsche**\n' + (lines.length ? lines.join('\n') : '_Noch keine Wünsche. Mach den Anfang!_');
   if (list.length > LIST_N) desc += `\n… und ${list.length - LIST_N} weitere auf der Webseite`;
   if (rounds.length) {
@@ -137,6 +137,7 @@ export async function voteAddButton(i, env, ctx) {
     return reply({ type: 9, data: { custom_id: 'voteadd', title: 'Spiel für den Stammtisch vorschlagen', components: [
       { type: 1, components: [{ type: 4, custom_id: 'q', label: 'Spielname (Sammlung oder Mitgliederspiele)', style: 1, min_length: 2, max_length: 100, required: true, placeholder: 'z. B. Azul' }] }] } });
   }
+  if (cid.startsWith('voteadd:x:')) return addVote(i, env, ctx, { gameId: null, game: cid.slice(10), year: null, mem: false });
   const g = (await candidates(env)).find((x) => x.k === cid.slice(8));
   if (!g) return say('Das Spiel habe ich nicht mehr gefunden.');
   return addVote(i, env, ctx, g);
@@ -145,7 +146,11 @@ export async function voteAddButton(i, env, ctx) {
 export async function voteAddSubmit(i, env, ctx) {
   const q = ((i.data.components || []).flatMap((r) => r.components || []).find((c) => c.custom_id === 'q') || {}).value || '';
   const hits = findGames(await candidates(env), q), web = webUrl(env);
-  if (!hits.length) return say(`„${clean(q)}“ habe ich weder in der Club-Sammlung noch bei den Mitgliederspielen gefunden. Versuch es mit einem anderen Namen${web ? ` oder such auf der Webseite: ${web}` : '.'}`);
+  if (!hits.length) {
+    const nm = String(q).trim().replace(/\s+/g, ' ').slice(0, 80);
+    return reply({ type: 4, data: { flags: 64, content: `„${clean(nm)}“ habe ich weder in der Club-Sammlung noch bei den Mitgliederspielen gefunden. Bringt es jemand mit? Dann wünsch es dir als Gastspiel. Sonst prüf die Schreibweise${web ? ` oder such auf der Webseite (mit BoardGameGeek-Suche): ${web}` : '.'}`,
+      components: nm.length >= 2 ? [{ type: 1, components: [{ type: 2, style: 1, custom_id: 'voteadd:x:' + nm, label: ('Als Gastspiel wünschen: ' + nm).slice(0, 80) }] }] : [] } });
+  }
   if (hits.length === 1) return addVote(i, env, ctx, hits[0]);
   const btns = hits.slice(0, 5).filter((g) => ('voteadd:' + g.k).length <= 100).map((g) => ({ type: 2, style: 2, custom_id: 'voteadd:' + g.k, label: (g.game + (g.year ? ` (${g.year})` : '') + (g.mem ? ' · Mitglied' : '')).slice(0, 80) }));
   return reply({ type: 4, data: { flags: 64, content: `Ich habe ${hits.length} passende Spiele gefunden${hits.length > 5 ? ', hier die ersten 5' : ''}. Welches meinst du?`, components: [{ type: 1, components: btns }] } });

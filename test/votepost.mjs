@@ -95,6 +95,8 @@ x = await interact({ type: 3, data: { custom_id: 'voteadd' }, message: { id: msg
 assert.equal(x.type, 9); assert.equal(x.data.custom_id, 'voteadd');
 const modal = (q) => interact({ type: 5, data: { custom_id: 'voteadd', components: [{ type: 1, components: [{ type: 4, custom_id: 'q', value: q }] }] }, ...as('556') });
 x = await modal('gibt es sicher nicht xyz'); assert.match(x.data.content, /nicht gefunden|weder/);
+const gb = x.data.components[0].components[0]; assert.equal(gb.custom_id, 'voteadd:x:gibt es sicher nicht xyz');
+x = await interact({ type: 3, data: { custom_id: gb.custom_id }, ...as('556') }); assert.match(x.data.content, /Notiert/);
 x = await modal('7 wonders'); assert.match(x.data.content, /Notiert/);
 x = await modal('wonders');
 if (x.data.components) { const b0 = x.data.components[0].components[0]; assert.match(b0.custom_id, /^voteadd:/); x = await interact({ type: 3, data: { custom_id: b0.custom_id }, ...as('556') }); }
