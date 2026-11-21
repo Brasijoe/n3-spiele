@@ -1519,14 +1519,14 @@ let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), 
 // Wunschspiele (Abstimmung für den nächsten Stammtisch): Stand vom Server, eigene Stimmen kommen über /my.
 let vt = { day: '', max: 5, list: [] }, vtOpenAll = false, vtBusy = false, vtPend = null;
 const ICO_UP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21h4V9H2zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7z"/></svg>';
-Object.assign(TXT.de, { vtLockedTip: 'Du bist bei der geplanten Runde dabei. Das zählt automatisch als deine Stimme.', fsOpen: 'Filter', fsClose: 'Filter einklappen', subStm: 'Stammtisch', stmKick: 'Nächster Stammtisch', stmTitle: '{d}', stmOffer: 'Runde für diesen Tag anbieten', stmDc: 'Abstimmung in Discord', stmAdd: 'Spiel wünschen (Sammlung oder Mitgliederspiele)', stmAddPh: 'Name eingeben …', stmNoHit: 'Kein Spiel gefunden. Spiele, die niemand im Club hat, findest du über „Spiele gesucht“.',
+Object.assign(TXT.de, { stmFree: '„{n}“ als Gastspiel wünschen', stmBgg: 'Suche auf BoardGameGeek …', vtLockedTip: 'Du bist bei der geplanten Runde dabei. Das zählt automatisch als deine Stimme.', fsOpen: 'Filter', fsClose: 'Filter einklappen', subStm: 'Stammtisch', stmKick: 'Nächster Stammtisch', stmTitle: '{d}', stmOffer: 'Runde für diesen Tag anbieten', stmDc: 'Abstimmung in Discord', stmAdd: 'Spiel wünschen (Sammlung, Mitgliederspiele oder Gastspiel)', stmAddPh: 'Name eingeben …', stmNoHit: 'Kein Spiel gefunden. Spiele, die niemand im Club hat, findest du über „Spiele gesucht“.',
   stmKWish: 'Wunschspiele', stmKVotes: 'Stimmen', stmKPeople: 'Personen', stmKRounds: 'Runden geplant', stmKFree: 'freie Plätze', stmFAll: 'Alle', stmFWish: 'Nur Wünsche', stmFPlan: 'Schon geplant', stmLegend: 'Blau = Wunsch · Orange = Runde steht schon',
   stmPlanned: 'Schon geplant', stmPlanInfo: '{t} Uhr · {a}/{s} dabei · {f}', stmPlanFree: 'noch {n} frei', stmPlanFull: 'voll', stmToRound: 'Zur Runde', stmLater: 'Danach: {l}', stmLaterN: '{d} ({n} Runden)', stmLaterN1: '{d} (1 Runde)', stmNone: 'Für diesen Tag gibt es noch keine Wünsche und keine Runden. Wünsch dir oben ein Spiel oder biete eine Runde an.', stmNoneF: 'Nichts in dieser Auswahl.', stmGo: 'Zum Stammtisch', stmTeaser: 'Wunschspiele für {d}', stmTeaserNone: 'Noch keine Wünsche.', stmNoDay: 'Gerade ist kein Stammtisch eingetragen.',
   vtTitle: '{d}', vtTitleToday: 'Heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Wer eine Runde anbietet, sieht so, was gefragt ist. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
   vtMine: 'Deine Stimmen: {n} von {m}.', vtNone: 'Noch keine Wünsche. Tippe in der Sammlung auf einer Spielekarte auf 👍.', vtN1: '1 Stimme', vtNn: '{n} Stimmen', vtBtn: 'Wunschspiel für den Stammtisch am {d}: Tippe, wenn du das spielen willst (bis zu {m} Stimmen). Wer eine Runde anbietet, sieht, was gefragt ist.', vtBtnOn: 'Du hast dir das für den Stammtisch am {d} gewünscht. Nochmal tippen nimmt die Stimme zurück.',
   vtPlanned: 'Runde geplant', vtWho: 'Gewählt von: {n}', vtAll: 'Alle {n} anzeigen', vtLess: 'Weniger anzeigen', vtLimit: 'Du hast schon {m} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück.',
   vtLoginT: 'Abstimmen', vtLoginTxt: 'Zum Abstimmen melde dich mit Discord an. So zählt jede Stimme nur einmal.' });
-Object.assign(TXT.en, { vtLockedTip: 'You are in the planned game. That counts as your vote automatically.', fsOpen: 'Filters', fsClose: 'Collapse filters', subStm: 'Club night', stmKick: 'Next club night', stmTitle: '{d}', stmOffer: 'Offer a game for this day', stmDc: 'Vote in Discord', stmAdd: 'Wish for a game (collection or member games)', stmAddPh: 'Type a name …', stmNoHit: 'No game found. For games nobody at the club has, use “Games wanted”.',
+Object.assign(TXT.en, { stmFree: 'Wish for “{n}” as a guest game', stmBgg: 'Searching BoardGameGeek …', vtLockedTip: 'You are in the planned game. That counts as your vote automatically.', fsOpen: 'Filters', fsClose: 'Collapse filters', subStm: 'Club night', stmKick: 'Next club night', stmTitle: '{d}', stmOffer: 'Offer a game for this day', stmDc: 'Vote in Discord', stmAdd: 'Wish for a game (collection, member games or guest game)', stmAddPh: 'Type a name …', stmNoHit: 'No game found. For games nobody at the club has, use “Games wanted”.',
   stmKWish: 'wished games', stmKVotes: 'votes', stmKPeople: 'people', stmKRounds: 'games planned', stmKFree: 'free seats', stmFAll: 'All', stmFWish: 'Wishes only', stmFPlan: 'Already planned', stmLegend: 'Blue = wish · Orange = game already planned',
   stmPlanned: 'Already planned', stmPlanInfo: '{t} · {a}/{s} in · {f}', stmPlanFree: '{n} free', stmPlanFull: 'full', stmToRound: 'Go to game', stmLater: 'After that: {l}', stmLaterN: '{d} ({n} games)', stmLaterN1: '{d} (1 game)', stmNone: 'No wishes and no games for this day yet. Wish for a game above or offer one.', stmNoneF: 'Nothing in this selection.', stmGo: 'Go to club night', stmTeaser: 'Wish list for {d}', stmTeaserNone: 'No wishes yet.', stmNoDay: 'No club night is scheduled right now.',
   vtTitle: '{d}', vtTitleToday: 'Today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Whoever offers a game can see what people want. After the club night, voting starts over.',
@@ -3184,7 +3184,7 @@ function renderVotes() {
     else if (!g && mg && !rndMine(mg)) acts += '<button type="button" class="btn btn-quiet" data-vtbring="' + esc(mg.key) + '">' + esc(t.brAsk) + '</button>';
     else acts += '<button type="button" class="btn btn-primary" data-vtoffer="' + esc(x.key) + '">' + esc(t.ptNew) + '</button>';
     return '<li class="vt-row' + (o.r.length ? ' planned' : '') + '"><span class="rk">' + (o.i + 1) + '</span>' + thumbHtml({ guest: !g, gameId: x.gameId }, g, nm) +
-      '<div><div class="nm">' + esc(nm) + (o.r.length ? ' ' + '<span class="pchip plan">' + esc(t.stmPlanned) + '</span>' : '') + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div>' +
+      '<div><div class="nm">' + esc(nm) + (!g && !mg ? ' <span class="src guest">' + esc(t.guestTag) + '</span>' : '') + (o.r.length ? ' ' + '<span class="pchip plan">' + esc(t.stmPlanned) + '</span>' : '') + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div>' +
       o.r.map((y) => '<div class="plan-info">📅 ' + esc(planInfo(y)) + '</div>').join('') + '</div><div class="acts">' + acts + '</div></li>';
   }).join('');
   $('vtMore').hidden = stmF !== 'all' || shown.length <= 12; $('vtMore').textContent = vtOpenAll ? t.vtLess : fill(t.vtAll, { n: shown.length });
@@ -3198,16 +3198,30 @@ function renderVtTeaser() {
   $('vtTList').innerHTML = vt.list.length ? vt.list.slice(0, 3).map((x) => { const g = x.gameId ? byId[x.gameId] : null; return '<li>' + esc(g ? name(g) : x.game) + '<span class="meta">👍 ' + x.n + '</span></li>'; }).join('') : '<li class="meta" style="list-style:none;margin-left:-20px">' + esc(t.stmTeaserNone) + '</li>';
 }
 // „Spiel wünschen“: Suche über Sammlung und Mitgliederspiele, 👍 direkt in der Trefferliste.
+// Spiel wünschen: erst Sammlung + Mitgliederspiele, dann BoardGameGeek (Gastspiele: jemand bringt es mit), notfalls freier Name.
+var stmRemote = [], stmRemoteQ = '', stmRemoteSt = 'idle', stmTimer = null;
+function guestVoteBtn(i) {
+  const r = stmRemote[i], t = T(), k = vtKeyOf(r.id, r.n), x = vtItem(k), on = vtMineHas(k), n = x ? x.n : 0, tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max }) + vtWho(x);
+  return '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vguest="' + i + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + (n ? '<span>' + n + '</span>' : '') + '</button>';
+}
 function renderStmRes() {
-  const t = T(), q = fold($('stmQ').value || ''), box = $('stmRes');
+  const t = T(), raw = ($('stmQ').value || '').trim(), q = fold(raw), box = $('stmRes');
   $('stmQ').placeholder = t.stmAddPh;
-  if (q.length < 2) { box.innerHTML = ''; return; }
+  if (q.length < 2) { box.innerHTML = ''; stmRemote = []; stmRemoteQ = ''; return; }
   const seen = new Set(), hits = [];
   for (const g of all.concat(memGames)) {
     const k = vtKey(g); if (seen.has(k)) continue;
     if ([g.nDe, g.nEn].some((n) => n && fold(n).includes(q))) { seen.add(k); hits.push(g); if (hits.length >= 8) break; }
   }
-  box.innerHTML = hits.length ? hits.map((g) => '<li>' + thumbHtml({ guest: !!g.mem, gameId: g.id }, g.mem ? null : g, name(g)) + '<span class="nm">' + esc(name(g)) + (g.mem ? '<span class="src mem">' + esc(t.memTag) + '</span>' : '') + '</span>' + voteBtn(g) + '</li>').join('') : '<li class="meta" style="display:block">' + esc(t.stmNoHit) + '</li>';
+  let h = hits.map((g) => '<li>' + thumbHtml({ guest: !!g.mem, gameId: g.id }, g.mem ? null : g, name(g)) + '<span class="nm">' + esc(name(g)) + (g.mem ? '<span class="src mem">' + esc(t.memTag) + '</span>' : '') + '</span>' + voteBtn(g) + '</li>').join('');
+  // Gastspiele von BGG (nicht in Sammlung/Mitgliederspielen), dazu der freie Name als letzte Möglichkeit.
+  if (stmRemoteQ !== raw) { stmRemote = []; stmRemoteSt = 'loading'; stmRemoteQ = raw; clearTimeout(stmTimer); stmTimer = setTimeout(async () => { const rem = await searchRemote(raw); if (stmRemoteQ !== raw) return; stmRemoteSt = rem ? 'idle' : 'off'; stmRemote = (rem || []).filter((r) => !r.e && !seen.has(String(r.id)) && !byId[r.id]).slice(0, 6); renderStmRes(); }, 350); }
+  const free = { id: null, n: raw, y: null, free: true };
+  const list = stmRemote.filter((r) => !r.free).concat(stmRemote.some((r) => fold(r.n) === q) || hits.some((g) => fold(name(g)) === q) ? [] : [free]);
+  stmRemote = list;
+  h += list.map((r, i) => '<li>' + thumbHtml({ guest: true, gameId: r.id }, null, r.n) + '<span class="nm">' + (r.free ? esc(fill(t.stmFree, { n: r.n })) : esc(r.n) + (r.y ? ' <span class="meta">(' + r.y + ')</span>' : '')) + '<span class="src guest">' + esc(t.guestTag) + '</span></span>' + guestVoteBtn(i) + '</li>').join('');
+  if (stmRemoteSt === 'loading') h += '<li class="meta" style="display:block">' + esc(t.stmBgg) + '</li>';
+  box.innerHTML = h;
 }
 $('stmQ').addEventListener('input', renderStmRes);
 $('stmFilter').addEventListener('click', (e) => { const b = e.target.closest('[data-stmf]'); if (!b) return; stmF = b.dataset.stmf; renderVotes(); });
@@ -3259,6 +3273,7 @@ document.addEventListener('click', (e) => {
     const k = b.dataset.vote, g = all.find((x) => x.key === k) || memById(k); if (!g) return;
     doVote({ gameId: g.id || null, game: g.nDe, year: g.y || null, mem: !!g.mem }, b); return;
   }
+  if ((b = e.target.closest('button[data-vguest]'))) { const r = stmRemote[Number(b.dataset.vguest)]; if (r) doVote({ gameId: r.id || null, game: r.n, year: r.y || null, mem: false }, b); return; }
   if ((b = e.target.closest('button[data-vk]'))) { const x = vtItem(b.dataset.vk); if (x) doVote(x, b); return; }
   if ((b = e.target.closest('[data-vtbring]'))) { openBring(b.dataset.vtbring); return; }
   if ((b = e.target.closest('[data-vtoffer]'))) {
