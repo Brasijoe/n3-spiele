@@ -219,9 +219,9 @@ async function cmdParty(i, env, ctx) {
   const minP = opt(i, 'mindestens') ? Number(opt(i, 'mindestens')) : null;
   if (minP != null && !(minP >= 2 && minP <= seats)) return say(`Mindestens: 2 bis ${seats} (nicht mehr als Plätze).`);
   const note = str(opt(i, 'hinweis'), 500);
+  // Runden anbieten nur mit Mitgliederrolle; bei bestehenden Runden mitspielen können alle (nach den Stammtisch-Regeln).
   if (!isMember(rule, roles)) {
-    if (guestsPaused(rule, berlinToday())) return say(pauseText(rule));
-    if (date < berlinToday()) return say('Das Datum liegt in der Vergangenheit.');
+    return say('Runden anbieten können nur Mitglieder (mit der Mitgliederrolle). Bei bestehenden Runden kannst du weiterhin mitspielen, und auf der Webseite kannst du für Wunschspiele abstimmen.');
     if (!isStammtisch(date, rule)) return say(stammtischOnly(rule));
     if (!introOk(note)) return say(INTRO_HELP + ' Bitte `/party` noch einmal mit `hinweis` ausfüllen.');
   }

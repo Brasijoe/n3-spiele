@@ -215,8 +215,9 @@ async function route(req, env, ctx, url) {
     // Ohne Mitgliederrolle (und ohne Event-Code): nur Stammtisch-Tage, und der Hinweis muss eine kurze Vorstellung enthalten.
     if (!ev) {
       const rule = await getBooking(env);
+      // Runden anbieten nur mit Mitgliederrolle (Event-Codes ausgenommen); mitspielen bleibt allen nach den Stammtisch-Regeln offen.
       if (!isMember(rule, auth.member.roles)) {
-        if (guestsPaused(rule, berlinToday())) return fail(403, 'guests_paused');
+        return fail(403, 'members_only_offer');
         if (date < berlinToday()) return fail(400, 'invalid');
         const bad = checkBookingDate(rule, auth.member.roles, date); if (bad) return fail(400, bad);
         if (!introOk(note)) return fail(400, 'intro_missing');

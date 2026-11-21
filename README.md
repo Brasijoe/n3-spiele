@@ -164,7 +164,7 @@ Tests: `npm test` (unit), `test/discord-e2e.mjs`, `test/discord-sync.mjs`, `test
 ## 8. Who may offer or join a round when
 
 - **Members** (Discord member role) can offer and join rounds on any day, on the website and with `/party`.
-- **Everyone else** only on **Stammtisch days** (club nights; default every Tuesday and the first Saturday of the month). Other days are greyed out in the date picker. When offering, the note must contain a short introduction (at least 40 characters).
+- **Everyone else** cannot offer rounds (web, `/party`, "Hab ich: Runde anlegen"; error `members_only_offer`, since 2026-11-21). They can still join rounds under the rules below and vote on the wish list. Rounds non-members created earlier stay editable (Stammtisch days and introduction still apply there).
 - **Rounds on Stammtisch days and event rounds** are open for everyone to join. Rounds on other days are members only.
 - **Event codes** are exempt from the Stammtisch rule; only the event days apply.
 - **Pause for non-members:** in the same admin section, "Neue Runden von Nicht-Mitgliedern vorübergehend sperren" (temporarily stop new rounds from non-members) blocks new rounds from people without the member role on the web, via `/party` and via "Hab ich: Runde anlegen". Optional end date (inclusive) and a note shown to non-members. Members, event-code rounds and existing rounds are not affected.
