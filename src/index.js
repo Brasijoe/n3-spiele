@@ -3,7 +3,7 @@ import { syncExtras, listExtras, coverResponse, listGuestWeights, fillGuestWeigh
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
-import { votesRoute, expireVotes, myVotes } from './votes.js';
+import { votesRoute, expireVotes, myVotes, myLocked } from './votes.js';
 import { syncVotePoll, votePostLink } from './votepost.js';
 import { campaignRoute, postDueSessions, tidyCampaigns, linkSessionPlay, linkCampaignPlays } from './campaigns.js';
 import { addWait, removeWait, promoteWaitlist, sweepWaitlists, waitOf } from './waitlist.js';
@@ -133,8 +133,8 @@ async function route(req, env, ctx, url) {
     const p3 = await env.DB.prepare('SELECT id, src FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
     const bggUser = p3.results.some((r) => r.src === 'bgg') ? ((await env.DB.prepare('SELECT bgg_user FROM members WHERE discord_id = ?1').bind(u.member.discord_id).first().catch(() => null)) || {}).bgg_user || '' : '';
     const wd = await myWanted(env, u.member.discord_id);
-    const votes = await myVotes(env, u.member.discord_id);
-    return json({ id: u.member.discord_id, name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, votes, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
+    const votes = await myVotes(env, u.member.discord_id), votesLocked = await myLocked(env, u.member.discord_id);
+    return json({ id: u.member.discord_id, name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, votes, votesLocked, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();

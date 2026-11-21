@@ -103,7 +103,13 @@ v = await (await call('GET', '/votes')).json();
 assert.ok(v.list.filter((g) => g.names.includes('Fritz')).length >= 1);
 
 // Geplante Runde für den Tag erscheint im Post
-sql(`INSERT INTO parties(id, game_id, game, guest, date, time, seats, host, host_key_hash, note, attendees, created_at) VALUES('pv1', 68448, '7 Wonders', 0, '${v.day}', '18:30', 5, 'Lena', 'x', '', '{}', '2026-01-01T00:00:00Z')`);
+sql(`INSERT INTO parties(id, game_id, game, guest, date, time, seats, host, host_key_hash, note, attendees, created_at, host_discord) VALUES('pv1', 68448, '7 Wonders', 0, '${v.day}', '18:30', 5, 'Fritz', 'x', '', '{"d559":{"name":"Ida","at":"x"},"d558":{"name":"Hans","at":"x","res":1,"until":null},"Max":{"name":"Max","at":"x"}}', '2026-01-01T00:00:00Z', '556')`);
+// Ersteller + Mitspieler zählen automatisch (Fritz' eigene Stimme nicht doppelt, Reservierung nicht), und sie können nicht nochmal abstimmen
+v = await (await call('GET', '/votes')).json();
+const w7 = v.list.find((g) => g.key === '68448');
+assert.deepEqual([...w7.names].sort(), ['Fritz', 'Ida', 'Max']); assert.equal(w7.auto, 3);
+x = await interact({ type: 3, data: { custom_id: 'vote:68448' }, message: { id: msgId }, ...as('556') });
+assert.match(x.data.content, /automatisch/);
 const b2 = msgs.length; await tick();
 patch = msgs.slice(b2).find((m) => m.patch);
 assert.ok(patch && /Schon geplant/.test(patch.embeds[0].description) && /Runde 18:30 geplant/.test(patch.embeds[0].description), 'Runde im Post');
