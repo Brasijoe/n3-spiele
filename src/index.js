@@ -3,6 +3,7 @@ import { syncExtras, listExtras, coverResponse, listGuestWeights, fillGuestWeigh
 import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
+import { votesRoute, expireVotes, myVotes } from './votes.js';
 import { campaignRoute, postDueSessions, tidyCampaigns, linkSessionPlay, linkCampaignPlays } from './campaigns.js';
 import { addWait, removeWait, promoteWaitlist, sweepWaitlists, waitOf } from './waitlist.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
@@ -118,6 +119,7 @@ async function route(req, env, ctx, url) {
   const ar = await authRoute(req, env, url, path, m, ip, allow); if (ar) return ar;
   if (path.startsWith('/member-games')) { await ensureCols(env); return memberGamesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin, checkEvent }); }
   if (path.startsWith('/campaigns')) return campaignRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin });
+  if (path.startsWith('/votes')) return votesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember });
   if (path.startsWith('/wanted')) { await ensureCols(env); return wantedRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin }); }
   if (path === '/my' && m === 'GET') {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
@@ -130,7 +132,8 @@ async function route(req, env, ctx, url) {
     const p3 = await env.DB.prepare('SELECT id, src FROM member_games WHERE discord_id = ?1').bind(u.member.discord_id).all();
     const bggUser = p3.results.some((r) => r.src === 'bgg') ? ((await env.DB.prepare('SELECT bgg_user FROM members WHERE discord_id = ?1').bind(u.member.discord_id).first().catch(() => null)) || {}).bgg_user || '' : '';
     const wd = await myWanted(env, u.member.discord_id);
-    return json({ id: u.member.discord_id, name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
+    const votes = await myVotes(env, u.member.discord_id);
+    return json({ id: u.member.discord_id, name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, votes, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();
@@ -543,6 +546,7 @@ export default {
       try { await ensureCols(env); const n = await pruneMemberGames(env); if (n) console.log('member games removed', n); } catch (e) { console.log('member games prune failed', e.code || e.message); }
       try { await backfillMemberGames(env); } catch (e) { console.log('member games backfill failed', e.code || e.message); }
       try { const n = await expireWanted(env); if (n) console.log('wanted expired', n); } catch (e) { console.log('wanted expire failed', e.code || e.message); }
+      try { const n = await expireVotes(env); if (n) console.log('votes expired', n); } catch (e) { console.log('vote expire failed', e.code || e.message); }
       try { const n = await tidyCampaigns(env); if (n) console.log('campaigns tidied', n); } catch (e) { console.log('campaign tidy failed', e.code || e.message); }
       try { await ensureCols(env); await ensurePlayCols(env); const n = await linkLoggedPlays(env); if (n) console.log('rounds linked to plays', n); } catch (e) { console.log('round link failed', e.code || e.message); }
       try { await ensureCols(env); const n = await archiveOldThreads(env); if (n) console.log('party threads archived', n); } catch (e) { console.log('thread archive failed', e.code || e.message); }
