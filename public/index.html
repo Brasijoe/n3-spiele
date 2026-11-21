@@ -521,6 +521,20 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 @media (max-width: 520px) { .rnd-res { grid-template-columns: 1fr; } .rnd-cv { max-width: 220px; width: 100%; justify-self: center; } .rnd-info { align-items: center; text-align: center; } .rnd-info .pills { justify-content: center; } .rnd-info .bgg { align-self: center; } }
 #rndEmpty { margin: 12px 0 0; }
 @media (prefers-reduced-motion: reduce) { .dice-scene, .dice-shadow, .dice.spin, .rnd-cv::before, .rnd-res.pop, dialog.rnd-dlg[open], .rnd-btn:hover svg { animation: none; } .rnd-conf { display: none; } }
+.shame-tgl { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.shame-chev { flex: none; transition: transform .2s ease; transform: rotate(90deg); color: var(--muted); }
+.shame.closed .shame-chev { transform: none; }
+.shame-ttl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.shame-peek { display: none; flex-wrap: wrap; gap: 8px; }
+.shame.closed .shame-peek { display: flex; }
+.shame.closed .shame-body { display: none; }
+.shame.closed { padding-block: 14px; }
+.shame.closed .shame-head h2 { font-size: 22px; }
+.shame-body { display: flex; flex-direction: column; gap: 14px; }
+.shame-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 12px 4px 4px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font: 600 13px var(--font-body); cursor: pointer; }
+.shame-chip img { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: var(--cover); filter: grayscale(.35) sepia(.25); }
+.shame-chip:hover img { filter: none; }
+@media (prefers-reduced-motion: reduce) { .shame-chev { transition: none; } }
 /* Desktop (ab 1100px): Elemente nebeneinander. Darunter (Handy/Tablet) bleibt alles wie bisher. */
 .pt-side, .pt-main { display: contents; }
 @media (min-width: 1100px) {
@@ -528,7 +542,8 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   #viewCollection > * { grid-column: 1 / -1; }
   #viewCollection > .hl { grid-column: 1; align-self: stretch; }
   #viewCollection > .shame { grid-column: 2; align-self: stretch; }
-  #viewCollection > .hl:has(+ .shame[hidden]) { grid-column: 1 / -1; }
+  #viewCollection > .hl:has(+ .shame[hidden]), #viewCollection > .hl:has(+ .shame.closed) { grid-column: 1 / -1; }
+  #viewCollection > .shame.closed { grid-column: 1 / -1; }
   #viewCollection .track { height: 420px; }
   #viewCollection .shame-grid { grid-template-columns: 1fr; }
   #viewCollection .shame-card { grid-template-columns: 100px 1fr; grid-template-rows: auto auto; }
@@ -592,12 +607,15 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     </div>
   </section>
 
-  <section class="panel shame" id="shame" aria-labelledby="shameH" hidden>
+  <section class="panel shame closed" id="shame" aria-labelledby="shameH" hidden>
     <div class="shame-head">
-      <div><h2 id="shameH" class="sec-h">Shelf of Shame <span class="shame-mon" id="shameMon"></span></h2><p class="meta" id="shameSub"></p></div>
-      <button type="button" class="btn btn-quiet" id="shameAll"></button>
+      <div class="shame-ttl"><h2 id="shameH" class="sec-h"><button type="button" class="shame-tgl" id="shameTgl" aria-expanded="false" aria-controls="shameBody"><svg class="shame-chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>Shelf of Shame <span class="shame-mon" id="shameMon"></span></button></h2>
+        <div class="shame-peek" id="shamePeek"></div></div>
     </div>
-    <div class="shame-grid" id="shameList"></div>
+    <div class="shame-body" id="shameBody">
+      <div class="shame-head"><p class="meta" id="shameSub"></p><button type="button" class="btn btn-quiet" id="shameAll"></button></div>
+      <div class="shame-grid" id="shameList"></div>
+    </div>
   </section>
 
   <section class="panel filters" aria-label="Filter">
@@ -1790,6 +1808,8 @@ function renderShame() {
   $('shameSub').textContent = d.picks.length ? t.shSub : t.shAllDone;
   $('shameAll').hidden = !d.never.length;
   $('shameAll').textContent = d.never.length === 1 ? t.shAll1 : fill(t.shAll, { n: d.never.length });
+  $('shamePeek').innerHTML = d.picks.map((g) => '<button type="button" class="shame-chip" data-shpeek="1">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="">' : '') + '<span>' + esc(name(g)) + '</span></button>').join('');
+  shameOpen(lsGet('n3-shame') === 'open');
   $('shameList').innerHTML = d.picks.map((g) => {
     const n = name(g), done = playedIn(g, playedIds, playedNames);
     const dust = g.added && g.added !== '2026-11-01' ? fill(t.shDust, { d: g.added.split('-').reverse().join('.') }) : '';
@@ -1804,6 +1824,10 @@ function renderShame() {
       (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></article>';
   }).join('');
 }
+// Shelf of Shame: standardmäßig eingeklappt (nur Titel + die zwei Spiele als kleine Chips), Zustand pro Gerät gemerkt.
+function shameOpen(on) { $('shame').classList.toggle('closed', !on); $('shameTgl').setAttribute('aria-expanded', String(on)); }
+$('shameTgl').onclick = () => { const on = $('shame').classList.contains('closed'); shameOpen(on); lsSet('n3-shame', on ? 'open' : ''); };
+$('shamePeek').addEventListener('click', (e) => { if (e.target.closest('[data-shpeek]')) { shameOpen(true); lsSet('n3-shame', 'open'); } });
 $('shameList').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-shfind],button[data-shlog]'); if (!b) return;
   const g = games.find((x) => x.key === (b.dataset.shfind || b.dataset.shlog)); if (!g) return;
