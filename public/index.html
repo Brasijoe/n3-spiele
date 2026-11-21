@@ -452,31 +452,8 @@ dialog.info form.pe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 1
 dialog.info form.pe .wide { grid-column: 1 / -1; }
 .gl-list { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (max-width: 720px) { .st-panel, .st-filters { padding-inline: 18px; } .months { gap: 3px; } .mlabels { gap: 3px; font-size: 10px; } }
-/* Shelf of Shame: zwei Monats-Spotlights aus den nie gespielten Spielen */
-.shame { padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
-.shame-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; }
-.shame-head h2 { margin: 0; display: flex; align-items: center; gap: 10px; }
-.shame-head p { margin: 4px 0 0; max-width: 680px; }
-.shame-mon { font: 700 12px var(--font-body); text-transform: uppercase; letter-spacing: .06em; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 4px 10px; }
-.shame-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
-.shame-card { position: relative; display: grid; grid-template-columns: 120px 1fr; gap: 14px; padding: 14px; border: 2px dashed var(--line-strong); border-radius: 10px; background: var(--surface); }
-.shame-card.done { border-style: solid; border-color: #2b7a40; }
-.shame-cv { position: relative; aspect-ratio: 1; border-radius: 8px; background: var(--cover); display: flex; align-items: center; justify-content: center; }
-.shame-cv img { max-width: 92%; max-height: 92%; object-fit: contain; filter: grayscale(.35) sepia(.25); transition: filter .4s ease; }
-.shame-card:hover .shame-cv img, .shame-card.done .shame-cv img { filter: none; }
-.shame-cv .badge { right: -8px; top: -8px; }
-.shame-dust { position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.65); color: #fff; border-radius: 4px; padding: 2px 6px; }
-.shame-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.shame-info h3 { margin: 0; font-family: var(--font-display); font-size: 19px; line-height: 1.2; color: var(--fg); }
-.shame-info .pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.shame-card .actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: 8px; align-self: end; }
-.shame-card .actions .btn { min-height: 38px; padding: 0 14px; font-size: 13px; }
-.shame-ok { font-size: 13px; font-weight: 700; color: #2b7a40; }
+/* Shelf of Shame: Markierung auf den Spielkarten (die Spotlights laufen als dritte Ansicht in der Slideshow) */
 .shame-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); }
-.shame-card { grid-template-rows: 1fr auto; } .shame-cv { grid-row: 1 / 3; align-self: start; }
-@media (max-width: 600px) { .shame { padding: 20px 18px; } .shame-head h2 { font-size: 22px; flex-wrap: wrap; } .shame-grid { grid-template-columns: 1fr; }
-  .shame-card { grid-template-columns: 84px 1fr; gap: 10px 12px; } .shame-cv { grid-row: 1; } .shame-cv .badge { width: 34px !important; height: 34px !important; font-size: 12px !important; }
-  .shame-card .actions { grid-column: 1 / -1; } .shame-card .actions .btn { flex: 1 1 auto; } .shame-dust { display: none; } .shame-info h3 { font-size: 17px; } }
 /* Zufallsspiel: Würfel, Mischen, Enthüllung */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .rnd-btn { display: inline-flex; align-items: center; gap: 8px; }
@@ -521,34 +498,22 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 @media (max-width: 520px) { .rnd-res { grid-template-columns: 1fr; } .rnd-cv { max-width: 220px; width: 100%; justify-self: center; } .rnd-info { align-items: center; text-align: center; } .rnd-info .pills { justify-content: center; } .rnd-info .bgg { align-self: center; } }
 #rndEmpty { margin: 12px 0 0; }
 @media (prefers-reduced-motion: reduce) { .dice-scene, .dice-shadow, .dice.spin, .rnd-cv::before, .rnd-res.pop, dialog.rnd-dlg[open], .rnd-btn:hover svg { animation: none; } .rnd-conf { display: none; } }
-.shame-tgl { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
-.shame-chev { flex: none; transition: transform .2s ease; transform: rotate(90deg); color: var(--muted); }
-.shame.closed .shame-chev { transform: none; }
-.shame-ttl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
-.shame-peek { display: none; flex-wrap: wrap; gap: 8px; }
-.shame.closed .shame-peek { display: flex; }
-.shame.closed .shame-body { display: none; }
-.shame.closed { padding-block: 14px; }
-.shame.closed .shame-head h2 { font-size: 22px; }
-.shame-body { display: flex; flex-direction: column; gap: 14px; }
-.shame-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 12px 4px 4px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--fg); font: 600 13px var(--font-body); cursor: pointer; }
-.shame-chip img { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: var(--cover); filter: grayscale(.35) sepia(.25); }
-.shame-chip:hover img { filter: none; }
-@media (prefers-reduced-motion: reduce) { .shame-chev { transition: none; } }
+.hl .hl-title { min-height: 44px; display: flex; align-items: center; }
+.hl-ctl { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hl-dots { display: flex; flex-direction: column; align-items: center; }
+.hl-dots button { width: 32px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.hl-dots button::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); transition: background .2s, transform .2s; }
+.hl-dots button:hover::after { background: var(--muted); }
+.hl-dots button[aria-pressed="true"]::after { background: var(--accent); transform: scale(1.3); }
+.hl-dots button[hidden] { display: none; }
+.slide-info .shame-tag { align-self: center; }
+.shame-ok { font-size: 13px; font-weight: 700; color: #2b7a40; }
+@media (prefers-reduced-motion: reduce) { .hl-dots button::after { transition: none; } }
 /* Desktop (ab 1100px): Elemente nebeneinander. Darunter (Handy/Tablet) bleibt alles wie bisher. */
 .pt-side, .pt-main { display: contents; }
 @media (min-width: 1100px) {
   #viewCollection { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; align-items: start; }
   #viewCollection > * { grid-column: 1 / -1; }
-  #viewCollection > .hl { grid-column: 1; align-self: stretch; }
-  #viewCollection > .shame { grid-column: 2; align-self: stretch; }
-  #viewCollection > .hl:has(+ .shame[hidden]), #viewCollection > .hl:has(+ .shame.closed) { grid-column: 1 / -1; }
-  #viewCollection > .shame.closed { grid-column: 1 / -1; }
-  #viewCollection .track { height: 420px; }
-  #viewCollection .shame-grid { grid-template-columns: 1fr; }
-  #viewCollection .shame-card { grid-template-columns: 100px 1fr; grid-template-rows: auto auto; }
-  #viewCollection .shame-cv { grid-row: 1; }
-  #viewCollection .shame-card .actions { grid-column: 1 / -1; grid-row: 2; }
   #viewCollection .guest-cta { order: 10; }
   #subRounds { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px 24px; align-items: start; }
   #subRounds > .pt-side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 20px; }
@@ -591,9 +556,10 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 
 <main class="wrap" id="viewCollection">
   <section class="panel hl" aria-labelledby="hlH">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-inline:28px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-inline:28px">
       <h2 id="hlH" class="hl-title">Highlights</h2>
-      <button type="button" class="icon-btn" id="autoBtn" aria-pressed="false" style="min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"></button>
+      <div class="hl-ctl"><button type="button" class="icon-btn" id="autoBtn" aria-pressed="false" style="min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"></button>
+        <div class="hl-dots" id="hlDots" role="group"><button type="button" data-hlm="hl"></button><button type="button" data-hlm="recent"></button><button type="button" data-hlm="shame"></button></div></div>
     </div>
     <div class="stage">
       <div class="track" id="track"></div>
@@ -604,17 +570,8 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <div class="hl-actions">
       <a class="btn btn-primary" id="hlBgg" target="_blank" rel="noopener" href="https://boardgamegeek.com" data-t="viewBgg"></a>
       <button type="button" class="btn btn-outline" id="hlLog" data-t="logPlay"></button>
-    </div>
-  </section>
-
-  <section class="panel shame closed" id="shame" aria-labelledby="shameH" hidden>
-    <div class="shame-head">
-      <div class="shame-ttl"><h2 id="shameH" class="sec-h"><button type="button" class="shame-tgl" id="shameTgl" aria-expanded="false" aria-controls="shameBody"><svg class="shame-chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>Shelf of Shame <span class="shame-mon" id="shameMon"></span></button></h2>
-        <div class="shame-peek" id="shamePeek"></div></div>
-    </div>
-    <div class="shame-body" id="shameBody">
-      <div class="shame-head"><p class="meta" id="shameSub"></p><button type="button" class="btn btn-quiet" id="shameAll"></button></div>
-      <div class="shame-grid" id="shameList"></div>
+      <button type="button" class="btn btn-outline" id="hlFind" hidden></button>
+      <button type="button" class="btn btn-quiet" id="hlAll" hidden></button>
     </div>
   </section>
 
@@ -1093,7 +1050,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 <script>
 (async function () {
 const TXT = {
-  de: { shSub: 'Diese Spiele stehen im Regal und wurden noch nie im Club gespielt. Jeden Monat holen wir zwei davon ins Rampenlicht – je besser die BGG-Wertung, desto größer die Chance.', shAll: 'Alle {n} ungespielten Spiele zeigen', shAll1: 'Das ungespielte Spiel zeigen', shTag: 'Spotlight im {m}', shDust: 'Seit {d} im Regal', shDone: 'Diesen Monat gespielt – eins weniger im Regal der Schande!', shFind: 'Mitspieler suchen', shAllDone: 'Jedes Spiel der Sammlung wurde schon mindestens einmal gespielt. Das Regal der Schande ist leer!', shCard: 'Shelf of Shame', rndBtn: 'Zufallsspiel', rndBtnT: 'Ein zufälliges Spiel aus den gefilterten Spielen würfeln', rndRolling: 'Es wird gewürfelt …', rndTitle: 'Der Würfel ist gefallen!', rndFrom: 'Gewürfelt aus {n} Spielen, die zu deinen Filtern passen.', rndFrom1: 'Nur ein Spiel passt zu deinen Filtern.', rndAgain: 'Nochmal würfeln', rndGo: 'Mitspieler suchen', rndClose: 'Schließen', rndEmptyT: 'Nichts zu würfeln', rndEmpty: 'Kein Spiel passt zu den aktiven Filtern. Setz ein paar Filter zurück und würfle dann noch einmal.', rndPicked: 'Gewürfelt: {n}',
+  de: { hlDots: 'Ansicht der Slideshow', shNever: 'Noch nie im Club gespielt', shSub: 'Diese Spiele stehen im Regal und wurden noch nie im Club gespielt. Jeden Monat holen wir zwei davon ins Rampenlicht – je besser die BGG-Wertung, desto größer die Chance.', shAll: 'Alle {n} ungespielten Spiele zeigen', shAll1: 'Das ungespielte Spiel zeigen', shTag: 'Spotlight im {m}', shDust: 'Seit {d} im Regal', shDone: 'Diesen Monat gespielt – eins weniger im Regal der Schande!', shFind: 'Mitspieler suchen', shAllDone: 'Jedes Spiel der Sammlung wurde schon mindestens einmal gespielt. Das Regal der Schande ist leer!', shCard: 'Shelf of Shame', rndBtn: 'Zufallsspiel', rndBtnT: 'Ein zufälliges Spiel aus den gefilterten Spielen würfeln', rndRolling: 'Es wird gewürfelt …', rndTitle: 'Der Würfel ist gefallen!', rndFrom: 'Gewürfelt aus {n} Spielen, die zu deinen Filtern passen.', rndFrom1: 'Nur ein Spiel passt zu deinen Filtern.', rndAgain: 'Nochmal würfeln', rndGo: 'Mitspieler suchen', rndClose: 'Schließen', rndEmptyT: 'Nichts zu würfeln', rndEmpty: 'Kein Spiel passt zu den aktiven Filtern. Setz ein paar Filter zurück und würfle dann noch einmal.', rndPicked: 'Gewürfelt: {n}',
     dcLogin: 'Anmelden', dcLoginT: 'Mit Discord anmelden', joinT: 'Erst dem N3-Discord beitreten', joinTxt: 'Du bist noch nicht auf unserem Discord-Server. Tritt ihm über den Einladungslink bei und melde dich danach noch einmal an.', joinRetry: 'Erneut anmelden', joinBtn: 'Discord-Server beitreten', tabWanted: 'Spiel suchen', whRound: 'Hab ich: Runde anlegen', whLater: 'Hab ich', whRoundT: 'Runde mit „{n}“ anlegen', whLaterT: '„{n}“: Hab ich', whInterestT: 'Mitspielen: {n}',
     whRoundTxt: 'Die Runde wird sofort angelegt und im Discord-Kanal #mitspieler-gesucht angekündigt. {r} und alle, die auch mitspielen wollen, sind schon eingetragen (soweit Platz ist).', whLaterTxt: 'Wir sagen {r} im Discord-Kanal #spiele-gesucht Bescheid, dass du das Spiel hast. Den Termin macht ihr dann direkt miteinander aus.',
     whInterestTxt: 'Wir setzen dich auf die Liste. Legt jemand eine Runde an, bist du gleich dabei (soweit Platz ist).', whLogin: 'Antworten geht auf der Webseite nur mit Discord-Anmeldung.', whSendRound: 'Runde anlegen', whSendLater: 'Bescheid geben', whSendInterest: 'Ich will auch mitspielen',
@@ -1196,7 +1153,7 @@ const TXT = {
     tagNeutral: 'sprachneutral', tagMostly: 'fast sprachneutral', tipNeutral: 'Sprachneutral: im Spiel ist kein Text nötig', tipMostly: 'Fast sprachneutral: nur wenig Text im Spiel',
     admOwnDir: 'Besitzer-Verzeichnis (volle Namen)', admOwnDirNote: 'Eine Zeile pro Person: Kurzname = vollständiger Name. Nur für Admins sichtbar; der volle Name erscheint als Vorschlag, beim Überfahren und im Excel-Export (Leihgeber/Spender).', admOwnDirSave: 'Verzeichnis speichern', admOwnDirOk: 'Gespeichert ({n} Namen).', admLang: 'Sprache, Besitzer und Inventurdaten', admLangNote: 'Sprache unserer Ausgabe, Sprachabhängigkeit, Besitzer und seit wann das Spiel dabei ist. Jede Änderung wird sofort gespeichert. Ohne Sprache erscheint ein Spiel im Sprachfilter nur, wenn es (fast) sprachneutral ist. Die Sprachabhängigkeit kommt von BGG und lässt sich hier überschreiben.', admLangQ: 'Spiel suchen', admLangOnlyEmpty: 'Nur Spiele ohne Sprache', admLangErr: 'Speichern hat nicht geklappt.', admLangOk: 'Gespeichert: {n}',
     owner: 'Besitzer', ownerUnknown: '?', addedOn: 'Dabei seit', inv: 'Inventarnummer', zLabel: 'Zustand', zNames: ['Neu', 'Sehr gut', 'Gut', 'Beschädigt', 'Reparaturbedürftig', 'Unbrauchbar'], ldLabel: 'Sprachabhängigkeit', ldNames: ['sprachneutral (kein Text)', 'fast sprachneutral (wenig Text)', 'mittel viel Text', 'viel Text', 'ohne die Sprache unspielbar'], ldUnknown: 'unbekannt', ldBgg: 'BGG: {v}', ldShort: ['neutral', 'fast neutral', 'mittel', 'viel Text', 'unspielbar'], colGame: 'Spiel', lgSortBy: 'Nach {c} sortieren', colLd: 'Sprachabh.', colInv: 'Inv.-Nr.', infoMore: 'Details', admExport: 'Als Excel exportieren', admExportNote: 'Alle Spiele mit den Spalten der Inventurliste, dazu Besitzer, Datum, Sprache und BGG-Daten.' },
-  en: { shSub: 'These games sit on the shelf and have never been played at the club. Every month we put two of them in the spotlight – the better the BGG rating, the bigger the chance.', shAll: 'Show all {n} unplayed games', shAll1: 'Show the unplayed game', shTag: 'Spotlight for {m}', shDust: 'On the shelf since {d}', shDone: 'Played this month – one less on the shelf of shame!', shFind: 'Find players', shAllDone: 'Every game in the collection has been played at least once. The shelf of shame is empty!', shCard: 'Shelf of Shame', rndBtn: 'Random game', rndBtnT: 'Roll a random game from the filtered games', rndRolling: 'Rolling the dice …', rndTitle: 'The die is cast!', rndFrom: 'Rolled from {n} games that match your filters.', rndFrom1: 'Only one game matches your filters.', rndAgain: 'Roll again', rndGo: 'Find players', rndClose: 'Close', rndEmptyT: 'Nothing to roll', rndEmpty: 'No game matches the active filters. Reset a few filters, then roll again.', rndPicked: 'Rolled: {n}',
+  en: { hlDots: 'Slideshow view', shNever: 'Never played at the club', shSub: 'These games sit on the shelf and have never been played at the club. Every month we put two of them in the spotlight – the better the BGG rating, the bigger the chance.', shAll: 'Show all {n} unplayed games', shAll1: 'Show the unplayed game', shTag: 'Spotlight for {m}', shDust: 'On the shelf since {d}', shDone: 'Played this month – one less on the shelf of shame!', shFind: 'Find players', shAllDone: 'Every game in the collection has been played at least once. The shelf of shame is empty!', shCard: 'Shelf of Shame', rndBtn: 'Random game', rndBtnT: 'Roll a random game from the filtered games', rndRolling: 'Rolling the dice …', rndTitle: 'The die is cast!', rndFrom: 'Rolled from {n} games that match your filters.', rndFrom1: 'Only one game matches your filters.', rndAgain: 'Roll again', rndGo: 'Find players', rndClose: 'Close', rndEmptyT: 'Nothing to roll', rndEmpty: 'No game matches the active filters. Reset a few filters, then roll again.', rndPicked: 'Rolled: {n}',
     dcLogin: 'Sign in', dcLoginT: 'Sign in with Discord', joinT: 'Join the N3 Discord first', joinTxt: 'You are not on our Discord server yet. Join it with the invite link, then sign in again.', joinRetry: 'Sign in again', joinBtn: 'Join the Discord server', tabWanted: 'Look for a game', whRound: 'I have it: set up a game', whLater: 'I have it', whRoundT: 'Set up a game of “{n}”', whLaterT: '“{n}”: I have it', whInterestT: 'Join: {n}',
     whRoundTxt: 'The game is created right away and announced in the Discord channel #mitspieler-gesucht. {r} and everyone who wants to play too are already signed up (as far as seats allow).', whLaterTxt: 'We tell {r} in the Discord channel #spiele-gesucht that you have the game. You then arrange a date directly with each other.',
     whInterestTxt: 'We put you on the list. When someone sets up a game, you are in right away (as far as seats allow).', whLogin: 'Answering on the website requires signing in with Discord.', whSendRound: 'Set up game', whSendLater: 'Let them know', whSendInterest: 'I want to play too',
@@ -1670,17 +1627,27 @@ function recentSlides() {
   return recentCache;
 }
 const recentOk = () => recentSlides().length > 0;
+// Drei Ansichten: Highlights, Zuletzt gespielt, Shelf of Shame. Die Punkte unter dem Pause-Knopf wählen direkt.
+const HL_MODES = ['hl', 'recent', 'shame'];
+const shameSlides = () => { const d = shameData(); return d ? d.slides : []; };
+const modeOk = (m) => m === 'hl' || (m === 'recent' ? recentOk() : m === 'shame' ? shameSlides().length > 0 : false);
+const nextMode = () => { for (let i = 1; i <= HL_MODES.length; i++) { const m = HL_MODES[(HL_MODES.indexOf(hlMode) + i) % HL_MODES.length]; if (modeOk(m)) return m; } return 'hl'; };
 function slideItems() {
-  if (hlMode === 'recent' && recentOk()) return recentSlides().map((r) => ({ id: 'r' + r.k, g: r.g, r, cover: r.cover, nm: r.g ? name(r.g) : String(r.p.game || '?') }));
+  if (hlMode === 'recent') return recentSlides().map((r) => ({ id: 'r' + r.k, g: r.g, r, cover: r.cover, nm: r.g ? name(r.g) : String(r.p.game || '?') }));
+  if (hlMode === 'shame') { const d = shameData(); return d.slides.map((g) => ({ id: 's' + g.id, g, cover: g.cover, nm: name(g), sh: d.keys.has(g.key) ? 'spot' : 'never' })); }
   return highlights.map((g) => ({ id: 'h' + g.id, g, cover: g.cover, nm: name(g) }));
 }
-const slideKey = () => (hlMode === 'recent' && recentOk() ? 'rslide' : 'slide');
+const slideKey = () => (hlMode === 'recent' ? 'rslide' : hlMode === 'shame' ? 'sslide' : 'slide');
+const modeName = (m) => (m === 'recent' ? T().recTab : m === 'shame' ? 'Shelf of Shame' : 'Highlights');
 function renderHlTabs() {
-  const ok = recentOk();
-  if (!ok) hlMode = 'hl';
+  if (!modeOk(hlMode)) hlMode = 'hl';
   // Nur die Überschrift der gerade sichtbaren Slideshow, keine Reiter.
-  const txt = hlMode === 'recent' ? T().recTab : 'Highlights';
+  const txt = modeName(hlMode);
   if ($('hlH').textContent !== txt) $('hlH').textContent = txt;
+  const dots = $('hlDots'); dots.setAttribute('aria-label', T().hlDots);
+  let shown = 0;
+  dots.querySelectorAll('button[data-hlm]').forEach((b) => { const m = b.dataset.hlm, ok = modeOk(m); b.hidden = !ok; if (ok) shown++; b.setAttribute('aria-pressed', String(m === hlMode)); b.setAttribute('aria-label', modeName(m)); b.title = modeName(m); });
+  dots.hidden = shown < 2;
 }
 let builtFor = null, lastInfoId = null, infoTimer = null;
 const STEP_DEG = 30, FOCUS_SCALE = 1.25;
@@ -1726,7 +1693,10 @@ function renderSlider() {
       '<span class="last">' + esc([fill(t.lastPlayed, { d: last }), p.players ? p.players + ' ' + t.players : '', p.winner ? t.win + p.winner : ''].filter(Boolean).join(' · ')) + '</span>' +
       '<span class="desc">' + esc(fill(t.playedN, { n: cx.r.n })) + '</span>';
   } else {
-    html = '<span class="nm">' + esc(name(cg)) + ' <span class="yr">(' + cg.y + ')</span></span>' +
+    const d = cx.sh ? shameData() : null, mName = d ? new Date(d.mon + '-15T12:00:00').toLocaleDateString(de() ? 'de-DE' : 'en-GB', { month: 'long' }) : '';
+    html = (cx.sh ? '<span class="shame-tag">' + (cx.sh === 'spot' ? '★ ' + esc(fill(t.shTag, { m: mName })) : esc(t.shNever)) + '</span>' +
+      (cx.sh === 'spot' && playedIn(cg, playedIds, playedNames) ? '<span class="shame-ok">✓ ' + esc(t.shDone) + '</span>' : '') : '') +
+      '<span class="nm">' + esc(name(cg)) + ' <span class="yr">(' + cg.y + ')</span></span>' +
       '<span>' + esc(fmt(cg.p1, cg.p2) + ' ' + t.players + ' · ' + tTxt(cg) + ' · ' + t.weights[cg.wl] + ' · ' + t.bestWith + ' ' + bestTxt(cg)) + '</span>' +
       ((descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) ? '<span class="desc">' + esc(descFor(cg)[de() ? 0 : 1] || descFor(cg)[0]) + '</span>' : '') +
       expHtml(cg, 'exp');
@@ -1740,11 +1710,18 @@ function renderSlider() {
   const bgg = cg ? cg.link : cx.r && Number(cx.r.p.gameId) > 0 ? 'https://boardgamegeek.com/boardgame/' + Number(cx.r.p.gameId) : '';
   $('hlBgg').hidden = !bgg; if (bgg) $('hlBgg').href = bgg;
   $('hlLog').onclick = () => openLog(cg || GUEST_PENDING);
+  // Shelf of Shame: zusätzlich „Mitspieler suchen“ und „Alle N ungespielten Spiele zeigen“.
+  const sd = hlMode === 'shame' ? shameData() : null;
+  $('hlFind').hidden = !sd; $('hlAll').hidden = !sd || !sd.never.length;
+  if (sd) {
+    $('hlFind').textContent = t.shFind; $('hlFind').onclick = () => seekPlayers(cg);
+    $('hlAll').textContent = sd.never.length === 1 ? t.shAll1 : fill(t.shAll, { n: sd.never.length });
+  }
 }
 // Moduswechsel mit kurzem Ausblenden, damit die neuen Cover nicht über die alten fliegen.
 let swapTimer = null;
 function setHlMode(m) {
-  if (m === hlMode || (m === 'recent' && !recentOk())) return;
+  if (m === hlMode || !modeOk(m)) return;
   const track = $('track');
   clearTimeout(swapTimer);
   if (reduceMotionQ()) { hlMode = m; renderSlider(); return; }
@@ -1774,7 +1751,7 @@ function memCard(g) {
 // Die Auswahl bleibt den ganzen Monat gleich, ohne etwas zu speichern: Grundlage sind die Spiele, die vor dem Monatsersten
 // noch nie gespielt wurden, und der Zufall ist mit dem Monat geseedet. Gewichtete Ziehung ohne Zurücklegen
 // (Efraimidis-Spirakis: Schlüssel u^(1/w), die zwei größten gewinnen); Gewicht wächst quadratisch mit der BGG-Wertung über 5.
-var SHAME_N = 2;
+var SHAME_N = 2, SHAME_SLIDES = 10;
 var shameW = (g) => { const r = Number(g.r) || 0; return r > 5 ? (r - 5) * (r - 5) : 0.25; };
 function shameRand(str) {
   let h = 2166136261;
@@ -1796,44 +1773,13 @@ function shameData() {
   const ids = new Set(early.map((p) => Number(p.gameId)).filter(Boolean)), nms = new Set(early.map((p) => String(p.game || '').trim().toLowerCase()).filter(Boolean));
   const picks = shamePick(games.filter((g) => !playedIn(g, ids, nms)), mon, SHAME_N);
   const never = games.filter((g) => !playedIn(g, playedIds, playedNames));
-  shameCache = { plays, mon, picks, never, keys: new Set(picks.map((g) => g.key)) };
+  // Slideshow-Ansicht „Shelf of Shame“: erst die zwei Spotlights, dann bis zu 8 weitere nie gespielte Spiele (gleiche Gewichtung).
+  const pk = new Set(picks.map((g) => g.key)), slides = picks.concat(shamePick(never.filter((g) => !pk.has(g.key)), mon, SHAME_SLIDES - picks.length));
+  shameCache = { plays, mon, picks, never, slides, keys: new Set(picks.map((g) => g.key)) };
   return shameCache;
 }
-function renderShame() {
-  const el = $('shame'), d = shameData();
-  if (!d) { el.hidden = true; return; }
-  const t = T(), mName = new Date(d.mon + '-15T12:00:00').toLocaleDateString(de() ? 'de-DE' : 'en-GB', { month: 'long' });
-  el.hidden = false;
-  $('shameMon').textContent = new Date(d.mon + '-15T12:00:00').toLocaleDateString(de() ? 'de-DE' : 'en-GB', { month: 'long', year: 'numeric' });
-  $('shameSub').textContent = d.picks.length ? t.shSub : t.shAllDone;
-  $('shameAll').hidden = !d.never.length;
-  $('shameAll').textContent = d.never.length === 1 ? t.shAll1 : fill(t.shAll, { n: d.never.length });
-  $('shamePeek').innerHTML = d.picks.map((g) => '<button type="button" class="shame-chip" data-shpeek="1">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="">' : '') + '<span>' + esc(name(g)) + '</span></button>').join('');
-  shameOpen(lsGet('n3-shame') === 'open');
-  $('shameList').innerHTML = d.picks.map((g) => {
-    const n = name(g), done = playedIn(g, playedIds, playedNames);
-    const dust = g.added && g.added !== '2026-11-01' ? fill(t.shDust, { d: g.added.split('-').reverse().join('.') }) : '';
-    const pills = (g.p2 ? '<span class="pill">' + esc(fmt(g.p1, g.p2) + ' ' + t.pl) + '</span>' : '') + (g.t ? '<span class="pill">' + esc(tTxt(g)) + '</span>' : '') + (g.w ? '<span class="pill">' + esc(t.weights[g.wl]) + '</span>' : '') + modePill(g);
-    return '<article class="shame-card' + (done ? ' done' : '') + '"><div class="shame-cv">' + (g.cover ? '<img loading="lazy" src="' + esc(g.cover) + '" alt="' + esc(fill(t.cover, { n })) + '">' : '') + (g.r ? badge(g, 40) : '') +
-      (dust ? '<span class="shame-dust">' + esc(dust) + '</span>' : '') + '</div><div class="shame-info">' +
-      '<span class="shame-tag">' + esc(fill(t.shTag, { m: mName })) + '</span><h3>' + esc(n) + '</h3>' +
-      '<span class="meta">' + esc([g.y || '', catNames(g).slice(0, 2).join(', ')].filter(Boolean).join(' · ')) + '</span>' +
-      (pills ? '<div class="pills">' + pills + '</div>' : '') + (done ? '<span class="shame-ok">✓ ' + esc(t.shDone) + '</span>' : '') + '</div>' +
-      '<div class="actions"><button type="button" class="btn btn-primary" data-shfind="' + esc(g.key) + '">' + esc(t.shFind) + '</button>' +
-      '<button type="button" class="btn btn-outline" data-shlog="' + esc(g.key) + '">' + esc(t.logPlay) + '</button>' +
-      (g.link ? '<a class="bgg" target="_blank" rel="noopener" href="' + esc(g.link) + '" aria-label="' + esc(fill(t.onBgg, { n })) + '">BGG</a>' : '') + '</div></article>';
-  }).join('');
-}
-// Shelf of Shame: standardmäßig eingeklappt (nur Titel + die zwei Spiele als kleine Chips), Zustand pro Gerät gemerkt.
-function shameOpen(on) { $('shame').classList.toggle('closed', !on); $('shameTgl').setAttribute('aria-expanded', String(on)); }
-$('shameTgl').onclick = () => { const on = $('shame').classList.contains('closed'); shameOpen(on); lsSet('n3-shame', on ? 'open' : ''); };
-$('shamePeek').addEventListener('click', (e) => { if (e.target.closest('[data-shpeek]')) { shameOpen(true); lsSet('n3-shame', 'open'); } });
-$('shameList').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-shfind],button[data-shlog]'); if (!b) return;
-  const g = games.find((x) => x.key === (b.dataset.shfind || b.dataset.shlog)); if (!g) return;
-  if (b.dataset.shlog) openLog(g); else seekPlayers(g);
-});
-$('shameAll').onclick = () => {
+function renderShame() { renderSlider(); }
+$('hlAll').onclick = () => {
   // Setzt den Filter „Im Club gespielt: Noch nie“ (im Filter-Knopf als aktiver Filter gezählt) und springt zur Liste.
   S.src = 'club'; S.played = 'never'; S.limit = PAGE; renderFilters(); renderGrid();
   const f = $('srcTabs'); if (f) f.scrollIntoView({ behavior: reduceMotionQ() ? 'auto' : 'smooth', block: 'start' });
@@ -2213,8 +2159,8 @@ const SWAP_MS = 2500;
 let autoKick = null;
 function autoTick() {
   if (hoverPause || document.hidden || !$('modal').hidden || currentView() !== 'collection') return;
-  if (++modeTicks >= MODE_TICKS && recentOk()) {
-    modeTicks = 0; setHlMode(hlMode === 'hl' ? 'recent' : 'hl');
+  if (++modeTicks >= MODE_TICKS && nextMode() !== hlMode) {
+    modeTicks = 0; setHlMode(nextMode());
     clearInterval(autoTimer); autoTimer = null; clearTimeout(autoKick);
     autoKick = setTimeout(() => { autoKick = null; autoTick(); restartAuto(); }, SWAP_MS);
     return;
@@ -2226,6 +2172,7 @@ function restartAuto() {
   if (autoOn) autoTimer = setInterval(autoTick, AUTO_MS);
 }
 $('autoBtn').onclick = () => { autoOn = !autoOn; renderAutoBtn(); restartAuto(); };
+$('hlDots').addEventListener('click', (e) => { const b = e.target.closest('button[data-hlm]'); if (!b) return; modeTicks = 0; setHlMode(b.dataset.hlm); restartAuto(); });
 const stage = document.querySelector('.hl');
 stage.addEventListener('mouseenter', () => { hoverPause = true; });
 stage.addEventListener('mouseleave', () => { hoverPause = false; });
