@@ -328,7 +328,7 @@ dialog.info form.mg { display: flex; flex-direction: column; gap: 12px; }
 .cnt.o { background: var(--accent); color: var(--on-accent); } .cnt.p { background: var(--mem); color: var(--on-mem); }
 .sub-page { display: flex; flex-direction: column; gap: 20px; }
 .sub-page[hidden] { display: none; }
-.sub-page > .sec-h { font-size: 24px; margin: 8px 0 0; }
+.sub-page > .sec-h, .pt-main > .sec-h { font-size: 24px; margin: 8px 0 0; }
 .acc-o { border-top: 4px solid var(--accent); } .acc-p { border-top: 4px solid var(--mem); }
 .parties.rounds .party { box-shadow: inset 4px 0 0 var(--accent); }
 .parties.wants .party { box-shadow: inset 4px 0 0 var(--mem); }
@@ -521,6 +521,35 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 @media (max-width: 520px) { .rnd-res { grid-template-columns: 1fr; } .rnd-cv { max-width: 220px; width: 100%; justify-self: center; } .rnd-info { align-items: center; text-align: center; } .rnd-info .pills { justify-content: center; } .rnd-info .bgg { align-self: center; } }
 #rndEmpty { margin: 12px 0 0; }
 @media (prefers-reduced-motion: reduce) { .dice-scene, .dice-shadow, .dice.spin, .rnd-cv::before, .rnd-res.pop, dialog.rnd-dlg[open], .rnd-btn:hover svg { animation: none; } .rnd-conf { display: none; } }
+/* Desktop (ab 1100px): Elemente nebeneinander. Darunter (Handy/Tablet) bleibt alles wie bisher. */
+.pt-side, .pt-main { display: contents; }
+@media (min-width: 1100px) {
+  #viewCollection { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  #viewCollection > * { grid-column: 1 / -1; }
+  #viewCollection > .hl { grid-column: 1; align-self: stretch; }
+  #viewCollection > .shame { grid-column: 2; align-self: stretch; }
+  #viewCollection > .hl:has(+ .shame[hidden]) { grid-column: 1 / -1; }
+  #viewCollection .track { height: 420px; }
+  #viewCollection .shame-grid { grid-template-columns: 1fr; }
+  #viewCollection .shame-card { grid-template-columns: 100px 1fr; grid-template-rows: auto auto; }
+  #viewCollection .shame-cv { grid-row: 1; }
+  #viewCollection .shame-card .actions { grid-column: 1 / -1; grid-row: 2; }
+  #viewCollection .guest-cta { order: 10; }
+  #subRounds { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px 24px; align-items: start; }
+  #subRounds > .pt-side { display: flex; flex-direction: column; gap: 20px; }
+  #subRounds > .pt-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  #subRounds .pt-side .pt-head { flex-direction: column; align-items: flex-start; }
+  #subRounds .vt-panel { padding: 22px; }
+  #subRounds .vt-row { grid-template-columns: 22px 44px minmax(0, 1fr); }
+  #subRounds .vt-row .th { width: 44px; height: 44px; }
+  #subRounds .vt-row .acts { grid-column: 2 / -1; justify-content: flex-start; }
+  #subRounds .parties { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  #subRounds .pt-main > .sec-h:first-child { margin-top: 0; }
+  #viewStats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  #viewStats > * { grid-column: 1 / -1; }
+  #viewStats > section:nth-of-type(2), #viewStats > section:nth-of-type(4) { grid-column: 1; }
+  #viewStats > section:nth-of-type(3), #viewStats > section:nth-of-type(5) { grid-column: 2; }
+}
 </style>
 
 <div class="band">
@@ -731,6 +760,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <a href="#kampagnen" class="g" data-sub="camps"><span data-t="subCamps"></span> <span class="cnt g" id="cntCamps"></span></a>
   </nav>
   <div class="sub-page" id="subRounds">
+    <div class="pt-side">
     <section class="panel st-panel acc-o">
       <div class="pt-head"><h2 data-t="ptTitle"></h2><button type="button" class="btn btn-primary" id="ptNew" data-t="ptNew"></button></div>
       <p class="meta" data-t="ptIntro" style="margin:0"></p>
@@ -743,12 +773,15 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <ol class="vt-list" id="vtList"></ol>
       <button type="button" class="btn btn-quiet vt-more" id="vtMore" hidden></button>
     </section>
+    </div>
+    <div class="pt-main">
     <h2 class="sec-h" data-t="ptUpcoming"></h2>
     <div class="parties rounds" id="ptUpcoming"></div>
     <h2 class="sec-h" id="ptCampH" data-t="ptCamp" hidden></h2>
     <div class="parties camps" id="ptCamp"></div>
     <h2 class="sec-h" id="ptPastH" data-t="ptPast"></h2>
     <div class="parties rounds" id="ptPast"></div>
+    </div>
   </div>
   <div class="sub-page" id="subWanted" hidden>
     <section class="panel st-panel acc-p" id="wtPanel" aria-labelledby="wtH">
