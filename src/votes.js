@@ -21,7 +21,18 @@ export async function ensureVotes(env) {
 export async function voteDay(env) {
   return nextStammtische(berlinToday(), await getBooking(env), 1)[0] || '';
 }
-const keyOf = (gameId, game) => (gameId > 0 ? String(gameId) : 'n:' + game.toLowerCase());
+export const keyOf = (gameId, game) => (gameId > 0 ? String(gameId) : 'n:' + game.toLowerCase());
+
+// Stimme setzen (on = true) oder zurücknehmen. Gibt 'vote_limit' zurück, wenn schon VOTE_MAX andere Stimmen vergeben sind.
+export async function castVote(env, day, did, name, x, on) {
+  const key = keyOf(x.gameId || 0, x.game);
+  if (!on) { await env.DB.prepare('DELETE FROM votes WHERE day = ?1 AND game_key = ?2 AND discord_id = ?3').bind(day, key, did).run(); return 'ok'; }
+  const used = (await env.DB.prepare('SELECT COUNT(*) AS n FROM votes WHERE day = ?1 AND discord_id = ?2 AND game_key != ?3').bind(day, did, key).first()).n;
+  if (used >= VOTE_MAX) return 'vote_limit';
+  await env.DB.prepare('INSERT INTO votes(day, game_key, discord_id, name, game, game_id, year, mem, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9) ON CONFLICT(day, game_key, discord_id) DO NOTHING')
+    .bind(day, key, did, name, x.game, x.gameId || null, x.year || null, x.mem ? 1 : 0, new Date().toISOString()).run();
+  return 'ok';
+}
 
 // Rangliste: meiste Stimmen zuerst, bei Gleichstand wer zuerst gewählt wurde.
 export async function voteList(env, day) {
@@ -57,7 +68,8 @@ export async function votesRoute(req, env, ctx, path, m, ip, h) {
   await ensureVotes(env);
   if (path === '/votes' && m === 'GET') {
     const day = await voteDay(env);
-    return json({ day, max: VOTE_MAX, list: await voteList(env, day) });
+    let post = null; try { post = h.postLink ? await h.postLink() : null; } catch { /* egal */ }
+    return json({ day, max: VOTE_MAX, list: await voteList(env, day), post: post && post.day === day ? post.url : '' });
   }
   if (path === '/votes' && m === 'POST') {
     const u = await checkMember(req, env, ip); if (u.err) return fail(u.err === 'rate_limited' ? 429 : 403, u.err);
@@ -66,15 +78,10 @@ export async function votesRoute(req, env, ctx, path, m, ip, h) {
     const b = await body(req);
     const game = str(b.game, 120), gameId = int(b.gameId);
     if (!game || (gameId != null && !(gameId > 0))) return fail(400, 'invalid');
-    const key = keyOf(gameId || 0, game), did = u.member.discord_id;
-    if (b.on === false) {
-      await env.DB.prepare('DELETE FROM votes WHERE day = ?1 AND game_key = ?2 AND discord_id = ?3').bind(day, key, did).run();
-    } else {
-      const used = (await env.DB.prepare('SELECT COUNT(*) AS n FROM votes WHERE day = ?1 AND discord_id = ?2 AND game_key != ?3').bind(day, did, key).first()).n;
-      if (used >= VOTE_MAX) return json({ error: 'vote_limit', max: VOTE_MAX }, 409);
-      await env.DB.prepare('INSERT INTO votes(day, game_key, discord_id, name, game, game_id, year, mem, created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9) ON CONFLICT(day, game_key, discord_id) DO NOTHING')
-        .bind(day, key, did, u.member.name, game, gameId || null, int(b.year), b.mem ? 1 : 0, new Date().toISOString()).run();
-    }
+    const did = u.member.discord_id;
+    const res = await castVote(env, day, did, u.member.name, { game, gameId, year: int(b.year), mem: !!b.mem }, b.on !== false);
+    if (res === 'vote_limit') return json({ error: 'vote_limit', max: VOTE_MAX }, 409);
+    if (h.onVote) ctx.waitUntil(h.onVote().catch((e) => console.log('vote post refresh failed', e && e.message)));
     return json({ day, max: VOTE_MAX, list: await voteList(env, day), mine: await myVotes(env, did) });
   }
   return fail(404, 'not_found');

@@ -519,6 +519,37 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 .slide-info .shame-tag { align-self: center; }
 .shame-ok { font-size: 13px; font-weight: 700; color: #2b7a40; }
 @media (prefers-reduced-motion: reduce) { .hl-dots button::after { transition: none; } }
+/* Stammtisch-Reiter (blau): Wunschspiele + geplante Runden */
+.subtabs a.b[aria-current="page"] { border-color: var(--club); }
+.cnt.b { background: var(--club); color: #fff; }
+.acc-b { border-top: 4px solid var(--club); }
+.stm-kick { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--club); margin-bottom: 2px; }
+.stm-kpis { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.stm-kpis .kpi { background: var(--bg); }
+@media (max-width: 600px) { .stm-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stm-kpis .kpi { padding: 10px 12px; } .stm-kpis .kpi .v { font-size: 22px; } .stm-kpis .kpi .l { font-size: 12px; } }
+.stm-add { position: relative; max-width: 520px; }
+.stm-add input { width: 100%; box-sizing: border-box; }
+.stm-res { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.stm-res:empty { display: none; }
+.stm-res li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; background: var(--bg); }
+.stm-res .th { width: 40px; height: 40px; border-radius: 6px; background: var(--cover); object-fit: contain; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
+.stm-res .nm { font-weight: 700; color: var(--fg); overflow-wrap: anywhere; }
+.stm-res .src { margin-left: 6px; }
+.stm-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.stm-list .vt-row { box-shadow: inset 4px 0 0 var(--club); background: var(--surface); }
+.stm-list .vt-row.planned { box-shadow: inset 4px 0 0 var(--accent); background: var(--guest-soft); }
+.stm-list .vt-row .rk.cal { font-size: 18px; }
+.pchip.plan { background: var(--accent); color: var(--on-accent); }
+.vt-row .plan-info { font-size: 13px; color: var(--fg); font-weight: 600; margin-top: 2px; }
+.vt-teaser { gap: 10px; }
+.vt-teaser h2 { font-size: 20px; margin: 0; }
+.vt-mini { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.vt-mini li { color: var(--fg); }
+.vt-mini .meta { margin-left: 6px; }
+.vt-teaser .btn { align-self: flex-start; }
+.party.flash { animation: pflash 1.6s ease; }
+@keyframes pflash { 0%, 40% { outline: 3px solid var(--club); outline-offset: 2px; } 100% { outline: 3px solid transparent; outline-offset: 2px; } }
+@media (prefers-reduced-motion: reduce) { .party.flash { animation: none; } }
 /* Desktop (ab 1100px): Elemente nebeneinander. Darunter (Handy/Tablet) bleibt alles wie bisher. */
 .pt-side, .pt-main { display: contents; }
 @media (min-width: 1100px) {
@@ -541,14 +572,17 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
   #viewCollection > .filters .adv { grid-template-columns: 1fr; padding: 14px; }
   #viewCollection .grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
   #viewCollection .guest-cta { order: 10; }
-  #subRounds { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px 24px; align-items: start; }
+  /* Unterreiter der Mitspieler-/Spielesuche als Seitenleiste links. */
+  #viewParties { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 24px; align-items: start; }
+  #viewParties > * { grid-column: 2; grid-row: 1; }
+  #viewParties > .subtabs { grid-column: 1; flex-direction: column; flex-wrap: nowrap; gap: 4px; border-bottom: 0; background: var(--surface); border-radius: 8px; padding: 10px; position: sticky; top: 16px; }
+  #viewParties > .subtabs a { white-space: nowrap; justify-content: space-between; border-bottom: 0; margin-bottom: 0; border-left: 4px solid transparent; border-radius: 4px; padding: 10px 12px; }
+  #viewParties > .subtabs a:hover { background: var(--bg); }
+  #viewParties > .subtabs a[aria-current="page"] { background: var(--bg); }
+  #subRounds { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px 24px; align-items: start; }
   #subRounds > .pt-side { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 20px; }
   #subRounds > .pt-main { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
   #subRounds .pt-side .pt-head { flex-direction: column; align-items: flex-start; }
-  #subRounds .vt-panel { padding: 22px; }
-  #subRounds .vt-row { grid-template-columns: 22px 44px minmax(0, 1fr); }
-  #subRounds .vt-row .th { width: 44px; height: 44px; }
-  #subRounds .vt-row .acts { grid-column: 2 / -1; justify-content: flex-start; }
   #subRounds .parties { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
   #subRounds .pt-main > .sec-h:first-child { margin-top: 0; }
   #viewStats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
@@ -719,6 +753,14 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
         </div>
         <span class="note" data-t="admBkPauseHelp"></span>
       </div>
+      <div class="bk-pause" style="border-color:#2f6fb0">
+        <strong data-t="admVpH" style="color:var(--fg)"></strong>
+        <div class="row">
+          <label class="field" style="flex:0 1 220px"><span data-t="admVpDays"></span><input type="number" id="bkVpDays" min="0" max="14" step="1"></label>
+          <label class="field" style="flex:0 1 260px"><span data-t="admVpPing"></span><select id="bkVpPing"><option value="here" data-t="admVpHere"></option><option value="role" data-t="admVpRole"></option><option value="none" data-t="admVpNone"></option></select></label>
+        </div>
+        <span class="note" data-t="admVpHelp"></span>
+      </div>
       <div class="row" style="align-items:center"><button type="button" class="btn btn-primary" id="bkSave" data-t="admBkSave"></button><span id="bkMsg" role="status" class="note"></span></div>
     </div>
     <div class="adm-block">
@@ -756,6 +798,7 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 <main class="wrap" id="viewParties" hidden>
   <!-- Unterseiten: Runden (orange) und "Hat jemand …?" (lila), umschaltbar per #partys / #suche. -->
   <nav class="subtabs" id="ptSub" aria-label="Mitspieler-/Spielesuche">
+    <a href="#stammtisch" class="b" data-sub="stm"><span data-t="subStm"></span> <span class="cnt b" id="cntStm"></span></a>
     <a href="#partys" class="o" data-sub="rounds"><span data-t="subRounds"></span> <span class="cnt o" id="cntRounds"></span></a>
     <a href="#suche" class="p" data-sub="wanted"><span data-t="subWanted"></span> <span class="cnt p" id="cntWanted"></span></a>
     <a href="#kampagnen" class="g" data-sub="camps"><span data-t="subCamps"></span> <span class="cnt g" id="cntCamps"></span></a>
@@ -768,11 +811,10 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
       <div class="pt-how" id="ptHow"></div>
     </section>
     <p class="meta" id="ptState" style="margin:0"></p>
-    <section class="panel vt-panel" id="vtPanel" aria-labelledby="vtH" hidden>
-      <h2 id="vtH"></h2>
-      <p class="meta" id="vtIntro" style="margin:0"></p>
-      <ol class="vt-list" id="vtList"></ol>
-      <button type="button" class="btn btn-quiet vt-more" id="vtMore" hidden></button>
+    <section class="panel st-panel acc-b vt-teaser" id="vtTeaser" hidden>
+      <h2 id="vtTH"></h2>
+      <ol class="vt-mini" id="vtTList"></ol>
+      <a class="btn btn-outline" href="#stammtisch" data-stmgo-tab data-t="stmGo"></a>
     </section>
     </div>
     <div class="pt-main">
@@ -783,6 +825,21 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
     <h2 class="sec-h" id="ptPastH" data-t="ptPast"></h2>
     <div class="parties rounds" id="ptPast"></div>
     </div>
+  </div>
+  <div class="sub-page" id="subStm" hidden>
+    <!-- Nächster Stammtisch: Wunschspiele (Abstimmung) und die für den Tag schon geplanten Runden in einer Liste. -->
+    <section class="panel st-panel acc-b" id="vtPanel" aria-labelledby="vtH">
+      <div class="pt-head"><div><span class="stm-kick" data-t="stmKick"></span><h2 id="vtH"></h2></div>
+        <div class="row" style="gap:8px"><button type="button" class="btn btn-primary" id="stmOffer" data-t="stmOffer"></button><a class="btn btn-outline" id="stmDc" target="_blank" rel="noopener" hidden data-t="stmDc"></a></div></div>
+      <p class="meta" id="vtIntro" style="margin:0"></p>
+      <div class="kpis stm-kpis" id="stmKpis"></div>
+      <div class="stm-add"><label class="field"><span data-t="stmAdd"></span><input type="search" id="stmQ" autocomplete="off" spellcheck="false"></label><ul class="stm-res" id="stmRes"></ul></div>
+      <p class="meta" id="stmLater" style="margin:0"></p>
+    </section>
+    <p class="meta" id="vtState" style="margin:0" hidden></p>
+    <div class="stm-bar"><div class="group" id="stmFilter" role="group"></div><span class="meta" id="stmLegend"></span></div>
+    <ol class="vt-list stm-list" id="vtList"></ol>
+    <button type="button" class="btn btn-quiet vt-more" id="vtMore" hidden></button>
   </div>
   <div class="sub-page" id="subWanted" hidden>
     <section class="panel st-panel acc-p" id="wtPanel" aria-labelledby="wtH">
@@ -1104,6 +1161,7 @@ const TXT = {
     ciTitle: 'Anmelden', ciP1: 'Zum Anlegen von Spielrunden und Eintragen von Partien meldest du dich einmal an, am einfachsten mit „Mit Discord anmelden“. Dein Browser bleibt angemeldet; deine eigenen Partien und Runden kannst du danach bearbeiten und löschen.', ciP2: 'Voraussetzung: Du bist auf dem N3-Discord-Server und kannst dort den Brettspiel-Kanal sehen (Brettspiel-Rolle). Wer den Server verlässt, wird abgemeldet.', ciP3: 'Ohne Discord-Anmeldung im Browser geht es auch mit einem Code: Tippe im Discord-Kanal #mitspieler-gesucht /code, der Bot schickt ihn dir (nur für dich sichtbar). Gib ihn hier einmal ein. Partien ohne Discord kannst du über den QR-Code im Club eintragen.', ciLink: 'Zum N3-Discord', ciClose: 'Schließen',
     code: 'Persönlicher Code', codePh: 'ABCD-EFGH', codeHint: 'Im Discord-Kanal #mitspieler-gesucht auf dem N3-Discord mit /code abholen. Nur einmal nötig.', byName: 'Dein Name', byHint: 'Damit wir wissen, wer eingetragen hat. Wird auf diesem Handy gemerkt.', errBy: 'Bitte deinen Namen eingeben.', errKey: 'Dieser QR-Code ist nicht mehr gültig. Bitte den aktuellen Code im Club scannen oder deinen persönlichen Code eingeben.',
     admQr: 'Eintragen per QR-Code', admQrNote: 'Wer den QR-Code im Club scannt, kann Partien ohne Discord eintragen (mit Namen). Ein neuer Schlüssel macht alte Ausdrucke sofort ungültig.', admQrPrint: 'Aushang drucken', admQrCopy: 'Link kopieren', admQrCopied: 'Link kopiert.', admQrMake: 'Schlüssel erzeugen', admQrRenew: 'Neuen Schlüssel erzeugen', admQrRenewSure: 'Alte Ausdrucke werden ungültig – wirklich?', admQrNone: 'Noch kein Schlüssel. Erst erzeugen, dann drucken.', admQrRenewed: 'Neuer Schlüssel aktiv. Bitte den neuen Aushang drucken.', admQrErr: 'Das hat nicht geklappt.', byTag: 'von {n}',
+    admVpH: 'Abstimmung in Discord', admVpDays: 'Tage vor dem Stammtisch posten (0 = aus)', admVpPing: 'Benachrichtigung', admVpHere: '@here (alle online im Kanal)', admVpRole: 'Mitgliederrolle erwähnen', admVpNone: 'Keine Erwähnung', admVpHelp: 'Der Bot postet die Wunschspiele-Abstimmung im Runden-Kanal ab 12 Uhr am ersten Tag und hält sie aktuell (Stimmen, neue Vorschläge, geplante Runden). Für @here braucht der Bot die Berechtigung „@everyone, @here und alle Rollen erwähnen“, für die Rolle muss sie erwähnbar sein.',
     admBkPause: 'Neue Runden von Nicht-Mitgliedern vorübergehend sperren', admBkPauseUntil: 'Gesperrt bis einschließlich (optional)', admBkPauseNote: 'Hinweis für Nicht-Mitglieder (optional)', admBkPauseHelp: 'Gilt für „Runde anbieten“ auf der Webseite, /party in Discord und „Hab ich: Runde anlegen“. Mitglieder und Runden mit Event-Code sind nicht betroffen, bestehende Runden bleiben. Ohne Datum gilt die Sperre, bis du den Haken entfernst. Speichern nicht vergessen.', admBkPaused: 'Gesperrt', pausedT: 'Neue Runden von Nicht-Mitgliedern sind gerade pausiert{u}.', pausedU: ' (bis einschließlich {d})', pausedEv: 'Mit einem Event-Code geht es weiterhin. Mitglieder (mit der Mitgliederrolle) können wie immer Runden anbieten; melde dich dafür mit Discord an.',
     admBk: 'Runden: Mitglieder und Stammtisch-Tage', admBkNote: 'Mitglieder (Discord-Rolle unten) können Runden an jedem Tag anbieten. Alle anderen nur an Stammtisch-Tagen und mit einer kurzen Vorstellung im Hinweis; Runden mit Event-Code sind davon ausgenommen. Rollen-ID leer = keine Einschränkung. Rollen-ID: in Discord Entwicklermodus an, Rechtsklick auf die Rolle → „Rollen-ID kopieren“.', admBkRole: 'Discord-Rollen-ID der Mitglieder', admBkWeekly: 'Jede Woche', admBkMonthly: 'Jeden Monat', admBkExtra: 'Zusätzliche Tage', admBkSkip: 'Fällt aus', admBkSave: 'Speichern', admBkOk: 'Gespeichert. Nächste Stammtische: {n}', admBkBad: 'Bitte Daten als TT.MM.JJJJ eingeben, durch Komma getrennt.', admBkLast: 'letzter',
     admEv: 'Event-Codes', admEvNote: 'Mit einem Event-Code kann jede Person ohne Discord eine Runde anbieten (mit Namen), bis einschließlich „Code gültig bis“ und nur an den Eventtagen. In Discord steht dann der Eventname dabei. Code leer lassen = er wird automatisch erzeugt.', admEvName: 'Eventname', admEvCode: 'Code (optional, mind. 6 Zeichen)', admEvCodePh: 'leer = automatisch', admEvFrom: 'Event von', admEvTo: 'Event bis', admEvUntil: 'Code gültig bis', admEvAdd: 'Event-Code anlegen', admEvNone: 'Noch keine Event-Codes.', admEvValid: 'gültig bis {d}', admEvExpired: 'abgelaufen ({d})', admEvCopy: 'Link kopieren', admEvCopied: 'Link kopiert.', admEvDel: 'Löschen', admEvTaken: 'Diesen Code gibt es schon.', admEvShort: 'Der Code braucht mindestens 6 Buchstaben oder Ziffern.', admEvBad: 'Bitte Name und alle drei Daten ausfüllen („bis“ nicht vor „von“).', admEvMade: 'Event-Code {c} ist aktiv.',
@@ -1207,6 +1265,7 @@ const TXT = {
     ciTitle: 'Sign in', ciP1: 'To create game rounds and log plays, sign in once, easiest with “Sign in with Discord”. Your browser stays signed in; afterwards you can edit and delete your own plays and rounds.', ciP2: 'Requirement: you are on the N3 Discord server and can see the board game channel there (board game role). Leaving the server signs you out.', ciP3: 'If Discord sign-in doesn’t work in your browser, use a code: type /code in the Discord channel #mitspieler-gesucht, the bot sends it to you (only visible to you). Enter it here once. Without Discord you can log plays via the QR code at the club.', ciLink: 'Go to the N3 Discord', ciClose: 'Close',
     code: 'Personal code', codePh: 'ABCD-EFGH', codeHint: 'Get it with /code in the Discord channel #mitspieler-gesucht on the N3 Discord. Only needed once.', byName: 'Your name', byHint: 'So we know who logged it. Remembered on this phone.', errBy: 'Please enter your name.', errKey: 'This QR code is no longer valid. Please scan the current code at the club or enter your personal code.',
     admQr: 'Logging via QR code', admQrNote: 'Anyone who scans the QR code at the club can log plays without Discord (with their name). A new key instantly invalidates old printouts.', admQrPrint: 'Print poster', admQrCopy: 'Copy link', admQrCopied: 'Link copied.', admQrMake: 'Create key', admQrRenew: 'Create new key', admQrRenewSure: 'Old printouts stop working – sure?', admQrNone: 'No key yet. Create one, then print.', admQrRenewed: 'New key active. Please print the new poster.', admQrErr: 'That didn’t work.', byTag: 'by {n}',
+    admVpH: 'Vote in Discord', admVpDays: 'Post days before the club night (0 = off)', admVpPing: 'Notification', admVpHere: '@here (everyone online in the channel)', admVpRole: 'Mention the member role', admVpNone: 'No mention', admVpHelp: 'The bot posts the wish-list vote in the rounds channel from 12:00 on the first day and keeps it up to date (votes, new suggestions, planned games). For @here the bot needs the “Mention @everyone, @here and All Roles” permission; for the role it must be mentionable.',
     admBkPause: 'Temporarily stop new games from non-members', admBkPauseUntil: 'Stopped up to and including (optional)', admBkPauseNote: 'Note for non-members (optional)', admBkPauseHelp: 'Applies to “Offer a game” on the website, /party in Discord and “I have it: set up a game”. Members and games with an event code are not affected, existing games stay. Without a date the stop lasts until you untick it. Don’t forget to save.', admBkPaused: 'Stopped', pausedT: 'New games from non-members are paused right now{u}.', pausedU: ' (up to and including {d})', pausedEv: 'You can still use an event code. Members (with the member role) can offer games as usual; sign in with Discord for that.',
     admBk: 'Games: members and game nights', admBkNote: 'Members (Discord role below) can offer games on any day. Everyone else only on game nights and with a short introduction in the note; games with an event code are exempt. Empty role ID = no restriction. Role ID: turn on developer mode in Discord, right-click the role → “Copy Role ID”.', admBkRole: 'Discord role ID of members', admBkWeekly: 'Every week', admBkMonthly: 'Every month', admBkExtra: 'Extra days', admBkSkip: 'Cancelled', admBkSave: 'Save', admBkOk: 'Saved. Next game nights: {n}', admBkBad: 'Please enter dates as DD.MM.YYYY, separated by commas.', admBkLast: 'last',
     admEv: 'Event codes', admEvNote: 'With an event code anyone can offer a game without Discord (with their name), up to and including “Code valid until”, and only on the event days. Discord then shows the event name. Leave the code empty to generate one.', admEvName: 'Event name', admEvCode: 'Code (optional, min. 6 characters)', admEvCodePh: 'empty = automatic', admEvFrom: 'Event from', admEvTo: 'Event to', admEvUntil: 'Code valid until', admEvAdd: 'Create event code', admEvNone: 'No event codes yet.', admEvValid: 'valid until {d}', admEvExpired: 'expired ({d})', admEvCopy: 'Copy link', admEvCopied: 'Link copied.', admEvDel: 'Delete', admEvTaken: 'This code already exists.', admEvShort: 'The code needs at least 6 letters or digits.', admEvBad: 'Please fill in the name and all three dates (“to” not before “from”).', admEvMade: 'Event code {c} is active.',
@@ -1445,11 +1504,17 @@ let plays = [], playCount = {}, playedIds = new Set(), playedNames = new Set(), 
 // Wunschspiele (Abstimmung für den nächsten Stammtisch): Stand vom Server, eigene Stimmen kommen über /my.
 let vt = { day: '', max: 5, list: [] }, vtOpenAll = false, vtBusy = false, vtPend = null;
 const ICO_UP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21h4V9H2zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7z"/></svg>';
-Object.assign(TXT.de, { vtTitle: 'Wunschspiele für {d}', vtTitleToday: 'Wunschspiele für heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Wer eine Runde anbietet, sieht so, was gefragt ist. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
+Object.assign(TXT.de, { subStm: 'Stammtisch', stmKick: 'Nächster Stammtisch', stmTitle: '{d}', stmOffer: 'Runde für diesen Tag anbieten', stmDc: 'Abstimmung in Discord', stmAdd: 'Spiel wünschen (Sammlung oder Mitgliederspiele)', stmAddPh: 'Name eingeben …', stmNoHit: 'Kein Spiel gefunden. Spiele, die niemand im Club hat, findest du über „Spiele gesucht“.',
+  stmKWish: 'Wunschspiele', stmKVotes: 'Stimmen', stmKPeople: 'Personen', stmKRounds: 'Runden geplant', stmKFree: 'freie Plätze', stmFAll: 'Alle', stmFWish: 'Nur Wünsche', stmFPlan: 'Schon geplant', stmLegend: 'Blau = Wunsch · Orange = Runde steht schon',
+  stmPlanned: 'Schon geplant', stmPlanInfo: '{t} Uhr · {a}/{s} dabei · {f}', stmPlanFree: 'noch {n} frei', stmPlanFull: 'voll', stmToRound: 'Zur Runde', stmLater: 'Danach: {l}', stmLaterN: '{d} ({n} Runden)', stmLaterN1: '{d} (1 Runde)', stmNone: 'Für diesen Tag gibt es noch keine Wünsche und keine Runden. Wünsch dir oben ein Spiel oder biete eine Runde an.', stmNoneF: 'Nichts in dieser Auswahl.', stmGo: 'Zum Stammtisch', stmTeaser: 'Wunschspiele für {d}', stmTeaserNone: 'Noch keine Wünsche.', stmNoDay: 'Gerade ist kein Stammtisch eingetragen.',
+  vtTitle: '{d}', vtTitleToday: 'Heute', vtIntro: 'Was möchtest du beim nächsten Stammtisch spielen? Tippe auf 👍 bei bis zu {m} Spielen, auf den Spielekarten oder hier. Wer eine Runde anbietet, sieht so, was gefragt ist. Nach dem Stammtisch beginnt die Abstimmung von vorne.',
   vtMine: 'Deine Stimmen: {n} von {m}.', vtNone: 'Noch keine Wünsche. Tippe in der Sammlung auf einer Spielekarte auf 👍.', vtN1: '1 Stimme', vtNn: '{n} Stimmen', vtBtn: 'Wunschspiel für den Stammtisch am {d}: Tippe, wenn du das spielen willst (bis zu {m} Stimmen). Wer eine Runde anbietet, sieht, was gefragt ist.', vtBtnOn: 'Du hast dir das für den Stammtisch am {d} gewünscht. Nochmal tippen nimmt die Stimme zurück.',
   vtPlanned: 'Runde geplant', vtWho: 'Gewählt von: {n}', vtAll: 'Alle {n} anzeigen', vtLess: 'Weniger anzeigen', vtLimit: 'Du hast schon {m} Stimmen für diesen Stammtisch vergeben. Nimm erst eine zurück.',
   vtLoginT: 'Abstimmen', vtLoginTxt: 'Zum Abstimmen melde dich mit Discord an. So zählt jede Stimme nur einmal.' });
-Object.assign(TXT.en, { vtTitle: 'Wish list for {d}', vtTitleToday: 'Wish list for today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Whoever offers a game can see what people want. After the club night, voting starts over.',
+Object.assign(TXT.en, { subStm: 'Club night', stmKick: 'Next club night', stmTitle: '{d}', stmOffer: 'Offer a game for this day', stmDc: 'Vote in Discord', stmAdd: 'Wish for a game (collection or member games)', stmAddPh: 'Type a name …', stmNoHit: 'No game found. For games nobody at the club has, use “Games wanted”.',
+  stmKWish: 'wished games', stmKVotes: 'votes', stmKPeople: 'people', stmKRounds: 'games planned', stmKFree: 'free seats', stmFAll: 'All', stmFWish: 'Wishes only', stmFPlan: 'Already planned', stmLegend: 'Blue = wish · Orange = game already planned',
+  stmPlanned: 'Already planned', stmPlanInfo: '{t} · {a}/{s} in · {f}', stmPlanFree: '{n} free', stmPlanFull: 'full', stmToRound: 'Go to game', stmLater: 'After that: {l}', stmLaterN: '{d} ({n} games)', stmLaterN1: '{d} (1 game)', stmNone: 'No wishes and no games for this day yet. Wish for a game above or offer one.', stmNoneF: 'Nothing in this selection.', stmGo: 'Go to club night', stmTeaser: 'Wish list for {d}', stmTeaserNone: 'No wishes yet.', stmNoDay: 'No club night is scheduled right now.',
+  vtTitle: '{d}', vtTitleToday: 'Today', vtIntro: 'What would you like to play at the next club night? Tap 👍 on up to {m} games, on the game cards or here. Whoever offers a game can see what people want. After the club night, voting starts over.',
   vtMine: 'Your votes: {n} of {m}.', vtNone: 'No wishes yet. Tap 👍 on a game card in the collection.', vtN1: '1 vote', vtNn: '{n} votes', vtBtn: 'Wish list for the club night on {d}: tap if you want to play this (up to {m} votes). Whoever offers a game can see what people want.', vtBtnOn: 'You wished for this for the club night on {d}. Tap again to take your vote back.',
   vtPlanned: 'Game planned', vtWho: 'Voted by: {n}', vtAll: 'Show all {n}', vtLess: 'Show less', vtLimit: 'You already used {m} votes for this club night. Take one back first.',
   vtLoginT: 'Vote', vtLoginTxt: 'Sign in with Discord to vote. That way every vote counts only once.' });
@@ -2564,7 +2629,7 @@ function partyCard(x, past) {
   if (!past && (canEdit || own) && Object.values(p.attendees || {}).some(resLive)) actions += '<button type="button" class="btn btn-quiet" data-prelease="' + esc(x.id) + '">' + esc(t.ptRelease) + '</button>';
   if (canEdit || (my && my.host) || own) actions += '<button type="button" class="btn ' + (pendingPDel === x.id ? 'btn-primary' : 'btn-quiet') + '" data-pdel="' + esc(x.id) + '">' + esc(pendingPDel === x.id ? t.delConfirm : t.ptDel) + '</button>';
   const join = joinOpen === x.id ? (joinWait ? '<span class="meta">' + esc(t.ptWaitHint) + '</span>' : '') + '<form class="join" data-pjoinform="' + esc(x.id) + '"><input type="text" maxlength="40" aria-label="' + esc(t.ptYourName) + '" placeholder="' + esc(t.ptYourName) + '" required><button type="submit" class="btn btn-primary" style="min-height:40px">' + esc(t.ptOk) + '</button><button type="button" class="btn btn-quiet" data-pjoincancel style="min-height:40px">' + esc(t.cancel) + '</button></form><span class="err" data-pjoinmsg></span>' : '';
-  return '<article class="party' + (past ? ' past' : '') + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + (!past && membersOnlyJoin(p) ? '<span class="src mem">' + esc(t.ptMemOnly) + '</span>' : '') + '</div></div>' +
+  return '<article class="party' + (past ? ' past' : '') + '" id="party-' + esc(x.id) + '"><div class="top">' + th + '<div><span class="when">' + esc(fill(t.ptAt, { d: dayLabel(String(p.date)), t: p.time || '–' })) + '</span><h3>' + esc(nm) + '</h3>' + srcTag(p) + (p.event ? '<span class="src event">' + esc(p.event) + '</span>' : '') + (!past && membersOnlyJoin(p) ? '<span class="src mem">' + esc(t.ptMemOnly) + '</span>' : '') + '</div></div>' +
     '<div class="body"><div class="seats" aria-label="' + esc(taken + '/' + seats) + '">' + dots + '<span class="meta" style="margin-left:6px">' + esc(taken + '/' + seats + ' · ' + (free ? fill(t.ptFree, { n: free }) : t.ptFull) + (wl.length ? ' · ' + fill(t.ptWaitN, { n: wl.length }) : '')) + '</span></div>' + (minChip ? '<div>' + minChip + '</div>' : '') +
     '<div class="who"><span class="pill host">' + esc(p.host || '?') + ' · ' + esc(t.ptHostTag) + '</span>' + ins.map(([, a]) => a.res ? '<span class="pill res" title="' + esc(t.ptResTag) + '">⏳ ' + esc(a.name) + ' · ' + esc(t.ptResTag) + '</span>' : '<span class="pill">' + esc(a.name) + '</span>').join('') + wl.map((e, i) => '<span class="pill wl" title="' + esc(t.ptWaitTag) + '">🕒 ' + (i + 1) + '. ' + esc(e.name) + '</span>').join('') + '</div>' +
     (p.note ? '<span class="meta">' + esc(partyNote(p.note)) + '</span>' : '') + join + '<div class="actions">' + actions + '</div></div></article>';
@@ -3040,28 +3105,106 @@ function voteBtn(g) {
 }
 // Steht für den Abstimmungstag schon eine Runde mit dem Spiel?
 const vtPlanned = (x) => parties.some((y) => String(y.p.date) === vt.day && (x.gameId ? Number(y.p.gameId) === Number(x.gameId) : String(y.p.game || '').trim().toLowerCase() === String(x.game).trim().toLowerCase()));
+// Runden, die für den Abstimmungstag schon geplant sind (noch nicht als gespielt eingetragen), nach Uhrzeit.
+const vtRounds = () => parties.filter((y) => String(y.p.date) === vt.day && !y.p.playId).sort((a, b) => String(a.p.time || '').localeCompare(String(b.p.time || '')));
+const vtSameGame = (x, y) => (x.gameId ? Number(y.p.gameId) === Number(x.gameId) : String(y.p.game || '').trim().toLowerCase() === String(x.game).trim().toLowerCase());
+let stmF = 'all';
+function planInfo(y) {
+  const t = T(), seats = Math.max(2, Number(y.p.seats) || 2), taken = whoIn(y.p).length + 1, free = Math.max(0, seats - taken);
+  return fill(t.stmPlanInfo, { t: y.p.time || '–', a: taken, s: seats, f: free ? fill(t.stmPlanFree, { n: free }) : t.stmPlanFull }) + ' · ' + (y.p.host || '?');
+}
 function renderVotes() {
   const t = T(), box = $('vtPanel'); if (!box) return;
-  box.hidden = !vt.day; if (!vt.day) return;
-  $('vtH').textContent = vt.day === todayIso() ? t.vtTitleToday : fill(t.vtTitle, { d: dayLabel(vt.day) });
+  renderVtTeaser();
+  $('cntStm').textContent = vt.day && vt.list.length ? String(vt.list.length) : '';
+  if (!vt.day) { $('vtH').textContent = t.stmNoDay; ['vtIntro', 'stmKpis', 'stmLater'].forEach((id) => { $(id).innerHTML = ''; }); $('vtList').innerHTML = ''; $('stmFilter').innerHTML = ''; $('vtMore').hidden = true; $('stmOffer').hidden = true; return; }
+  $('stmOffer').hidden = false;
+  const d = new Date(vt.day + 'T12:00:00'), long = d.toLocaleDateString(de() ? 'de-DE' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('vtH').textContent = vt.day === todayIso() ? t.ptToday + ', ' + long : long;
   const mineN = myIds && myIds.votes ? myIds.votes.size : 0;
   $('vtIntro').textContent = fill(t.vtIntro, { m: vt.max }) + (me ? ' ' + fill(t.vtMine, { n: mineN, m: vt.max }) : '');
-  const show = vtOpenAll ? vt.list : vt.list.slice(0, 5);
-  $('vtList').innerHTML = !vt.list.length ? '<li class="st-empty">' + esc(t.vtNone) + '</li>' : show.map((x, i) => {
-    const g = x.gameId ? byId[x.gameId] : null, nm = g ? name(g) : x.game, on = vtMineHas(x.key), mg = memFor(x.gameId, x.game);
+  $('stmDc').hidden = !vt.post; if (vt.post) $('stmDc').href = vt.post;
+  // Kennzahlen
+  const rounds = vtRounds(), votes = vt.list.reduce((n, x) => n + x.n, 0), people = new Set(vt.list.flatMap((x) => x.names)).size;
+  const free = rounds.reduce((n, y) => n + Math.max(0, (Number(y.p.seats) || 2) - whoIn(y.p).length - 1), 0);
+  const kpi = (v, l) => '<div class="kpi"><span class="v">' + esc(v) + '</span><span class="l">' + esc(l) + '</span></div>';
+  $('stmKpis').innerHTML = kpi(vt.list.length, t.stmKWish) + kpi(votes, t.stmKVotes) + kpi(people, t.stmKPeople) + kpi(rounds.length, t.stmKRounds) + kpi(free, t.stmKFree);
+  // Weitere Stammtische mit der Zahl der schon geplanten Runden (Klick: Runde für den Tag anbieten).
+  const later = (bk && bk.next ? bk.next : []).filter((x) => x > vt.day).slice(0, 4);
+  $('stmLater').innerHTML = later.length ? esc(fill(t.stmLater, { l: '' })) + later.map((x) => { const n = parties.filter((y) => String(y.p.date) === x && !y.p.playId).length;
+    return '<button type="button" class="linkbtn" data-stmday="' + esc(x) + '">' + esc(n === 1 ? fill(t.stmLaterN1, { d: dayLabel(x) }) : n ? fill(t.stmLaterN, { d: dayLabel(x), n }) : dayLabel(x)) + '</button>'; }).join(' · ') : '';
+  $('stmFilter').innerHTML = [['all', t.stmFAll], ['wish', t.stmFWish], ['plan', t.stmFPlan]].map(([k, l]) => '<button type="button" class="chip" data-stmf="' + k + '" aria-pressed="' + (stmF === k) + '">' + esc(l) + '</button>').join('');
+  $('stmLegend').textContent = t.stmLegend;
+  // Eine Liste: Wünsche nach Stimmen, Spiele mit Runde orange markiert; danach geplante Runden ohne Stimmen.
+  const used = new Set();
+  let rows = vt.list.map((x, i) => { const r = rounds.filter((y) => vtSameGame(x, y)); r.forEach((y) => used.add(y.id)); return { x, i, r }; });
+  rows = rows.concat(rounds.filter((y) => !used.has(y.id)).map((y) => ({ y })));
+  const shown = rows.filter((o) => stmF === 'all' || (stmF === 'wish' ? !!o.x : (o.y || (o.r && o.r.length))));
+  const show = vtOpenAll || stmF !== 'all' ? shown : shown.slice(0, 12);
+  $('vtList').innerHTML = !rows.length ? '<li class="st-empty">' + esc(t.stmNone) + '</li>' : !shown.length ? '<li class="st-empty">' + esc(t.stmNoneF) + '</li>' : show.map((o) => {
+    if (o.y) {
+      const y = o.y, g = partyGame(y.p), nm = partyName(y.p), info = { gameId: y.p.gameId || null, game: g ? g.nDe : nm, year: y.p.year || null, mem: false };
+      const k = vtKeyOf(info.gameId, info.game), on = vtMineHas(k), tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max });
+      return '<li class="vt-row planned"><span class="rk cal" aria-hidden="true">📅</span>' + thumbHtml(y.p, g, nm) +
+        '<div><div class="nm">' + esc(nm) + '</div><div class="plan-info">' + esc(planInfo(y)) + '</div></div><div class="acts">' +
+        '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vround="' + esc(y.id) + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + '</button>' +
+        '<span class="pchip plan">' + esc(t.stmPlanned) + '</span><button type="button" class="btn btn-outline" data-stmgo="' + esc(y.id) + '">' + esc(t.stmToRound) + '</button></div></li>';
+    }
+    const x = o.x, g = x.gameId ? byId[x.gameId] : null, nm = g ? name(g) : x.game, on = vtMineHas(x.key), mg = memFor(x.gameId, x.game);
     const tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max }) + vtWho(x);
     let acts = '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vk="' + esc(x.key) + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + '<span>' + x.n + '</span></button>';
-    if (vtPlanned(x)) acts += '<span class="pchip ok">' + ICO_OK + esc(t.vtPlanned) + '</span>';
+    if (o.r.length) acts += '<span class="pchip plan">' + esc(t.stmPlanned) + '</span><button type="button" class="btn btn-outline" data-stmgo="' + esc(o.r[0].id) + '">' + esc(t.stmToRound) + '</button>';
     else if (!g && mg && !rndMine(mg)) acts += '<button type="button" class="btn btn-quiet" data-vtbring="' + esc(mg.key) + '">' + esc(t.brAsk) + '</button>';
     else acts += '<button type="button" class="btn btn-primary" data-vtoffer="' + esc(x.key) + '">' + esc(t.ptNew) + '</button>';
-    return '<li class="vt-row"><span class="rk">' + (i + 1) + '</span>' + thumbHtml({ guest: !g, gameId: x.gameId }, g, nm) +
-      '<div><div class="nm">' + esc(nm) + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div></div><div class="acts">' + acts + '</div></li>';
+    return '<li class="vt-row' + (o.r.length ? ' planned' : '') + '"><span class="rk">' + (o.i + 1) + '</span>' + thumbHtml({ guest: !g, gameId: x.gameId }, g, nm) +
+      '<div><div class="nm">' + esc(nm) + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div>' +
+      o.r.map((y) => '<div class="plan-info">📅 ' + esc(planInfo(y)) + '</div>').join('') + '</div><div class="acts">' + acts + '</div></li>';
   }).join('');
-  $('vtMore').hidden = vt.list.length <= 5; $('vtMore').textContent = vtOpenAll ? t.vtLess : fill(t.vtAll, { n: vt.list.length });
+  $('vtMore').hidden = stmF !== 'all' || shown.length <= 12; $('vtMore').textContent = vtOpenAll ? t.vtLess : fill(t.vtAll, { n: shown.length });
+  renderStmRes();
 }
+// Kleine Vorschau auf „Mitspieler gesucht“: Top 3 + Link zum Stammtisch-Reiter.
+function renderVtTeaser() {
+  const t = T(), el = $('vtTeaser'); if (!el) return;
+  el.hidden = !vt.day; if (!vt.day) return;
+  $('vtTH').textContent = fill(t.stmTeaser, { d: vt.day === todayIso() ? t.ptToday : dayLabel(vt.day) });
+  $('vtTList').innerHTML = vt.list.length ? vt.list.slice(0, 3).map((x) => { const g = x.gameId ? byId[x.gameId] : null; return '<li>' + esc(g ? name(g) : x.game) + '<span class="meta">👍 ' + x.n + '</span></li>'; }).join('') : '<li class="meta" style="list-style:none;margin-left:-20px">' + esc(t.stmTeaserNone) + '</li>';
+}
+// „Spiel wünschen“: Suche über Sammlung und Mitgliederspiele, 👍 direkt in der Trefferliste.
+function renderStmRes() {
+  const t = T(), q = fold($('stmQ').value || ''), box = $('stmRes');
+  $('stmQ').placeholder = t.stmAddPh;
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  const seen = new Set(), hits = [];
+  for (const g of all.concat(memGames)) {
+    const k = vtKey(g); if (seen.has(k)) continue;
+    if ([g.nDe, g.nEn].some((n) => n && fold(n).includes(q))) { seen.add(k); hits.push(g); if (hits.length >= 8) break; }
+  }
+  box.innerHTML = hits.length ? hits.map((g) => '<li>' + thumbHtml({ guest: !!g.mem, gameId: g.id }, g.mem ? null : g, name(g)) + '<span class="nm">' + esc(name(g)) + (g.mem ? '<span class="src mem">' + esc(t.memTag) + '</span>' : '') + '</span>' + voteBtn(g) + '</li>').join('') : '<li class="meta" style="display:block">' + esc(t.stmNoHit) + '</li>';
+}
+$('stmQ').addEventListener('input', renderStmRes);
+$('stmFilter').addEventListener('click', (e) => { const b = e.target.closest('[data-stmf]'); if (!b) return; stmF = b.dataset.stmf; renderVotes(); });
+// Zur Runde springen: Unterreiter „Mitspieler gesucht“, Karte kurz hervorheben.
+function goRound(id) {
+  try { history.replaceState(null, '', '#partys'); } catch (x) { location.hash = 'partys'; }
+  renderView(); renderParties();
+  const el = document.getElementById('party-' + id); if (!el) return;
+  el.scrollIntoView({ behavior: reduceMotionQ() ? 'auto' : 'smooth', block: 'center' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+document.addEventListener('click', (e) => {
+  let b;
+  if ((b = e.target.closest('[data-stmgo]'))) { goRound(b.dataset.stmgo); return; }
+  if ((b = e.target.closest('[data-stmgo-tab]'))) { e.preventDefault(); try { history.replaceState(null, '', '#stammtisch'); } catch (x) { location.hash = 'stammtisch'; } renderView(); renderVotes(); window.scrollTo(0, 0); return; }
+  if ((b = e.target.closest('[data-vround]'))) { const y = parties.find((z) => z.id === b.dataset.vround); if (!y) return; const g = partyGame(y.p); doVote({ gameId: y.p.gameId || null, game: g ? g.nDe : partyName(y.p), year: y.p.year || null, mem: false }, b); return; }
+  if ((b = e.target.closest('[data-stmday]')) || (b = e.target.closest('#stmOffer'))) {
+    const day = b.dataset.stmday || vt.day; openParty();
+    if (day >= todayIso()) { $('pDate').value = day; calMonth = day.slice(0, 7); }
+    if (typeof renderCal === 'function') renderCal(); return;
+  }
+});
 function setVotes(r) {
   if (!r || typeof r !== 'object') return;
-  vt = { day: r.day || '', max: r.max || 5, list: Array.isArray(r.list) ? r.list : [] };
+  vt = { day: r.day || '', max: r.max || 5, list: Array.isArray(r.list) ? r.list : [], post: r.post || (r.day === vt.day ? vt.post : '') || '' };
   if (Array.isArray(r.mine) && myIds) myIds.votes = new Set(r.mine);
   renderVotes(); renderGrid();
 }
@@ -3552,12 +3695,12 @@ function cpEndedCard(c) {
     (cpMsgs[c.id] ? '<span class="err" role="alert">' + esc(cpMsgs[c.id]) + '</span>' : '') + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
 }
 /* ---------- Ansichten (Tabs) ---------- */
-const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties|suche|wanted|kampagnen|campaigns)$/i.test(location.hash) ? 'parties' : 'collection');
+const currentView = () => (/^#(statistik|stats)$/i.test(location.hash) ? 'stats' : /^#(partys|parties|suche|wanted|kampagnen|campaigns|stammtisch|clubnight)$/i.test(location.hash) ? 'parties' : 'collection');
 function renderView() {
   const v = currentView();
   $('viewCollection').hidden = v !== 'collection'; $('viewStats').hidden = v !== 'stats'; $('viewParties').hidden = v !== 'parties';
-  const sub = /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : /^#(kampagnen|campaigns)$/i.test(location.hash) ? 'camps' : 'rounds';
-  $('subRounds').hidden = sub !== 'rounds'; $('subWanted').hidden = sub !== 'wanted'; $('subCamps').hidden = sub !== 'camps';
+  const sub = /^#(suche|wanted)$/i.test(location.hash) ? 'wanted' : /^#(kampagnen|campaigns)$/i.test(location.hash) ? 'camps' : /^#(stammtisch|clubnight)$/i.test(location.hash) ? 'stm' : 'rounds';
+  $('subStm').hidden = sub !== 'stm'; $('subRounds').hidden = sub !== 'rounds'; $('subWanted').hidden = sub !== 'wanted'; $('subCamps').hidden = sub !== 'camps';
   document.querySelectorAll('#ptSub a').forEach((a) => { if (a.dataset.sub === sub) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   document.querySelectorAll('#tabs a').forEach((a) => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 }
@@ -3571,6 +3714,7 @@ $('ptSub').addEventListener('click', (e) => {
   const a = e.target.closest('a[data-sub]'); if (!a) return; e.preventDefault();
   try { history.replaceState(null, '', a.getAttribute('href')); } catch (x) { location.hash = a.getAttribute('href').slice(1); }
   renderView(); if (a.dataset.sub === 'wanted') renderWanted(); else if (a.dataset.sub === 'camps') renderCamps(); else renderParties();
+  if (a.dataset.sub === 'stm') renderVotes();
 });
 window.addEventListener('hashchange', () => { renderView(); renderSlider(); });
 
@@ -3793,6 +3937,7 @@ function renderBkAdm() {
   const t = T(), r = bkAdm; if (!r) return;
   $('bkRole').value = r.memberRole || ''; $('bkExtra').value = toDmy(r.extra); $('bkSkip').value = toDmy(r.skip);
   $('bkPause').checked = !!r.pause; $('bkPauseUntil').value = r.pauseUntil || ''; $('bkPauseNote').value = r.pauseNote || '';
+  $('bkVpDays').value = r.votePostDays ?? 5; $('bkVpPing').value = r.votePing || 'here';
   const order = [1, 2, 3, 4, 5, 6, 0];
   $('bkWeekly').innerHTML = order.map((w) => '<label class="pill" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:14px"><input type="checkbox" data-bkw="' + w + '" style="width:18px;height:18px;padding:0"' + (r.weekdays.includes(w) ? ' checked' : '') + '> ' + esc(t.wdLong[w]) + '</label>').join(' ');
   const nths = [1, 2, 3, 4, -1], has = (n, w) => r.monthly.some((x) => x.nth === n && x.wd === w);
@@ -3806,7 +3951,7 @@ $('bkSave').onclick = async () => {
   const weekdays = Array.from(document.querySelectorAll('[data-bkw]:checked'), (x) => Number(x.dataset.bkw));
   const monthly = Array.from(document.querySelectorAll('[data-bkn]:checked'), (x) => ({ nth: Number(x.dataset.bkn), wd: Number(x.dataset.bkd) }));
   try {
-    bkAdm = await api('PUT', '/admin/booking', { memberRole: $('bkRole').value, weekdays, monthly, extra, skip, pause: $('bkPause').checked, pauseUntil: $('bkPauseUntil').value, pauseNote: $('bkPauseNote').value }); renderBkAdm();
+    bkAdm = await api('PUT', '/admin/booking', { memberRole: $('bkRole').value, weekdays, monthly, extra, skip, pause: $('bkPause').checked, pauseUntil: $('bkPauseUntil').value, pauseNote: $('bkPauseNote').value, votePostDays: Math.max(0, Math.min(14, parseInt($('bkVpDays').value, 10) || 0)), votePing: $('bkVpPing').value }); renderBkAdm();
     msg.className = 'note ok'; msg.textContent = fill(t.admBkOk, { n: bkAdm.next.slice(0, 5).map(dmy).join(', ') });
     api('GET', '/booking?' + Date.now()).then((r) => { bk = r; renderPtHow(); }).catch(() => {});
   } catch (e) { msg.className = 'err'; msg.textContent = t.admLangErr; }

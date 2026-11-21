@@ -7,7 +7,7 @@
 // Einstellungen: config-Schlüssel 'booking' = { memberRole, weekdays:[0–6], monthly:[{nth:1–4|-1, wd:0–6}], extra:[ISO], skip:[ISO] }.
 
 // pause / pauseUntil / pauseNote: Admin kann neue Runden von Nicht-Mitgliedern vorübergehend sperren (Event-Code-Runden ausgenommen).
-export const DEFAULT_BOOKING = { memberRole: '', weekdays: [2], monthly: [{ nth: 1, wd: 6 }], extra: [], skip: [], pause: false, pauseUntil: '', pauseNote: '' };
+export const DEFAULT_BOOKING = { memberRole: '', weekdays: [2], monthly: [{ nth: 1, wd: 6 }], extra: [], skip: [], pause: false, pauseUntil: '', pauseNote: '', votePostDays: 5, votePing: 'here' };
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const isIso = (s) => ISO.test(s) && !isNaN(Date.parse(s));
 const wdOf = (iso) => new Date(iso + 'T12:00:00Z').getUTCDay();
@@ -30,6 +30,9 @@ export function cleanBooking(b) {
     pause: !!b.pause,
     pauseUntil: isIso(String(b.pauseUntil || '')) ? String(b.pauseUntil) : '',
     pauseNote: String(b.pauseNote || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200),
+    // Wunschspiele-Abstimmung in Discord: so viele Tage vor dem Stammtisch posten (0 = aus); Erwähnung: here, role (Mitgliederrolle) oder none.
+    votePostDays: Number.isInteger(Number(b.votePostDays)) && Number(b.votePostDays) >= 0 && Number(b.votePostDays) <= 14 ? Number(b.votePostDays) : 5,
+    votePing: ['here', 'role', 'none'].includes(b.votePing) ? b.votePing : 'here',
   };
 }
 

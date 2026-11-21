@@ -101,6 +101,19 @@ async function builtInIds(env) {
   return builtIn;
 }
 
+// Alle Club-Spiele (eingebaut + übernommen) als { gameId, game, year } für die Suche im Discord-Bot.
+export async function clubGameList(env) {
+  const out = [];
+  try {
+    const res = await env.ASSETS.fetch(new Request('https://assets.local/index.html'));
+    const m = /<script type="application\/json" id="gameData">([\s\S]*?)<\/script>/.exec(await res.text());
+    JSON.parse(m[1]).g.forEach((x) => out.push({ gameId: x[0], game: x[1], year: x[2] || null }));
+  } catch { /* Seite nicht lesbar */ }
+  await ensureExtra(env);
+  (await env.DB.prepare('SELECT id, data FROM extra_games').all()).results.forEach((r) => { try { const d = JSON.parse(r.data); out.push({ gameId: r.id, game: d.n, year: d.y || null }); } catch { /* kaputt */ } });
+  return out;
+}
+
 // Steht ein Spiel (BGG-ID) in der Club-Sammlung (eingebaut oder aus der GeekList übernommen)?
 export async function inClub(env, id) {
   if (!id) return false;

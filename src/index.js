@@ -4,6 +4,7 @@ import { authRoute, currentUser } from './auth.js';
 import { memberGamesRoute, backfillMemberGames, pruneMemberGames } from './membergames.js';
 import { wantedRoute, expireWanted, myWanted } from './wanted.js';
 import { votesRoute, expireVotes, myVotes } from './votes.js';
+import { syncVotePoll, votePostLink } from './votepost.js';
 import { campaignRoute, postDueSessions, tidyCampaigns, linkSessionPlay, linkCampaignPlays } from './campaigns.js';
 import { addWait, removeWait, promoteWaitlist, sweepWaitlists, waitOf } from './waitlist.js';
 import { getBooking, cleanBooking, isMember, canJoin, joinOpenToAll, checkBookingDate, nextStammtische, introOk, INTRO_MIN, guestsPaused } from './booking.js';
@@ -119,7 +120,7 @@ async function route(req, env, ctx, url) {
   const ar = await authRoute(req, env, url, path, m, ip, allow); if (ar) return ar;
   if (path.startsWith('/member-games')) { await ensureCols(env); return memberGamesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin, checkEvent }); }
   if (path.startsWith('/campaigns')) return campaignRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin });
-  if (path.startsWith('/votes')) return votesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember });
+  if (path.startsWith('/votes')) return votesRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, onVote: () => syncVotePoll(env), postLink: () => votePostLink(env) });
   if (path.startsWith('/wanted')) { await ensureCols(env); return wantedRoute(req, env, ctx, path, m, ip, { json, fail, body, allow, checkMember, isAdmin }); }
   if (path === '/my' && m === 'GET') {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
@@ -534,6 +535,8 @@ export default {
         try { const n = await linkCampaignPlays(env); if (n) console.log('campaign sessions linked to plays', n); } catch (e) { console.log('campaign link failed', e.code || e.message); }
         // Kampagnen: Sitzungen eine Woche vorher im Thread posten.
         try { const n = await postDueSessions(env); if (n) console.log('campaign sessions posted', n); } catch (e) { console.log('campaign sessions failed', e.code || e.message); }
+        // Wunschspiele-Abstimmung in Discord: einige Tage vor dem Stammtisch posten, danach aktuell halten.
+        try { const r = await syncVotePoll(env); if (r) console.log('vote post', r); } catch (e) { console.log('vote post failed', e.code || e.message); }
         // Übersicht offener Runden aktuell halten (bearbeitet nur, wenn sich etwas geändert hat, z. B. nach Mitternacht).
         if (discordOn(env)) { try { await refreshOverview(env); } catch (e) { console.log('overview refresh failed', e.code || e.message); } }
       })());
