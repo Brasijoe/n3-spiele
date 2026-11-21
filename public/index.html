@@ -545,7 +545,13 @@ dialog.rnd-dlg h3 { padding-right: 44px; }
 .stm-res .src { margin-left: 6px; }
 .stm-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
 .stm-list .vt-row { box-shadow: inset 4px 0 0 var(--club); background: var(--surface); }
-.stm-list .vt-row.planned { box-shadow: inset 4px 0 0 var(--accent); background: var(--guest-soft); }
+.stm-list .vt-row.planned { box-shadow: inset 4px 0 0 var(--accent); }
+/* Feste Spalten: 👍 und Knopf stehen in allen Zeilen genau untereinander, Knöpfe gleich breit. */
+.stm-list .vt-row .acts { display: grid; grid-template-columns: 64px 190px; gap: 8px; flex-wrap: nowrap; }
+.stm-list .vt-row .acts .vote { width: 64px; justify-content: center; }
+.stm-list .vt-row .acts .btn { width: 100%; justify-content: center; }
+.stm-list .vt-row .nm .pchip { margin-left: 6px; vertical-align: 2px; }
+@media (max-width: 560px) { .stm-list .vt-row .acts { grid-template-columns: 64px minmax(0, 1fr); } }
 .stm-list .vt-row .rk.cal { font-size: 18px; }
 .pchip.plan { background: var(--accent); color: var(--on-accent); }
 .vt-row .plan-info { font-size: 13px; color: var(--fg); font-weight: 600; margin-top: 2px; }
@@ -3167,18 +3173,18 @@ function renderVotes() {
       const y = o.y, g = partyGame(y.p), nm = partyName(y.p), info = { gameId: y.p.gameId || null, game: g ? g.nDe : nm, year: y.p.year || null, mem: false };
       const k = vtKeyOf(info.gameId, info.game), on = vtMineHas(k), tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max });
       return '<li class="vt-row planned"><span class="rk cal" aria-hidden="true">📅</span>' + thumbHtml(y.p, g, nm) +
-        '<div><div class="nm">' + esc(nm) + '</div><div class="plan-info">' + esc(planInfo(y)) + '</div></div><div class="acts">' +
+        '<div><div class="nm">' + esc(nm) + ' ' + '<span class="pchip plan">' + esc(t.stmPlanned) + '</span>' + '</div><div class="plan-info">' + esc(planInfo(y)) + '</div></div><div class="acts">' +
         '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vround="' + esc(y.id) + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + '</button>' +
-        '<span class="pchip plan">' + esc(t.stmPlanned) + '</span><button type="button" class="btn btn-outline" data-stmgo="' + esc(y.id) + '">' + esc(t.stmToRound) + '</button></div></li>';
+        '<button type="button" class="btn btn-outline" data-stmgo="' + esc(y.id) + '">' + esc(t.stmToRound) + '</button></div></li>';
     }
     const x = o.x, g = x.gameId ? byId[x.gameId] : null, nm = g ? name(g) : x.game, on = vtMineHas(x.key), mg = memFor(x.gameId, x.game);
     const tip = fill(on ? t.vtBtnOn : t.vtBtn, { d: vtDayTxt(), m: vt.max }) + vtWho(x);
     let acts = '<button type="button" class="vote' + (on ? ' on' : '') + '" data-vk="' + esc(x.key) + '" aria-pressed="' + on + '" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + ICO_UP + '<span>' + x.n + '</span></button>';
-    if (o.r.length) acts += '<span class="pchip plan">' + esc(t.stmPlanned) + '</span><button type="button" class="btn btn-outline" data-stmgo="' + esc(o.r[0].id) + '">' + esc(t.stmToRound) + '</button>';
+    if (o.r.length) acts += '<button type="button" class="btn btn-outline" data-stmgo="' + esc(o.r[0].id) + '">' + esc(t.stmToRound) + '</button>';
     else if (!g && mg && !rndMine(mg)) acts += '<button type="button" class="btn btn-quiet" data-vtbring="' + esc(mg.key) + '">' + esc(t.brAsk) + '</button>';
     else acts += '<button type="button" class="btn btn-primary" data-vtoffer="' + esc(x.key) + '">' + esc(t.ptNew) + '</button>';
     return '<li class="vt-row' + (o.r.length ? ' planned' : '') + '"><span class="rk">' + (o.i + 1) + '</span>' + thumbHtml({ guest: !g, gameId: x.gameId }, g, nm) +
-      '<div><div class="nm">' + esc(nm) + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div>' +
+      '<div><div class="nm">' + esc(nm) + (o.r.length ? ' ' + '<span class="pchip plan">' + esc(t.stmPlanned) + '</span>' : '') + '</div><div class="who">' + esc((x.n === 1 ? t.vtN1 : fill(t.vtNn, { n: x.n })) + ': ' + x.names.join(', ')) + '</div>' +
       o.r.map((y) => '<div class="plan-info">📅 ' + esc(planInfo(y)) + '</div>').join('') + '</div><div class="acts">' + acts + '</div></li>';
   }).join('');
   $('vtMore').hidden = stmF !== 'all' || shown.length <= 12; $('vtMore').textContent = vtOpenAll ? t.vtLess : fill(t.vtAll, { n: shown.length });
