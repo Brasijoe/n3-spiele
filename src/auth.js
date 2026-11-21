@@ -89,8 +89,17 @@ async function newSession(env, discordId, via) {
   return token;
 }
 
+// Zustimmung zur Namensanzeige speichern (erster Zeitpunkt bleibt).
+export async function saveConsent(env, m) {
+  if (m.name_consent_at) return;
+  m.name_consent_at = new Date().toISOString();
+  await env.DB.prepare('UPDATE members SET name_consent_at = coalesce(name_consent_at, ?1) WHERE discord_id = ?2').bind(m.name_consent_at, m.discord_id).run();
+}
+
 // Wer schreibt? Sitzung (X-Session) oder – wie bisher – persönlicher Code (X-Member-Code). Gibt { member } oder { err } zurück.
-export async function currentUser(req, env, allow, ip) {
+// Ohne Zustimmung zur Namensanzeige gibt es err 'consent_required' (außer anyConsent; die Seite fragt dann nach).
+// Header X-Name-Consent: 1 = die Person hat das Häkchen gerade gesetzt.
+export async function currentUser(req, env, allow, ip, anyConsent) {
   await ensureAuth(env);
   const tok = String(req.headers.get('x-session') || '');
   let m = null;
@@ -108,7 +117,10 @@ export async function currentUser(req, env, allow, ip) {
     if (!m) return { err: 'bad_code' };
   }
   const err = await memberOk(env, m);
-  return err ? { err } : { member: m };
+  if (err) return { err };
+  if (!m.name_consent_at && req.headers.get('x-name-consent') === '1') await saveConsent(env, m);
+  if (!m.name_consent_at && !anyConsent) return { err: 'consent_required' };
+  return { member: m };
 }
 
 const page = (env, url, msg, ok) => new Response(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anmeldung</title>
@@ -121,6 +133,7 @@ const ERR_TXT = {
   no_channel: 'Du kannst den Brettspiel-Kanal auf dem Discord-Server nicht sehen. Hol dir die Brettspiel-Rolle und versuche es dann noch einmal.',
   blocked: 'Dein Zugang ist gesperrt.',
   failed: 'Die Anmeldung hat nicht geklappt. Bitte noch einmal versuchen.',
+  consent_required: 'Bitte setze vor der Anmeldung das Häkchen, dass dein Discord-Name in Runden und Listen angezeigt werden darf.',
 };
 
 // Routen unter /api/auth/…; gibt null zurück, wenn der Pfad nicht passt.
@@ -136,14 +149,15 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
     if (!env.DISCORD_CLIENT_SECRET || !env.DISCORD_APP_ID) return page(env, url, 'Die Discord-Anmeldung ist noch nicht eingerichtet.', false);
     const nonce = String(url.searchParams.get('n') || '');
     if (!/^[0-9a-f]{32}$/.test(nonce)) return page(env, url, ERR_TXT.failed, false);
+    const consent = url.searchParams.get('c') === '1' ? '1' : '0';
     const state = randHex(16);
     const to = new URL(env.DISCORD_OAUTH_URL || 'https://discord.com/oauth2/authorize');
     to.search = new URLSearchParams({ client_id: env.DISCORD_APP_ID, response_type: 'code', scope: 'identify', redirect_uri: redirect, state, prompt: 'none' }).toString();
-    return new Response(null, { status: 302, headers: { location: to.toString(), 'set-cookie': `n3auth=${state}.${nonce}; Path=/api/auth; Max-Age=600; HttpOnly; Secure; SameSite=Lax`, 'cache-control': 'no-store' } });
+    return new Response(null, { status: 302, headers: { location: to.toString(), 'set-cookie': `n3auth=${state}.${nonce}.${consent}; Path=/api/auth; Max-Age=600; HttpOnly; Secure; SameSite=Lax`, 'cache-control': 'no-store' } });
   }
 
   if (path === '/auth/callback' && m === 'GET') {
-    const ck = /(?:^|;\s*)n3auth=([0-9a-f]{32})\.([0-9a-f]{32})/.exec(req.headers.get('cookie') || '');
+    const ck = /(?:^|;\s*)n3auth=([0-9a-f]{32})\.([0-9a-f]{32})(?:\.([01]))?/.exec(req.headers.get('cookie') || '');
     const clear = 'n3auth=; Path=/api/auth; Max-Age=0; HttpOnly; Secure; SameSite=Lax';
     const done = async (err, token) => {
       if (ck) await env.DB.prepare('INSERT INTO auth_handoff(nonce_hash, token, error, created) VALUES(?1, ?2, ?3, ?4) ON CONFLICT(nonce_hash) DO UPDATE SET token = excluded.token, error = excluded.error')
@@ -167,11 +181,14 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
       const a = await checkAccess(env, u.id);
       if (!a.ok) return done(a.err);
       const name = String(a.name || u.global_name || u.username || 'Spieler').slice(0, 40);
-      const old = await env.DB.prepare('SELECT blocked FROM members WHERE discord_id = ?1').bind(u.id).first();
+      const old = await env.DB.prepare('SELECT blocked, name_consent_at FROM members WHERE discord_id = ?1').bind(u.id).first();
       if (old && old.blocked) return done('blocked');
+      // Ohne Häkchen (und ohne frühere Zustimmung) keine Anmeldung.
+      const agreed = ck[3] === '1';
+      if (!agreed && !(old && old.name_consent_at)) return done('consent_required');
       // Ohne /code gibt es keinen Code: Platzhalter-Hash, der zu keinem Code passt.
-      await env.DB.prepare("INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at, roles) VALUES(?1, ?2, ?3, 0, ?4, ?5, ?6) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, checked_at = excluded.checked_at, roles = excluded.roles")
-        .bind(u.id, name, 'none:' + randHex(16), new Date().toISOString(), Date.now(), JSON.stringify(a.roles || [])).run();
+      await env.DB.prepare("INSERT INTO members(discord_id, name, code_hash, blocked, created_at, checked_at, roles, name_consent_at) VALUES(?1, ?2, ?3, 0, ?4, ?5, ?6, ?7) ON CONFLICT(discord_id) DO UPDATE SET name = excluded.name, checked_at = excluded.checked_at, roles = excluded.roles, name_consent_at = coalesce(members.name_consent_at, excluded.name_consent_at)")
+        .bind(u.id, name, 'none:' + randHex(16), new Date().toISOString(), Date.now(), JSON.stringify(a.roles || []), agreed ? new Date().toISOString() : null).run();
       return done(null, await newSession(env, u.id, 'discord'));
     } catch (e) { console.log('oauth failed', e && e.message); return done('failed'); }
   }
@@ -197,9 +214,17 @@ export async function authRoute(req, env, url, path, m, ip, allow) {
   }
 
   if (path === '/auth/me' && m === 'GET') {
-    const r = await currentUser(req, env, allow, ip);
+    const r = await currentUser(req, env, allow, ip, true);
     if (r.err) return fail(r.err === 'rate_limited' ? 429 : 401, r.err);
-    return json({ name: r.member.name, member: isMember(await getBooking(env), r.member.roles) });
+    return json({ name: r.member.name, member: isMember(await getBooking(env), r.member.roles), nameConsent: !!r.member.name_consent_at });
+  }
+
+  // Bestehende Anmeldung: Zustimmung zur Namensanzeige nachholen (Häkchen im Dialog).
+  if (path === '/auth/consent' && m === 'POST') {
+    const r = await currentUser(req, env, allow, ip, true);
+    if (r.err) return fail(r.err === 'rate_limited' ? 429 : 401, r.err);
+    await saveConsent(env, r.member);
+    return json({ ok: true, at: r.member.name_consent_at });
   }
 
   if (path === '/auth/logout' && m === 'POST') {

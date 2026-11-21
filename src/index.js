@@ -124,7 +124,7 @@ async function route(req, env, ctx, url) {
   if (path === '/my' && m === 'GET') {
     // Eigene Partien und Runden (für die Bearbeiten-Knöpfe); ohne Anmeldung leer.
     if (!req.headers.has('x-session')) return json({ plays: [], parties: [] });
-    const u = await checkMember(req, env, ip); if (u.err) return fail(u.err === 'rate_limited' ? 429 : 401, u.err);
+    const u = await currentUser(req, env, allow, ip, true); if (u.err) return fail(u.err === 'rate_limited' ? 429 : 401, u.err);
     await ensurePlayCols(env); await ensureCols(env);
     const p1 = await env.DB.prepare('SELECT id FROM plays WHERE by_discord = ?1 ORDER BY created_at DESC LIMIT 500').bind(u.member.discord_id).all();
     const p2 = await env.DB.prepare('SELECT id FROM parties WHERE host_discord = ?1 ORDER BY date DESC LIMIT 200').bind(u.member.discord_id).all();
@@ -133,7 +133,7 @@ async function route(req, env, ctx, url) {
     const bggUser = p3.results.some((r) => r.src === 'bgg') ? ((await env.DB.prepare('SELECT bgg_user FROM members WHERE discord_id = ?1').bind(u.member.discord_id).first().catch(() => null)) || {}).bgg_user || '' : '';
     const wd = await myWanted(env, u.member.discord_id);
     const votes = await myVotes(env, u.member.discord_id);
-    return json({ id: u.member.discord_id, name: u.member.name, member, wanted: wd.mine, wantedJoined: wd.joined, votes, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
+    return json({ id: u.member.discord_id, name: u.member.name, nameConsent: !!u.member.name_consent_at, member, wanted: wd.mine, wantedJoined: wd.joined, votes, plays: p1.results.map((r) => r.id), parties: p2.results.map((r) => r.id), memberGames: p3.results.map((r) => r.id), bggUser, bggSynced: p3.results.some((r) => r.src === 'bgg') });
   }
   if (path === '/plays' && m === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM plays ORDER BY created_at DESC LIMIT 500').all();
@@ -243,12 +243,13 @@ async function route(req, env, ctx, url) {
     if (!joinOpenToAll(rule, prow)) {
       const u = await checkMember(req, env, ip);
       if (u.err === 'rate_limited') return fail(429, u.err);
+      if (u.err === 'consent_required') return fail(403, u.err);
       if (u.err || !canJoin(rule, prow, u.member.roles)) return fail(403, u.err ? 'join_login' : 'join_members_only');
     }
     // Atomar: nur eintragen, wenn noch ein Platz frei ist (Gastgeber belegt einen Platz).
     // Angemeldet (Discord oder /code)? Dann die Discord-ID mitspeichern, damit der Bot die Person zum Thread der Runde hinzufügt.
     let did = null;
-    if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (!u.err) did = u.member.discord_id; }
+    if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (u.err === 'consent_required') return fail(403, u.err); if (!u.err) did = u.member.discord_id; }
     // Reservierter Platz (Runde aus „Hat jemand …?“): angemeldet bestätigen, auch wenn sonst alles belegt ist.
     const cur0 = await expireReservations(env, await env.DB.prepare('SELECT * FROM parties WHERE id = ?1').bind(g[1]).first());
     // Frei gewordene Plätze gehen zuerst an die Warteliste.
@@ -281,9 +282,10 @@ async function route(req, env, ctx, url) {
     if (!joinOpenToAll(rule, prow)) {
       const u = await checkMember(req, env, ip);
       if (u.err === 'rate_limited') return fail(429, u.err);
+      if (u.err === 'consent_required') return fail(403, u.err);
       if (u.err || !canJoin(rule, prow, u.member.roles)) return fail(403, u.err ? 'join_login' : 'join_members_only');
       did = u.member.discord_id;
-    } else if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (!u.err) did = u.member.discord_id; }
+    } else if (req.headers.get('x-session') || req.headers.get('x-member-code')) { const u = await checkMember(req, env, ip); if (u.err === 'consent_required') return fail(403, u.err); if (!u.err) did = u.member.discord_id; }
     const res = await addWait(env, g[1], { k: key, name, did });
     if (res.err === 'gone') return fail(409, 'full_or_gone');
     if (res.err === 'not_full') return fail(409, 'not_full');

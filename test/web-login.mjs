@@ -7,7 +7,7 @@ const hex = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (x) => 
 async function login(id) {
   await fetch(M + '/set?as=' + id);
   const n = hex(16);
-  let r = await fetch(W + '/auth/discord?n=' + n, { redirect: 'manual' }); assert.equal(r.status, 302);
+  let r = await fetch(W + '/auth/discord?c=1&n=' + n, { redirect: 'manual' }); assert.equal(r.status, 302);
   const cookie = r.headers.get('set-cookie').split(';')[0];
   r = await fetch(r.headers.get('location'), { redirect: 'manual' });
   r = await fetch(r.headers.get('location'), { headers: { cookie } }); assert.equal(r.status, 200);

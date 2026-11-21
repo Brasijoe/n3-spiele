@@ -31,7 +31,7 @@ http.createServer((req, res) => {
 const hex = (k) => Array.from(crypto.getRandomValues(new Uint8Array(k)), (x) => x.toString(16).padStart(2, '0')).join('');
 async function login(id) {
   await fetch('http://localhost:8801/set?as=' + id); const nn = hex(16);
-  let r = await fetch(W + '/auth/discord?n=' + nn, { redirect: 'manual' }); const cookie = r.headers.get('set-cookie').split(';')[0];
+  let r = await fetch(W + '/auth/discord?c=1&n=' + nn, { redirect: 'manual' }); const cookie = r.headers.get('set-cookie').split(';')[0];
   r = await fetch(r.headers.get('location'), { redirect: 'manual' }); await fetch(r.headers.get('location'), { headers: { cookie } });
   return (await (await fetch(W + '/auth/poll?n=' + nn)).json()).token;
 }

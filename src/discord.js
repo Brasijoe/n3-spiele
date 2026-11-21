@@ -500,6 +500,8 @@ export async function ensureCols(env) {
   const mc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('members')").all()).results.map((r) => r.name));
   if (!mc.has('roles')) await env.DB.prepare('ALTER TABLE members ADD COLUMN roles TEXT').run();
   if (!mc.has('bgg_user')) await env.DB.prepare('ALTER TABLE members ADD COLUMN bgg_user TEXT').run();
+  // Zustimmung, dass der Discord-Name öffentlich in Runden und Listen steht (Zeitpunkt, ISO). Ohne sie keine Web-Anmeldung.
+  if (!mc.has('name_consent_at')) await env.DB.prepare('ALTER TABLE members ADD COLUMN name_consent_at TEXT').run();
   // Herkunft der Mitgliederspiele ('bgg' = aus der BGG-Sammlung importiert; nur diese entfernt ein Abgleich automatisch).
   const gc = new Set((await env.DB.prepare("SELECT name FROM pragma_table_info('member_games')").all()).results.map((r) => r.name));
   if (!gc.has('src')) {
