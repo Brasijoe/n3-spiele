@@ -756,6 +756,37 @@ export async function campaignRoute(req, env, ctx, path, m, ip, h) {
     return json({ ok: true });
   }
   // Sitzungen: /campaigns/s/:sid/(absent|propose|vote|accept)
+  // „Nicht gespielt“: vorbeigegangene, nicht eingetragene Sitzung zählt nicht (fällt aus der Liste, dem Zähler und der Statistik „gespielt“).
+  // Läuft die Kampagne noch, kommt hinten ein Termin nach dem Rhythmus dazu, damit die geplante Zahl an Sitzungen bleibt.
+  if ((g = path.match(/^\/campaigns\/s\/([\w-]+)\/skip$/)) && m === 'POST') {
+    const s = await getSession(env, g[1]); if (!s) return fail(404, 'not_found');
+    const c = await getCamp(env, s.campaign_id); if (!c) return fail(404, 'not_found');
+    const who = await ownerOrAdmin(c); if (who.res) return who.res;
+    if (s.cancelled) return json({ ok: true });
+    if (s.date > berlinToday()) return fail(400, 'not_past');
+    if (s.play_id) return fail(409, 'logged');
+    const before = await getSessions(env, c.id), n = numberOf(before, s.id);
+    const u = await env.DB.prepare('UPDATE campaign_sessions SET cancelled = 1, prop = NULL WHERE id = ?1 AND cancelled = 0 AND play_id IS NULL').bind(s.id).run();
+    if (!u.meta.changes) return fail(409, 'changed');
+    let added = null;
+    const rule = c.rule ? J(c.rule, null) : null;
+    if (c.status === 'active' && rule && c.start_date) {
+      const rows = before.filter((r) => r.id !== s.id);
+      if (rows.length < c.sessions) {
+        const last = rows.reduce((mx, r) => (r.planned > mx ? r.planned : mx), addDays(berlinToday(), -1));
+        added = ruleDates(rule, c.start_date, 1, last)[0] || null;
+        if (added) await insertSessions(env, c.id, [added], c.time);
+      }
+    }
+    if (env.DISCORD_BOT_TOKEN) bg((async () => {
+      const by = who.admin ? 'der Verwaltung' : c.host_name;
+      if (c.discord_thread && s.discord_msg) await discord(env, 'PATCH', `/channels/${c.discord_thread}/messages/${s.discord_msg}`, { content: `~~Sitzung ${n}: ${c.game}, ${when(s.date, s.time)}~~ – nicht gespielt, zählt nicht.`, embeds: [], components: [], allowed_mentions: { parse: [] } }).catch(() => {});
+      await threadNote(env, c, `↩️ Die Sitzung vom ${when(s.date, s.time)} wurde nicht gespielt (eingetragen von ${by}) und zählt nicht.${added ? ` Dafür kommt am Ende ein Termin dazu: ${when(added, c.time)}.` : ''}`);
+      await postDueSessions(env, c.id);
+      await syncCampaign(env, c.id);
+    })());
+    return json({ ok: true, added });
+  }
   if ((g = path.match(/^\/campaigns\/s\/([\w-]+)\/(absent|propose|vote|accept)$/)) && (m === 'POST' || (m === 'DELETE' && g[2] === 'propose'))) {
     const s = await getSession(env, g[1]); if (!s) return fail(404, 'not_found');
     const c = await getCamp(env, s.campaign_id); if (!c || c.status !== 'active') return fail(404, 'not_found');

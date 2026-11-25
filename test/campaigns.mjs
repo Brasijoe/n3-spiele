@@ -198,16 +198,32 @@ console.log('leave + end ok');
 // Partie zu einer Sitzung eintragen (Sitzung in die Vergangenheit legen), Statistik nach „zu Ende gespielt“
 import { execSync } from 'node:child_process';
 const sql = (q) => execSync(`npx wrangler d1 execute n3-spiele --local --command ${JSON.stringify(q)}`, { stdio: 'pipe' });
-sql(`UPDATE campaign_sessions SET date = date(date, '-50 days'), planned = date(planned, '-50 days') WHERE campaign_id = '${id2}'`);
+sql(`UPDATE campaign_sessions SET date = date(date, '-55 days'), planned = date(planned, '-55 days') WHERE campaign_id = '${id2}'`);
 L = await list(fritz); let c3 = L.find((c) => c.id === id2); const past = c3.list.filter((s) => s.date < today);
 assert.ok(past.length >= 2); assert.equal(c3.phase, 'running');
 r = await call('POST', '/plays', fritz, { game: 'Pandemic Legacy', date: past[0].date, players: 2, winner: 'Alle', duration: 90, sessionId: past[0].id }); assert.equal(r.status, 200);
 r = await call('POST', '/plays', ida, { game: 'pandemic legacy', date: past[1].date, players: 2, winner: 'Alle', duration: 120 }); assert.equal(r.status, 200);
 await wait(1500);
 L = await list(fritz); c3 = L.find((c) => c.id === id2); assert.ok(c3.list[0].playId); assert.ok(c3.list[1].playId, 'auto-linked by game + date');
+// „Nicht gespielt“: unregistrierte vorbeigegangene Sitzung fällt raus, hinten kommt ein Termin dazu (Zähler bleibt bei der geplanten Zahl).
+{
+  const before = c3.list.length, skip = c3.list.filter((s) => s.date < today && !s.playId)[0];
+  assert.ok(skip, 'an unlogged past session exists');
+  r = await call('POST', `/campaigns/s/${skip.id}/skip`, ida); assert.equal(r.status, 403, 'only host/admin');
+  r = await call('POST', `/campaigns/s/${c3.list[0].id}/skip`, null, null, { 'x-admin-token': 'test-admin-pw' }); assert.equal(r.d.error, 'logged');
+  const fut = c3.list.find((s) => s.date > today); if (fut) { r = await call('POST', `/campaigns/s/${fut.id}/skip`, null, null, { 'x-admin-token': 'test-admin-pw' }); assert.equal(r.d.error, 'not_past'); }
+  r = await call('POST', `/campaigns/s/${skip.id}/skip`, null, null, { 'x-admin-token': 'test-admin-pw' }); assert.equal(r.status, 200); assert.ok(r.d.added, 'replacement date added');
+  await wait(1500);
+  L = await list(fritz); const c4 = L.find((c) => c.id === id2);
+  assert.equal(c4.list.some((s) => s.id === skip.id), false, 'skipped session gone'); assert.equal(c4.list.length, before, 'count unchanged');
+  assert.equal(c4.done, c3.done - 1, 'done counter drops'); assert.ok(c4.list.some((s) => s.date === r.d.added));
+  assert.ok(log.some((y) => y.method === 'POST' && /\/messages$/.test(y.path) && /nicht gespielt/.test((y.body && y.body.content) || '')), 'thread note');
+  c3 = c4;
+  console.log('did not play ok');
+}
 r = await call('DELETE', `/campaigns/${id2}?outcome=done`, null, null, { 'x-admin-token': 'test-admin-pw' }); assert.equal(r.status, 200);
 L = await list(fritz); c3 = L.find((c) => c.id === id2); assert.equal(c3.outcome, 'done'); assert.equal(c3.stats.logged, 2); assert.equal(c3.stats.minutes, 210); assert.deepEqual(c3.stats.winners, [{ name: 'Alle', n: 2 }]);
-assert.equal(c3.stats.played, past.length); assert.ok(c3.list.every((s) => s.date <= today));
+assert.equal(c3.stats.played, past.length - 1); assert.equal(c3.stats.cancelled, 1); assert.ok(c3.list.every((s) => s.date <= today));
 console.log('logging + stats ok');
 
 // Cron: Sitzungen werden eine Woche vorher gepostet
