@@ -209,6 +209,8 @@ footer.wrap { padding-block: 0 40px; display: flex; flex-wrap: wrap; gap: 12px 2
 .src.guest { background: var(--guest-soft); color: var(--guest-ink); }
 .src.guest::before { background: var(--guest); }
 .src.club { background: var(--surface-2); color: var(--fg); }
+.src.solo { background: var(--surface-2); color: var(--muted); }
+.src.solo::before { background: var(--line-strong); }
 .src.club::before { background: var(--club); }
 .src.mem { background: var(--mem-soft); color: var(--mem-ink); }
 .src.mem::before { background: var(--mem); border-radius: 50%; }
@@ -1570,10 +1572,10 @@ Object.assign(TXT.en, { subCamps: 'Campaigns', cpTitle: 'Find campaign players',
   cpEditNote: 'If you change start or rhythm, all upcoming dates are recalculated (individual reschedules are lost).',
   cpPropT: 'Suggest another date', cpPropTxt: 'Session {n}, currently {d}. Everyone in the campaign votes (here or in the Discord thread); if all agree or the organiser applies it, the session moves.', cpApplyLbl: 'Apply right away (no vote)', cpPropSend: 'Suggest', cpPropDone: 'Suggestion sent ✓', cpApplied: 'Rescheduled ✓',
   cpErr: { members_only: 'Campaigns are for members only (with the member role on our Discord), both to start and to join.', closed: 'This campaign is not looking for players right now.', full: 'Sorry, all seats are taken.', ended: 'This campaign is over.', past: 'The start date is in the past.', invalid: 'Please check all fields.', seats_taken: 'That many players are already in; you can’t reduce the seats further.', bad_date: 'Please pick a date from today on.', bad_time: 'Please enter a time.', same: 'That is already the current date.', past_session: 'This session is already over.', not_in: 'Only campaign players can do that.', started: 'The campaign has started already; the date can’t be open any more.', no_prop: 'That suggestion is already settled.' } });
-Object.assign(TXT.de, { ptCamp: 'Kampagnenrunden', cpRoundTag: 'Kampagne · Sitzung {n} von ca. {m}', cpPastTag: 'Kampagne · {n} gespielt', cpPlayedDates: 'Gespielte Termine', cpGo: 'Zur Kampagne', cpEndH: 'Vergangene Kampagnen',
+Object.assign(TXT.de, { ptCamp: 'Kampagnenrunden', cpRoundTag: 'Kampagne · Sitzung {n} von ca. {m}', cpPastTag: 'Kampagne · {n} gespielt', ptNoRound: 'Ohne Runde eingetragen', ptLoggedBy: 'Eingetragen von {n}', cpPlayedDates: 'Gespielte Termine', cpGo: 'Zur Kampagne', cpEndH: 'Vergangene Kampagnen',
   cpEndQ: 'Wie ist die Kampagne ausgegangen?', cpEndDoneBtn: 'Zu Ende gespielt', cpEndAbortBtn: 'Abgebrochen', cpEndDone: 'Zu Ende gespielt · {d}', cpEndAbort: 'Abgebrochen · {d}', cpDone: 'Zu Ende gespielt', cpAborted: 'Abgebrochen',
   cpPurge: 'Löschen', cpStPlayed: 'Partien', cpStMin: 'Spielzeit gesamt', cpStMinV: '{h} Std. ({m} Min.)', cpStAvg: 'Ø pro Partie', cpStCancel: 'Ausgefallen', cpStLogged: 'Eingetragen', cpStPeriod: 'Zeitraum', cpStWins: 'Meiste Siege', cpStAtt: 'Dabei' });
-Object.assign(TXT.en, { ptCamp: 'Campaign sessions', cpRoundTag: 'Campaign · session {n} of about {m}', cpPastTag: 'Campaign · {n} played', cpPlayedDates: 'Played sessions', cpGo: 'Open campaign', cpEndH: 'Past campaigns',
+Object.assign(TXT.en, { ptCamp: 'Campaign sessions', cpRoundTag: 'Campaign · session {n} of about {m}', cpPastTag: 'Campaign · {n} played', ptNoRound: 'Logged without a round', ptLoggedBy: 'Logged by {n}', cpPlayedDates: 'Played sessions', cpGo: 'Open campaign', cpEndH: 'Past campaigns',
   cpEndQ: 'How did the campaign end?', cpEndDoneBtn: 'Played to the end', cpEndAbortBtn: 'Abandoned', cpEndDone: 'Played to the end · {d}', cpEndAbort: 'Abandoned · {d}', cpDone: 'Completed', cpAborted: 'Abandoned',
   cpPurge: 'Delete', cpStPlayed: 'Sessions', cpStMin: 'Total play time', cpStMinV: '{h} h ({m} min)', cpStAvg: 'Avg per session', cpStCancel: 'Cancelled', cpStLogged: 'Logged', cpStPeriod: 'Period', cpStWins: 'Most wins', cpStAtt: 'Attendance' });
 const T = () => TXT[S.lang];
@@ -2636,6 +2638,19 @@ function pastPartyCard(x) {
     '<div class="body">' + (pl ? '<div class="presult"><div><small>' + esc(t.ptWon) + '</small><strong>' + ICO_CUP + '<span>' + esc(pl.winner || '–') + '</span></strong></div><div><small>' + esc(t.ptDur) + '</small><strong>' + ICO_CLOCK + '<span>' + esc(pl.duration ? fill(t.ptMin, { n: pl.duration }) : '–') + '</span></strong></div><div><small>' + esc(t.ptPl) + '</small><strong>' + ICO_PPL + '<span>' + esc(String(pl.players || names.length)) + '</span></strong></div></div>'
       : '<div class="players">' + ICO_PPL + esc(fill(t.ptPlayers, { n: names.length })) + '</div>') + '<div class="names">' + esc(names.join(', ')) + '</div>' + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
 }
+// Partie ohne Runde (QR-Code, „Partie eintragen“): erscheint unter „Vergangene Runden“ wie eine gespielte Runde.
+function playPastItem(pl) {
+  const t = T(), g = pl.guest ? null : byId[pl.gameId], nm = g ? name(g) : String(pl.game || '?'), d = String(pl.date);
+  const names = pl.names ? String(pl.names).split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const days = Math.round((new Date(todayIso() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5);
+  const ago = days === 1 ? t.ptYesterday : fill(t.ptAgo, { n: days });
+  const actions = canEdit || isMine('plays', pl.id) ? '<button type="button" class="btn btn-quiet" data-pe="' + esc(pl.id) + '">' + esc(t.ptEditPlay) + '</button>' : '';
+  const h = '<article class="party past"><div class="top">' + thumbHtml(pl, g, nm) + '<div><span class="when">' + esc(dayLabel(d) + ' · ' + ago) + '</span><h3>' + esc(nm) + '</h3>' +
+    '<span class="pchip ok">' + ICO_OK + esc(t.ptPlayed) + '</span> <span class="src solo">' + esc(t.ptNoRound) + '</span></div></div>' +
+    '<div class="body"><div class="presult"><div><small>' + esc(t.ptWon) + '</small><strong>' + ICO_CUP + '<span>' + esc(pl.winner || '–') + '</span></strong></div><div><small>' + esc(t.ptDur) + '</small><strong>' + ICO_CLOCK + '<span>' + esc(pl.duration ? fill(t.ptMin, { n: pl.duration }) : '–') + '</span></strong></div><div><small>' + esc(t.ptPl) + '</small><strong>' + ICO_PPL + '<span>' + esc(String(pl.players || names.length || '–')) + '</span></strong></div></div>' +
+    (names.length ? '<div class="names">' + esc(names.join(', ')) + '</div>' : pl.loggedBy ? '<div class="names">' + esc(fill(t.ptLoggedBy, { n: pl.loggedBy })) + '</div>' : '') + (actions ? '<div class="actions">' + actions + '</div>' : '') + '</div></article>';
+  return { d, h };
+}
 function partyCard(x, past) {
   if (past) return pastPartyCard(x);
   const t = T(), p = x.p, g = partyGame(p), nm = partyName(p), ins = whoIn(p), seats = Math.max(2, Number(p.seats) || 2);
@@ -2685,7 +2700,10 @@ function renderParties() {
   const past = parties.filter((x) => String(x.p.date) < td && String(x.p.date) >= lim);
   $('ptUpcoming').innerHTML = up.length ? up.map((x) => partyCard(x, false)).join('') : partyState === 'ready' ? '<p class="st-empty">' + esc(t.ptNone) + '</p>' : '';
   const cl = Array.isArray(camps) ? camps : [], cpPast = cl.map(cpPastItem).filter(Boolean);
-  const items = past.map((x) => ({ d: String(x.p.date), h: partyCard(x, true) })).concat(cpPast).sort((a, b) => b.d.localeCompare(a.d));
+  // Partien ohne Runde der letzten 30 Tage (nicht an eine Runde oder Kampagnensitzung gebunden).
+  const linked = new Set(parties.map((x) => String(x.p.playId || '')).concat(cl.flatMap((c) => (c.list || []).map((s) => String(s.playId || '')))));
+  const solo = plays.filter((pl) => pl.id && !linked.has(String(pl.id)) && String(pl.date) <= td && String(pl.date) >= lim).map(playPastItem);
+  const items = past.map((x) => ({ d: String(x.p.date), h: partyCard(x, true) })).concat(cpPast, solo).sort((a, b) => b.d.localeCompare(a.d));
   $('ptPast').innerHTML = items.map((x) => x.h).join('');
   const cr = cl.filter((c) => !c.ended && c.list.some((s) => s.date >= td)).sort((a, b) => { const na = a.list.find((s) => s.date >= td), nb = b.list.find((s) => s.date >= td); return (na.date + na.time).localeCompare(nb.date + nb.time); });
   $('ptCamp').innerHTML = cr.map(cpRoundCard).join(''); $('ptCampH').hidden = !cr.length;
